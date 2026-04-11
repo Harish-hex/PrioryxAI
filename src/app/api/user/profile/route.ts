@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
-import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
+import { errorMentionsColumn } from '@/lib/schema-migrations';
 
 export const runtime = 'nodejs';
 
@@ -26,13 +26,8 @@ export async function GET() {
     .single();
 
   if (errorMentionsColumn(error, 'cgpa')) {
-    try {
-      await ensureSchemaMigrations();
-      ({ data, error } = await supabase.from('users').select(SELF_FIELDS).eq('id', user.id).single());
-    } catch {
-      const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
-      ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
-    }
+    const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
+    ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
   }
 
   if (error || !data) {
@@ -149,28 +144,9 @@ export async function PATCH(request: NextRequest) {
     .select(SELF_FIELDS)
     .single();
 
+  // If cgpa column doesn't exist yet (migration not run), silently retry without it
   if (errorMentionsColumn(error, 'cgpa')) {
-    try {
-      await ensureSchemaMigrations();
-      ({ data, error } = await supabase
-        .from('users')
-        .update(updates)
-        .eq('id', user.id)
-        .select(SELF_FIELDS)
-        .single());
-    } catch (migrationError) {
-      console.warn('[user/profile PATCH] auto-migration failed', migrationError);
-    }
-  }
-
-  if (errorMentionsColumn(error, 'cgpa') && requestedCgpaUpdate) {
-    return NextResponse.json(
-      { error: 'CGPA could not be saved because the profile schema is still updating. Please retry once.' },
-      { status: 503 }
-    );
-  }
-
-  if (errorMentionsColumn(error, 'cgpa')) {
+    console.warn('[user/profile PATCH] cgpa column missing — saving without it. Run supabase-migration-v4.sql.');
     const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
     const safeUpdates = { ...updates };
     delete safeUpdates.cgpa;
