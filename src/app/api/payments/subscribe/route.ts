@@ -4,11 +4,6 @@ import Razorpay from 'razorpay';
 
 export const runtime = 'nodejs';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,6 +11,16 @@ export async function POST() {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    return NextResponse.json({ error: 'Payments not configured' }, { status: 503 });
+  }
+
+  // Instantiate inside handler so missing env vars don't crash at build time
+  const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
 
   try {
     const subscription = await razorpay.subscriptions.create({
