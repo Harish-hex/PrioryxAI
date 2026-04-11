@@ -79,9 +79,12 @@ export async function syncInternshalaJobsForUser(options: {
     stipend: job.stipend,
   }));
 
+  // Conflict on (user_id, apify_id) — per-user deduplication.
+  // A global apify_id unique constraint was dropped in migration v3;
+  // the same Internshala listing can now be stored for each user independently.
   const { data, error } = await supabase
     .from("tasks")
-    .upsert(rows, { onConflict: "apify_id", ignoreDuplicates: true })
+    .upsert(rows, { onConflict: "user_id,apify_id", ignoreDuplicates: true })
     .select("id");
 
   if (error) {

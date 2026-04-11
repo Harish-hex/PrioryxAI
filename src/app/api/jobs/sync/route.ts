@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
   let userId: string;
   let subjects: string[];
   let college: string | null;
+  let languages: Record<string, number> | null = null;
+  let force = false;
 
   if (hasQStashSig) {
     // Verify QStash signature before trusting body
@@ -35,6 +37,8 @@ export async function POST(request: NextRequest) {
     userId = body.user_id;
     subjects = body.subjects ?? [];
     college = body.college ?? null;
+    languages = body.languages ?? null;
+    force = true; // scheduled syncs always bypass the rate-limit
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });
@@ -44,15 +48,29 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: userData } = await supabase
-      .from('users')
-      .select('subjects, college')
-      .eq('id', user.id)
-      .single();
+    // Parse optional force flag from request body
+    let bodyForce = false;
+    try {
+      const text = await request.text();
+      if (text) {
+        const body = JSON.parse(text);
+        bodyForce = Boolean(body.force);
+      }
+    } catch {}
+
+    // Fetch user profile AND GitHub language cache in parallel so role
+    // derivation uses both subjects and GitHub languages (Bug fix: previously
+    // languages were never fetched here, so GitHub was ignored entirely).
+    const [{ data: userData }, { data: githubCache }] = await Promise.all([
+      supabase.from('users').select('subjects, college').eq('id', user.id).single(),
+      supabase.from('github_cache').select('languages').eq('user_id', user.id).single(),
+    ]);
 
     userId = user.id;
     subjects = userData?.subjects ?? [];
     college = userData?.college ?? null;
+    languages = githubCache?.languages ?? null;
+    force = bodyForce;
   }
 
   try {
@@ -60,11 +78,16 @@ export async function POST(request: NextRequest) {
       userId,
       subjects,
       college,
-      force: hasQStashSig,
+      languages,
+      force,
     });
 
     if (result.skipped === 'missing_apify_token') {
       return NextResponse.json({ message: 'Apify token not configured', inserted: 0 });
+    }
+
+    if (result.skipped === 'recently_synced') {
+      return NextResponse.json({ message: 'Already synced recently', inserted: 0, skipped: true });
     }
 
     if (result.skipped === 'no_jobs') {
