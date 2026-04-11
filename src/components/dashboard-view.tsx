@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, Brain, Clock3, Flame, Plus, Sparkles, Target } from "lucide-react";
+import { ArrowUpRight, Banknote, Brain, Briefcase, Clock3, Flame, MapPin, Plus, Sparkles, Target } from "lucide-react";
 import { useState } from "react";
 import { FocusSessionModal } from "@/components/focus-session-modal";
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
@@ -207,38 +207,109 @@ function NextMoveCard({
               </div>
             </div>
 
-            <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_230px]">
-              <div>
-                <p className="text-sm text-neutral-400">Do this next</p>
-                <h2 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl">{task.title}</h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">{task.reason}</p>
-              </div>
+            {task.type === "job" ? (
+              /* ── Job-specific layout ── */
+              <>
+                <div className="mt-6">
+                  <p className="text-sm text-neutral-400">Top internship match</p>
+                  {(() => {
+                    const [role, company] = task.title.includes(" @ ")
+                      ? task.title.split(" @ ", 2)
+                      : [task.title, null];
+                    const skills: string[] = task.subject
+                      ? task.subject.split(",").map((s: string) => s.trim()).filter(Boolean)
+                      : [];
+                    return (
+                      <>
+                        <h2 className="mt-2 text-3xl font-semibold leading-tight text-white sm:text-4xl">{role}</h2>
+                        {company && (
+                          <p className="mt-1 flex items-center gap-1.5 text-base text-neutral-400">
+                            <MapPin size={14} /> {company}
+                          </p>
+                        )}
+                        <p className="mt-3 text-sm leading-6 text-neutral-400">{task.reason}</p>
+                        {skills.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="text-xs text-neutral-500">Matched skills:</span>
+                            {skills.map((s) => (
+                              <span key={s} className="rounded-lg border border-volt/15 bg-volt/10 px-2.5 py-0.5 text-xs text-volt">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                <Stat icon={Clock3} label="Deadline" value={task.deadline} />
-                <Stat icon={Target} label="Focus block" value={task.estimate} />
-                <Stat icon={Brain} label="Mode" value={modeLabel} />
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-2">
-                <span className={`rounded-lg px-3 py-1.5 text-sm ${priorityStyles[task.priority]?.pill ?? ""}`}>
-                  {priorityStyles[task.priority]?.label ?? task.priority}
-                </span>
-                <span className={`rounded-lg px-3 py-1.5 text-sm ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
-                  {task.type}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onPrimaryAction}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
-              >
-                {actionLabel}
-                <ArrowUpRight size={16} />
-              </button>
-            </div>
+                <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {task.stipend && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-mint/20 bg-mint/10 px-3 py-1.5 text-sm font-semibold text-mint">
+                        <Banknote size={14} /> {task.stipend}
+                      </span>
+                    )}
+                    {task.deadline && task.deadline !== "No deadline" && (
+                      <span className="text-sm text-neutral-500">Apply by {task.deadline}</span>
+                    )}
+                  </div>
+                  {task.external_url ? (
+                    <a
+                      href={task.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-volt px-5 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-volt/90"
+                    >
+                      Apply on Internshala <ArrowUpRight size={16} />
+                    </a>
+                  ) : (
+                    <a
+                      href="https://internshala.com/internships"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
+                    >
+                      Browse Internshala <ArrowUpRight size={16} />
+                    </a>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* ── Generic task layout ── */
+              <>
+                <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_230px]">
+                  <div>
+                    <p className="text-sm text-neutral-400">Do this next</p>
+                    <h2 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl">{task.title}</h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">{task.reason}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <Stat icon={Clock3} label="Deadline" value={task.deadline} />
+                    <Stat icon={Target} label="Focus block" value={task.estimate} />
+                    <Stat icon={Brain} label="Mode" value={modeLabel} />
+                  </div>
+                </div>
+                <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`rounded-lg px-3 py-1.5 text-sm ${priorityStyles[task.priority]?.pill ?? ""}`}>
+                      {priorityStyles[task.priority]?.label ?? task.priority}
+                    </span>
+                    <span className={`rounded-lg px-3 py-1.5 text-sm ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
+                      {task.type}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onPrimaryAction}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
+                  >
+                    {actionLabel}
+                    <ArrowUpRight size={16} />
+                  </button>
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="py-3">
@@ -297,43 +368,33 @@ function PriorityFeed({
         </div>
       ) : tasks.length ? (
         <div className="space-y-3">
-          {tasks.map((task, index) => (
-            <motion.article
-              key={task.id}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass group rounded-lg p-4 transition hover:border-white/20 hover:bg-white/[0.075] hover:shadow-glow"
-              initial={{ opacity: 0, y: 8 }}
-              transition={{ delay: index * 0.035, duration: 0.25 }}
-              whileHover={{ scale: 1.006 }}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full ${priorityStyles[task.priority]?.dot ?? "bg-neutral-500"}`} />
-                    <span className="text-xs text-neutral-500">#{String(index + 1).padStart(2, "0")}</span>
-                    <span className={`rounded-lg px-2.5 py-1 text-xs ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
-                      {task.type}
-                    </span>
+          {tasks.map((task, index) =>
+            task.type === "job" ? (
+              <JobCard key={task.id} task={task} index={index} onComplete={onComplete} />
+            ) : (
+              <motion.article
+                key={task.id}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass group rounded-lg p-4 transition hover:border-white/20 hover:bg-white/[0.075] hover:shadow-glow"
+                initial={{ opacity: 0, y: 8 }}
+                transition={{ delay: index * 0.035, duration: 0.25 }}
+                whileHover={{ scale: 1.006 }}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`h-2.5 w-2.5 rounded-full ${priorityStyles[task.priority]?.dot ?? "bg-neutral-500"}`} />
+                      <span className="text-xs text-neutral-500">#{String(index + 1).padStart(2, "0")}</span>
+                      <span className={`rounded-lg px-2.5 py-1 text-xs ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
+                        {task.type}
+                      </span>
+                    </div>
+                    <h3 className="mt-2 text-base font-semibold text-white">{task.title}</h3>
+                    <p className="mt-1 text-sm text-neutral-500">{task.reason}</p>
                   </div>
-                  <h3 className="mt-2 text-base font-semibold text-white">{task.title}</h3>
-                  <p className="mt-1 text-sm text-neutral-500">{task.reason}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2 sm:block sm:text-right">
-                  <p className="text-sm font-medium text-neutral-200">{task.deadline}</p>
-                  {task.stipend && (
-                    <p className="mt-0.5 text-xs text-neutral-500">{task.stipend}</p>
-                  )}
-                  <div className="mt-2 flex gap-2 sm:justify-end">
-                    {task.type === "job" && task.external_url ? (
-                      <a
-                        href={task.external_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-lg border border-volt/20 bg-volt/10 px-2.5 py-1 text-xs font-semibold text-volt hover:bg-volt/20 transition"
-                      >
-                        Apply <ArrowUpRight size={11} />
-                      </a>
-                    ) : (
+                  <div className="flex shrink-0 items-center gap-2 sm:block sm:text-right">
+                    <p className="text-sm font-medium text-neutral-200">{task.deadline}</p>
+                    <div className="mt-2 flex gap-2 sm:justify-end">
                       <button
                         type="button"
                         onClick={() => onSnooze(task.id, 2)}
@@ -341,19 +402,19 @@ function PriorityFeed({
                       >
                         +2h
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => onComplete(task.id)}
-                      className="rounded-lg border border-mint/20 bg-mint/10 px-2.5 py-1 text-xs text-mint hover:bg-mint/20 transition"
-                    >
-                      Done
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => onComplete(task.id)}
+                        className="rounded-lg border border-mint/20 bg-mint/10 px-2.5 py-1 text-xs text-mint hover:bg-mint/20 transition"
+                      >
+                        Done
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.article>
-          ))}
+              </motion.article>
+            )
+          )}
         </div>
       ) : (
         <div className="glass rounded-lg p-6 text-center">
@@ -362,6 +423,121 @@ function PriorityFeed({
         </div>
       )}
     </div>
+  );
+}
+
+function JobCard({
+  task,
+  index,
+  onComplete,
+}: {
+  task: any;
+  index: number;
+  onComplete: (id: string) => void;
+}) {
+  // title format from job-sync: "Role @ Company"
+  const [role, company] = task.title.includes(" @ ")
+    ? task.title.split(" @ ", 2)
+    : [task.title, null];
+
+  const skills: string[] = task.subject
+    ? task.subject.split(",").map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  const isPlaceholder = task.source === "system";
+
+  return (
+    <motion.article
+      animate={{ opacity: 1, y: 0 }}
+      className="glass group rounded-lg p-4 transition hover:border-volt/20 hover:bg-white/[0.075] hover:shadow-glow"
+      initial={{ opacity: 0, y: 8 }}
+      transition={{ delay: index * 0.035, duration: 0.25 }}
+      whileHover={{ scale: 1.006 }}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          {/* Header row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-lg border border-volt/20 bg-volt/10 px-2.5 py-1 text-xs font-semibold text-volt">
+              <Briefcase size={11} /> Internship
+            </span>
+            {isPlaceholder && (
+              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-neutral-500">
+                Sync pending
+              </span>
+            )}
+          </div>
+
+          {/* Role + company */}
+          <h3 className="mt-2 text-base font-semibold text-white">{role}</h3>
+          {company && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-neutral-400">
+              <MapPin size={12} className="shrink-0" />
+              {company}
+            </p>
+          )}
+
+          {/* Reason / match rationale */}
+          <p className="mt-2 text-sm leading-5 text-neutral-500">{task.reason}</p>
+
+          {/* Skill chips */}
+          {skills.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {skills.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-neutral-400"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right column */}
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          {task.stipend && (
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
+              <Banknote size={13} className="text-mint" />
+              {task.stipend}
+            </span>
+          )}
+          {task.deadline && task.deadline !== "No deadline" && (
+            <p className="text-xs text-neutral-500">Apply by {task.deadline}</p>
+          )}
+
+          <div className="mt-1 flex gap-2">
+            {task.external_url ? (
+              <a
+                href={task.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-lg bg-volt px-3 py-1.5 text-xs font-semibold text-black transition hover:scale-[1.03] hover:bg-volt/90"
+              >
+                Apply <ArrowUpRight size={11} />
+              </a>
+            ) : (
+              <a
+                href="https://internshala.com/internships"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-lg border border-volt/20 bg-volt/10 px-3 py-1.5 text-xs font-semibold text-volt transition hover:bg-volt/20"
+              >
+                Browse <ArrowUpRight size={11} />
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => onComplete(task.id)}
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-neutral-400 transition hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
   );
 }
 
