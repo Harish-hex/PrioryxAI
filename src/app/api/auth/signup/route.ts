@@ -104,5 +104,5 @@ export async function POST(request: NextRequest) {
     user_agent: request.headers.get('user-agent') ?? null,
   });
 
-  return NextResponse.json({ message: 'Account created. Redirecting to onboarding…' });
+  return NextResponse.json({ redirect: '/onboarding' });
 }
