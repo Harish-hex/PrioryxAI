@@ -137,8 +137,10 @@ export function DashboardView({
         {!loading && visibleSetup.length > 0 && (
           <SetupStrip
             items={visibleSetup}
+            isPro={isPro}
             onDismiss={(id) => setDismissedSetup((prev) => { const next = new Set(prev); next.add(id); return next; })}
             onOpenSettings={onOpenSettings}
+            onOpenPricing={onOpenPricing}
           />
         )}
         <TaskCaptureBar onAddTask={onAddTask} />
@@ -882,13 +884,37 @@ function InsightPanel({ nextTask }: { nextTask: any }) {
 
 function SetupStrip({
   items,
+  isPro,
   onDismiss,
   onOpenSettings,
+  onOpenPricing,
 }: {
   items: any[];
+  isPro: boolean;
   onDismiss: (id: string) => void;
   onOpenSettings: () => void;
+  onOpenPricing: () => void;
 }) {
+  function handleItemClick(item: any) {
+    if (item.action_view === 'settings') {
+      onOpenSettings();
+      return;
+    }
+    if (item.action_view === 'external') {
+      // Free users clicking job browse → show upgrade modal instead of external link
+      if (!isPro) {
+        onOpenPricing();
+        return;
+      }
+      if (item.external_url) {
+        window.open(item.external_url, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+    // Default fallback
+    onOpenSettings();
+  }
+
   return (
     <AnimatePresence>
       <motion.div
@@ -907,10 +933,11 @@ function SetupStrip({
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
-                  onClick={onOpenSettings}
+                  onClick={() => handleItemClick(item)}
                   className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-500 hover:text-white transition"
                 >
-                  <Settings size={11} /> Fix
+                  <Settings size={11} />
+                  {item.action_view === 'external' && !isPro ? 'Upgrade' : (item.action_label ?? 'Fix')}
                   <ChevronRight size={11} />
                 </button>
                 <button

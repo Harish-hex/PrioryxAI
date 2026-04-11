@@ -24,6 +24,15 @@ function normalizeRole(value: string): string | null {
   return lowered;
 }
 
+export function buildInternshalaSearchUrl(role: string): string {
+  const slug = role
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  return `https://internshala.com/internships/${slug}-internship/`;
+}
+
 export function deriveJobRoles(subjects: string[] = [], languages?: Record<string, number> | null): string[] {
   const subjectRoles = subjects.map(normalizeRole).filter(Boolean) as string[];
   const languageRoles = Object.keys(languages ?? {})

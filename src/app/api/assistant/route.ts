@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   // Check pro status
   const { data: userData } = await supabase
     .from('users')
-    .select('pro_status, pro_expires_at, college, semester')
+    .select('pro_status, pro_expires_at, college, semester, subjects, cgpa')
     .eq('id', user.id)
     .single();
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No message provided' }, { status: 400 });
   }
 
-  // Fetch context: top 5 feed items + github health
+  // Fetch context: top 5 feed items + github health + repos
   const [{ data: tasks }, { data: github }] = await Promise.all([
     supabase
       .from('tasks')
@@ -63,22 +63,56 @@ export async function POST(request: NextRequest) {
       .eq('completed', false)
       .order('due_at', { ascending: true })
       .limit(5),
-    supabase.from('github_cache').select('health_score, last_commit_at, languages').eq('user_id', user.id).single(),
+    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single(),
   ]);
+
+  // Classify student profile for richer AI context
+  const subjects: string[] = userData?.subjects ?? [];
+  const cgpa: number | null = userData?.cgpa ?? null;
+  const repos: any[] = github?.repos ?? [];
+  const healthScore: number = github?.health_score ?? 0;
+  const semester: number = userData?.semester ?? 0;
+  const languages: Record<string, number> = github?.languages ?? {};
+  const reposWithDescription = repos.filter((r: any) => r.description?.trim());
+  const hasBacklog = cgpa !== null && cgpa < 5.0;
+
+  let studentProfile: string;
+  if (hasBacklog && subjects.length < 3 && healthScore < 20) {
+    studentProfile = 'no_foundation';
+  } else if (
+    healthScore >= 50 &&
+    subjects.length >= 3 &&
+    repos.length >= 2 &&
+    reposWithDescription.length >= 1
+  ) {
+    studentProfile = 'job_ready';
+  } else if (
+    (subjects.length > 0 || Object.keys(languages).length > 0) &&
+    (repos.length < 2 || reposWithDescription.length === 0)
+  ) {
+    studentProfile = 'skills_no_projects';
+  } else if (semester >= 3 && subjects.length < 3 && repos.length < 2) {
+    studentProfile = 'academics_first';
+  } else {
+    studentProfile = 'no_foundation';
+  }
 
   const today = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
   const context = `Today: ${today}
 Semester: ${sanitize(userData?.semester?.toString())}
 College: ${sanitize(userData?.college)}
+Student profile: ${studentProfile}
+Academic level: Semester ${semester}, CGPA ${cgpa != null ? cgpa : 'not set'}, ${subjects.length} tracked subject(s): ${subjects.slice(0, 5).join(', ') || 'none'}
 
 Top priorities:
 ${(tasks ?? []).map(t =>
   `- [${t.type.toUpperCase()}] ${sanitize(t.title)} — due ${t.due_at ? new Date(t.due_at).toLocaleDateString('en-IN') : 'no deadline'}`
 ).join('\n') || '- No tasks yet'}
 
-GitHub health: ${github?.health_score ?? 'not connected'}
+GitHub health: ${healthScore || 'not connected'}
 Last commit: ${github?.last_commit_at ?? 'unknown'}
-Top languages: ${Object.keys(github?.languages ?? {}).slice(0, 3).join(', ') || 'unknown'}`;
+Top languages: ${Object.keys(languages).slice(0, 3).join(', ') || 'unknown'}
+GitHub repos: ${repos.length} total (${reposWithDescription.length} with descriptions)`;
 
   // Load last 10 messages for context
   const { data: history } = await supabase

@@ -9,6 +9,7 @@ interface UserProfile {
   college: string | null;
   semester: number | null;
   subjects: string[] | null;
+  cgpa: number | null;
   github_username: string | null;
   pro_status: boolean;
   pro_expires_at: string | null;
@@ -31,6 +32,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
   const [semester, setSemester] = useState("");
+  const [cgpa, setCgpa] = useState("");
   const [subjects, setSubjects] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
 
@@ -60,6 +62,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           setName(p.name ?? "");
           setCollege(p.college ?? "");
           setSemester(p.semester ? String(p.semester) : "");
+          setCgpa(p.cgpa != null ? String(p.cgpa) : "");
           setSubjects(p.subjects?.join(", ") ?? "");
           setGithubUsername(p.github_username ?? "");
         }
@@ -82,6 +85,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     if (name) body.name = name;
     if (college) body.college = college;
     if (semester) body.semester = parseInt(semester, 10);
+    if (cgpa !== "") body.cgpa = cgpa === "" ? null : parseFloat(cgpa);
     if (subjectsArr.length) body.subjects = subjectsArr;
     if (githubUsername) body.github_username = githubUsername.replace(/^@/, "").trim();
 
@@ -216,7 +220,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Semester (1-12)" icon={Shield}>
                 <input
                   type="number"
@@ -225,6 +229,19 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
                   placeholder="e.g. 6"
+                  className="input-base"
+                />
+              </Field>
+
+              <Field label="CGPA (0–10)" icon={Shield}>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={cgpa}
+                  onChange={(e) => setCgpa(e.target.value)}
+                  placeholder="e.g. 8.4"
                   className="input-base"
                 />
               </Field>

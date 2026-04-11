@@ -13,6 +13,7 @@ type RepoNextStep = {
   title: string;
   reason: string;
   estimate: string;
+  isNewProject?: boolean;
 };
 
 function normalizeEstimate(value: string | null | undefined) {
@@ -69,6 +70,57 @@ function parseJsonResponse(raw: string | null | undefined) {
   }
 }
 
+async function suggestNewProject(subjects: string[] | null | undefined): Promise<RepoNextStep> {
+  const skills = (subjects ?? []).filter(Boolean).slice(0, 3);
+  const skillsText = skills.length > 0 ? skills.join(', ') : 'software development';
+
+  const fallback: RepoNextStep = {
+    title: 'Build a CRUD app with authentication and deploy it publicly',
+    reason:
+      'A deployed project with a live URL signals execution ability. Even a simple one outperforms a blank GitHub profile.',
+    estimate: '2–3 weeks',
+    isNewProject: true,
+  };
+
+  if (!process.env.OPENAI_API_KEY) return fallback;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Suggest one beginner-friendly portfolio project for a student. ' +
+            'Return strict JSON with keys: title (the project name, under 80 chars), reason (1–2 sentences on why this project impresses recruiters, under 200 chars), estimate (time to complete, e.g. "2–3 weeks"). ' +
+            'The project must: be completable in 2–4 weeks, produce a visible deployed demo, and directly match what recruiters look for in internship candidates with the given skills.',
+        },
+        {
+          role: 'user',
+          content: `Student skills: ${skillsText}`,
+        },
+      ],
+      max_tokens: 200,
+    });
+
+    const parsed = parseJsonResponse(response.choices[0]?.message?.content);
+    if (!parsed || typeof parsed !== 'object') return fallback;
+
+    const title = sanitize(String((parsed as any).title ?? ''));
+    const reason = sanitize(String((parsed as any).reason ?? ''));
+    if (!title || !reason) return fallback;
+
+    return {
+      title: `Build: ${title}`,
+      reason,
+      estimate: normalizeEstimate((parsed as any).estimate) || '2–3 weeks',
+      isNewProject: true,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export async function generateRepoNextStep({
   repos,
   subjects,
@@ -88,8 +140,13 @@ export async function generateRepoNextStep({
       url: repo.url ?? null,
     }));
 
-  if (candidateRepos.length === 0) {
-    return null;
+  // No repos or all repos empty/undescribed → suggest a new project to build
+  const allWeak =
+    candidateRepos.length === 0 ||
+    candidateRepos.every((r) => !r.description);
+
+  if (allWeak) {
+    return suggestNewProject(subjects);
   }
 
   const fallback = buildFallbackStep(pickFallbackRepo(repos));

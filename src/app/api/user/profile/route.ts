@@ -5,10 +5,10 @@ import { withFallback, redis } from '@/lib/redis';
 export const runtime = 'nodejs';
 
 // Fields the user can read about themselves (includes private fields)
-const SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, pro_status, pro_expires_at, last_active_at';
+const SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, cgpa, pro_status, pro_expires_at, last_active_at';
 
 // Fields the user is allowed to update
-const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'subjects', 'github_username']);
+const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'subjects', 'github_username', 'cgpa']);
 
 // Username: alphanumeric + hyphens, 1–39 chars (GitHub convention)
 const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
@@ -60,6 +60,19 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Semester must be an integer between 1 and 12.' }, { status: 400 });
       }
       updates[key] = n;
+      continue;
+    }
+
+    if (key === 'cgpa') {
+      const n = Number(val);
+      if (val === null || val === '' || val === undefined) {
+        updates[key] = null;
+        continue;
+      }
+      if (isNaN(n) || n < 0 || n > 10) {
+        return NextResponse.json({ error: 'CGPA must be a number between 0 and 10.' }, { status: 400 });
+      }
+      updates[key] = Math.round(n * 10) / 10; // store with 1 decimal
       continue;
     }
 

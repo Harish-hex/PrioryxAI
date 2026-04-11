@@ -2,12 +2,58 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
-import { syncInternshalaJobsForUser } from '@/lib/job-sync';
+import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl } from '@/lib/job-sync';
 import { generateRepoNextStep } from '@/lib/repo-next-step';
 
 export const runtime = 'nodejs';
 
 const FEED_CACHE_TTL = 60; // 1 minute
+
+type StudentProfile = 'no_foundation' | 'academics_first' | 'skills_no_projects' | 'job_ready';
+
+function classifyStudent({
+  userProfile,
+  githubCache,
+}: {
+  userProfile: any;
+  githubCache: any;
+}): StudentProfile {
+  const semester: number = userProfile?.semester ?? 0;
+  const subjects: string[] = userProfile?.subjects ?? [];
+  const cgpa: number | null = userProfile?.cgpa ?? null;
+  const repos: any[] = githubCache?.repos ?? [];
+  const healthScore: number = githubCache?.health_score ?? 0;
+  const languages: Record<string, number> = githubCache?.languages ?? {};
+
+  const reposWithDescription = repos.filter((r) => r.description?.trim());
+  const hasBacklog = cgpa !== null && cgpa < 5.0;
+
+  if (hasBacklog && subjects.length < 3 && healthScore < 20) {
+    return 'no_foundation';
+  }
+
+  if (
+    healthScore >= 50 &&
+    subjects.length >= 3 &&
+    repos.length >= 2 &&
+    reposWithDescription.length >= 1
+  ) {
+    return 'job_ready';
+  }
+
+  if (
+    (subjects.length > 0 || Object.keys(languages).length > 0) &&
+    (repos.length < 2 || reposWithDescription.length === 0)
+  ) {
+    return 'skills_no_projects';
+  }
+
+  if (semester >= 3 && subjects.length < 3 && repos.length < 2) {
+    return 'academics_first';
+  }
+
+  return 'no_foundation';
+}
 
 function buildSetupTasks({
   userProfile,
@@ -88,6 +134,12 @@ function buildSetupTasks({
       reason: 'Skill signals are used to monitor Internshala roles and rank career tasks in the feed.',
     });
   } else if (!hasJobs) {
+    const subjects: string[] = userProfile?.subjects ?? [];
+    const languages: Record<string, number> = githubCache?.languages ?? {};
+    const primaryRoles = deriveJobRoles(subjects, languages);
+    const primaryRole = primaryRoles[0] ?? 'software developer';
+    const internshalaUrl = buildInternshalaSearchUrl(primaryRole);
+
     setupTasks.push({
       id: 'setup-jobs',
       type: 'job',
@@ -99,9 +151,59 @@ function buildSetupTasks({
       estimate: '5 min',
       action_label: 'Browse openings',
       action_view: 'external',
-      external_url: 'https://internshala.com/internships',
+      external_url: internshalaUrl,
       reason: 'No live internship openings have synced yet. Browse Internshala directly or reconnect GitHub to trigger auto-matching.',
     });
+  }
+
+  // Profile-based guidance card
+  const profile = classifyStudent({ userProfile, githubCache });
+  const profileCards: Record<StudentProfile, any> = {
+    no_foundation: {
+      id: 'profile-guidance',
+      type: 'manual',
+      title: 'Clear your backlogs first — academics unlock internship eligibility',
+      due_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 108,
+      source: 'system',
+      estimate: '10 min',
+      action_label: 'Plan with AI',
+      action_view: 'assistant',
+      reason: 'Most companies screen on CGPA. A backlog-free transcript is prerequisite to internship applications.',
+    },
+    academics_first: {
+      id: 'profile-guidance',
+      type: 'manual',
+      title: 'Good marks — now build one project to show you can execute',
+      due_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 108,
+      source: 'system',
+      estimate: '10 min',
+      action_label: 'Plan with AI',
+      action_view: 'assistant',
+      reason: 'Your academics are strong but recruiters also want proof of execution. One shipped project changes the conversion rate.',
+    },
+    skills_no_projects: {
+      id: 'profile-guidance',
+      type: 'manual',
+      title: `You know the skills — build a portfolio project to prove it before internship season`,
+      due_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 108,
+      source: 'system',
+      estimate: '10 min',
+      action_label: 'Plan with AI',
+      action_view: 'assistant',
+      reason: 'Skills listed on a resume are unverifiable. A public GitHub project with a live demo is what converts an interview invite.',
+    },
+    job_ready: null, // job_ready users get Internshala deep link from the setup-jobs task instead
+  };
+
+  const profileCard = profileCards[profile];
+  if (profileCard) {
+    setupTasks.push(profileCard);
   }
 
   return setupTasks;
@@ -114,10 +216,12 @@ async function buildRepoGuidanceTask({
   githubCache: any;
   userProfile: any;
 }) {
-  const repos: any[] = githubCache?.repos ?? [];
-  if (repos.length === 0) {
+  // Only skip if GitHub isn't connected at all (no username)
+  if (!userProfile?.github_username) {
     return null;
   }
+
+  const repos: any[] = githubCache?.repos ?? [];
 
   const repoStep = await generateRepoNextStep({
     repos,
@@ -200,7 +304,7 @@ export async function GET() {
   const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
     supabase
       .from('users')
-      .select('college, semester, subjects, github_username, pro_status, pro_expires_at')
+      .select('college, semester, subjects, cgpa, github_username, pro_status, pro_expires_at')
       .eq('id', user.id)
       .single(),
     supabase
