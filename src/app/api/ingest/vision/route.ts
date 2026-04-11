@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { checkRateLimit, visionRatelimit, visionRatelimitPro, redis, withFallback, midnightISTttl } from '@/lib/redis';
+import { redis, withFallback, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 
@@ -111,15 +111,20 @@ export async function POST(request: NextRequest) {
   const isPro = Boolean(userData?.pro_status) &&
     (!userData?.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  // Rate limit — 3/day free, 10/day pro
-  const limiter = isPro ? visionRatelimitPro : visionRatelimit;
-  const rl = await checkRateLimit(limiter, user.id);
-  if (rl.blocked) {
-    if (rl.reason === 'redis_error') {
-      return NextResponse.json({ error: 'Service temporarily unavailable. Try again shortly.' }, { status: 503 });
-    }
+  // Daily upload quota — uses the same midnight-IST counter the UI reads
+  // Free: 1/day, Pro: 10/day
+  const FREE_DAILY_LIMIT = 1;
+  const PRO_DAILY_LIMIT = 10;
+  const dailyLimit = isPro ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  const visionKey = `vision_count:${user.id}`;
+  const usedToday = await withFallback(() => redis.get<number>(visionKey), 0);
+  if ((usedToday ?? 0) >= dailyLimit) {
     return NextResponse.json(
-      { error: isPro ? 'Vision limit reached (10/day)' : 'Vision limit reached (1/day for free users — upgrade to Pro for 10/day)' },
+      {
+        error: isPro
+          ? `Vision limit reached (${PRO_DAILY_LIMIT}/day — resets at midnight)`
+          : `Vision limit reached (${FREE_DAILY_LIMIT}/day for free users — upgrade to Pro for ${PRO_DAILY_LIMIT}/day)`,
+      },
       { status: 429 }
     );
   }
@@ -192,10 +197,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save tasks' }, { status: 500 });
     }
 
-    // Increment daily vision upload counter
-    const visionKey = `vision_count:${user.id}`;
-    const current = await withFallback(() => redis.get<number>(visionKey), 0);
-    await withFallback(() => redis.set(visionKey, (current ?? 0) + 1, { ex: midnightISTttl() }), undefined);
+    // Increment daily vision upload counter (same key checked above)
+    await withFallback(() => redis.set(visionKey, (usedToday ?? 0) + 1, { ex: midnightISTttl() }), undefined);
 
     return NextResponse.json({ tasks: inserted });
   } catch (err: any) {
