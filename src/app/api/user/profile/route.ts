@@ -18,11 +18,17 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('users')
     .select(SELF_FIELDS)
     .eq('id', user.id)
     .single();
+
+  // If cgpa column doesn't exist yet (migration not run), retry without it
+  if (error && error.message?.includes('cgpa')) {
+    const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
+    ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
+  }
 
   if (error || !data) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -109,12 +115,26 @@ export async function PATCH(request: NextRequest) {
 
   updates.last_active_at = new Date().toISOString();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('users')
     .update(updates)
     .eq('id', user.id)
     .select(SELF_FIELDS)
     .single();
+
+  // If the cgpa column doesn't exist yet (migration not run), retry without it
+  if (error && error.message?.includes('cgpa')) {
+    console.warn('[user/profile PATCH] cgpa column missing — retrying without it. Run supabase-migration-v4.sql.');
+    const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
+    const safeUpdates = { ...updates };
+    delete safeUpdates.cgpa;
+    ({ data, error } = await supabase
+      .from('users')
+      .update(safeUpdates)
+      .eq('id', user.id)
+      .select(safeFields)
+      .single());
+  }
 
   if (error) {
     console.error('[user/profile PATCH]', error);
