@@ -111,6 +111,47 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     fetchStatus();
   }, [fetchFeed, fetchStats, fetchStatus]);
 
+  // Track previous isPro to detect the moment it flips true → show activation banner
+  const prevIsProRef = useRef(false);
+  useEffect(() => {
+    if (!prevIsProRef.current && isPro) {
+      setPaymentPending(false);
+      setPaymentActivated(true);
+      setTimeout(() => setPaymentActivated(false), 6000);
+    }
+    prevIsProRef.current = isPro;
+  }, [isPro]);
+
+  // Shared polling function — polls /api/user/status every 5s for up to 5 minutes
+  const startPaymentPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    let attempts = 0;
+    const MAX_ATTEMPTS = 60; // 60 × 5s = 5 minutes
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch("/api/user/status");
+        if (res.ok) {
+          const data = await res.json();
+          const activated =
+            Boolean(data.pro_status) &&
+            (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+          if (activated) {
+            setIsPro(true); // triggers prevIsProRef effect → shows banner
+            setPaymentPending(false);
+            if (pollRef.current) clearInterval(pollRef.current);
+            return;
+          }
+        }
+      } catch {}
+      if (attempts >= MAX_ATTEMPTS) {
+        setPaymentPending(false);
+        setPaymentFailed(true);
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    }, 5000);
+  }, []);
+
   // Sync active view with browser back/forward navigation
   useEffect(() => {
     function handlePopState() {
@@ -122,7 +163,23 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Detect return from Razorpay payment page (?payment=success&razorpay_*)
+  // Fix 1 — Referrer-based trigger: user came back from Razorpay without ?payment=success
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const fromRazorpay =
+      document.referrer.includes("rzp.io") ||
+      document.referrer.includes("razorpay.com");
+    if (!fromRazorpay) return;
+    // Don't double-start if ?payment=success also triggers below
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") return;
+    setPaymentPending(true);
+    startPaymentPolling();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fix 2 — URL-based trigger: ?payment=success in redirect URL (+ optional Razorpay params)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -140,7 +197,6 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
     // Strip all query params from the URL without a page reload
     window.history.replaceState(null, "", window.location.pathname);
-
     setPaymentPending(true);
 
     async function activateViaRedirect() {
@@ -153,57 +209,33 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         if (res.ok) {
           setIsPro(true);
           setPaymentPending(false);
-          setPaymentActivated(true);
-          setTimeout(() => setPaymentActivated(false), 6000);
           return true;
         }
       } catch {}
       return false;
     }
 
-    async function startPolling() {
-      let attempts = 0;
-      const MAX_ATTEMPTS = 30;
-      pollRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const res = await fetch("/api/user/status");
-          if (res.ok) {
-            const data = await res.json();
-            const activated =
-              Boolean(data.pro_status) &&
-              (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
-            if (activated) {
-              setIsPro(true);
-              setPaymentPending(false);
-              setPaymentActivated(true);
-              if (pollRef.current) clearInterval(pollRef.current);
-              setTimeout(() => setPaymentActivated(false), 6000);
-              return;
-            }
-          }
-        } catch {}
-        if (attempts >= MAX_ATTEMPTS) {
-          setPaymentPending(false);
-          setPaymentFailed(true);
-          if (pollRef.current) clearInterval(pollRef.current);
-        }
-      }, 3000);
-    }
-
     if (hasRedirectParams) {
-      // Try direct verification first; fall back to polling (for webhook path)
       activateViaRedirect().then((activated) => {
-        if (!activated) startPolling();
+        if (!activated) startPaymentPolling();
       });
     } else {
-      // No redirect params — rely on webhook + polling
-      startPolling();
+      startPaymentPolling();
     }
 
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fix 3 — Silent delayed re-fetches for all non-pro users on page load
+  // Catches webhook activations that fire after the initial fetchStatus() call
+  useEffect(() => {
+    if (isPro) return;
+    const t1 = setTimeout(() => fetchStatus(), 5_000);
+    const t2 = setTimeout(() => fetchStatus(), 15_000);
+    const t3 = setTimeout(() => fetchStatus(), 30_000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  // Run once on mount — isPro in deps would re-trigger unnecessarily
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
