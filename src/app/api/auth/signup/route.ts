@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -34,10 +34,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Could not derive a valid username from this email' }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const serviceSupabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  // Check username uniqueness
-  const { data: existing } = await supabase
+  // Check username uniqueness via service role (bypasses RLS)
+  const { data: existing } = await serviceSupabase
     .from('users')
     .select('id')
     .eq('username', username)
@@ -45,22 +48,41 @@ export async function POST(request: NextRequest) {
 
   const finalUsername = existing ? `${username}${Date.now().toString().slice(-4)}` : username;
 
-  // Sign up via Supabase Auth
+  // Build response so Supabase SSR client can write session cookies onto it
+  const response = NextResponse.json({ redirect: '/onboarding' });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { name: name || null },
-      // Skip email confirmation in dev — set SUPABASE_AUTH_EMAIL_CONFIRM=false in Supabase dashboard
       emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
     },
   });
 
   if (signUpError) {
-    // Supabase returns a generic message for duplicate emails to prevent enumeration,
-    // but we surface the real error server-side only.
     console.error('[auth/signup]', signUpError.message);
-    if (signUpError.message.toLowerCase().includes('already registered')) {
+    if (
+      signUpError.message.toLowerCase().includes('already registered') ||
+      signUpError.message.toLowerCase().includes('already been registered')
+    ) {
       return NextResponse.json(
         { error: 'An account with this email already exists. Please sign in instead.' },
         { status: 409 }
@@ -70,21 +92,14 @@ export async function POST(request: NextRequest) {
   }
 
   const user = authData.user;
+
   if (!user) {
-    // Email confirmation required — Supabase didn't return a session
-    return NextResponse.json(
-      { message: 'Check your email to confirm your account, then sign in.' },
-      { status: 202 }
-    );
+    // Should not happen, but guard anyway
+    return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 });
   }
 
   // Insert user row using service role to bypass RLS on first insert
-  const serviceClient = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  await serviceClient.from('users').upsert(
+  const { error: upsertError } = await serviceSupabase.from('users').upsert(
     {
       id: user.id,
       email: user.email!,
@@ -96,13 +111,31 @@ export async function POST(request: NextRequest) {
     { onConflict: 'id', ignoreDuplicates: false }
   );
 
-  // Log auth event
-  await serviceClient.from('email_auth_log').insert({
-    user_id: user.id,
-    event: 'signup',
-    ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
-    user_agent: request.headers.get('user-agent') ?? null,
-  });
+  if (upsertError) {
+    console.error('[auth/signup] users upsert failed:', upsertError.message);
+  }
 
-  return NextResponse.json({ redirect: '/onboarding' });
+  // Log auth event (non-fatal — table may not exist yet)
+  try {
+    await serviceSupabase.from('email_auth_log').insert({
+      user_id: user.id,
+      event: 'signup',
+      ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+      user_agent: request.headers.get('user-agent') ?? null,
+    });
+  } catch {}
+
+  // If no session was created (email confirmation required), tell the user
+  if (!authData.session) {
+    return NextResponse.json(
+      { message: 'Check your email to confirm your account, then sign in.' },
+      { status: 202 }
+    );
+  }
+
+  // Session exists — cookies are already set on `response`, return it with correct body
+  return new NextResponse(JSON.stringify({ redirect: '/onboarding' }), {
+    status: 200,
+    headers: response.headers,
+  });
 }
