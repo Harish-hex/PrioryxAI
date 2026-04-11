@@ -924,20 +924,25 @@ function SetupStrip({
       >
         <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Get started</p>
         <div className="space-y-1.5">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-white/[0.05] transition group">
+          {items.map((item) => {
+            const isProGated = item.action_pro_only && !isPro;
+            return (
+            <div key={item.id} className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition group ${isProGated ? 'hover:bg-volt/[0.05]' : 'hover:bg-white/[0.05]'}`}>
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="h-1.5 w-1.5 rounded-full bg-volt shrink-0" />
+                <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isProGated ? 'bg-volt' : 'bg-volt'}`} />
                 <p className="text-sm text-neutral-300 truncate">{item.title}</p>
+                {isProGated && (
+                  <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-volt/10 text-volt border border-volt/20">Pro</span>
+                )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleItemClick(item)}
-                  className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-500 hover:text-white transition"
+                  className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition ${isProGated ? 'text-volt hover:text-white' : 'text-neutral-500 hover:text-white'}`}
                 >
-                  <Settings size={11} />
-                  {item.action_view === 'external' && !isPro ? 'Upgrade' : (item.action_label ?? 'Fix')}
+                  {isProGated ? <Sparkles size={11} /> : <Settings size={11} />}
+                  {isProGated ? 'Upgrade to unlock' : (item.action_label ?? 'Fix')}
                   <ChevronRight size={11} />
                 </button>
                 <button
@@ -950,7 +955,8 @@ function SetupStrip({
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </motion.div>
     </AnimatePresence>

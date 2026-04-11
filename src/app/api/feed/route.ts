@@ -71,7 +71,6 @@ function buildSetupTasks({
   const hasGithubUsername = Boolean(userProfile?.github_username);
   const hasGithubRepos = Boolean(githubCache?.repos?.length);
   const hasSubjects = Array.isArray(userProfile?.subjects) && userProfile.subjects.length > 0;
-  const hasJobs = existingTasks.some((task) => task.type === 'job');
 
   if (!hasExamDates) {
     setupTasks.push({
@@ -133,17 +132,21 @@ function buildSetupTasks({
       action_view: 'settings',
       reason: 'Skill signals are used to monitor Internshala roles and rank career tasks in the feed.',
     });
-  } else if (!hasJobs) {
+  }
+
+  // Always show Internshala browse card — Pro users go to role-specific search, free users see upgrade modal
+  {
     const subjects: string[] = userProfile?.subjects ?? [];
     const languages: Record<string, number> = githubCache?.languages ?? {};
     const primaryRoles = deriveJobRoles(subjects, languages);
     const primaryRole = primaryRoles[0] ?? 'software developer';
     const internshalaUrl = buildInternshalaSearchUrl(primaryRole);
+    const roleLabel = primaryRole.replace(/\b\w/g, (c) => c.toUpperCase());
 
     setupTasks.push({
-      id: 'setup-jobs',
+      id: 'browse-internshala',
       type: 'job',
-      title: 'Browse Internshala openings matched to your skill profile',
+      title: `Browse ${roleLabel} openings on Internshala matched to your profile`,
       due_at: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 115,
@@ -151,8 +154,9 @@ function buildSetupTasks({
       estimate: '5 min',
       action_label: 'Browse openings',
       action_view: 'external',
+      action_pro_only: true,
       external_url: internshalaUrl,
-      reason: 'No live internship openings have synced yet. Browse Internshala directly or reconnect GitHub to trigger auto-matching.',
+      reason: 'Direct Internshala search filtered to your skill profile. Pro users get full access.',
     });
   }
 
