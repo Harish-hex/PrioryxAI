@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-// @ts-ignore — pdf-parse has no bundled types
-import pdfParse from 'pdf-parse';
-import mammoth from 'mammoth';
+// pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';
 
@@ -168,9 +166,10 @@ export async function POST(request: NextRequest) {
       tasks = await extractFromImage(buffer.toString('base64'), mimeType);
 
     } else if (isPdf) {
-      // PDF → extract text with pdf-parse → GPT-4o text path
+      // PDF → extract text with pdf-parse (dynamic import avoids webpack crash)
       let extractedText = '';
       try {
+        const pdfParse = (await import('pdf-parse')).default;
         const parsed = await pdfParse(buffer);
         extractedText = parsed.text ?? '';
       } catch (pdfErr) {
@@ -180,29 +179,31 @@ export async function POST(request: NextRequest) {
       if (extractedText.trim().length > 50) {
         tasks = await extractFromText(extractedText);
       } else {
-        // Scanned/image PDF fallback — send first page as image
+        // Scanned/image-only PDF fallback
         console.warn('[vision] PDF has no extractable text — falling back to vision');
-        tasks = await extractFromImage(buffer.toString('base64'), 'application/pdf');
+        tasks = await extractFromImage(buffer.toString('base64'), 'image/jpeg');
       }
 
     } else if (isDocx) {
-      // DOCX → mammoth text extraction → GPT-4o text path
+      // DOCX → mammoth text extraction (dynamic import)
+      const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
       const text = result.value ?? '';
       tasks = text.trim().length > 20
         ? await extractFromText(text)
-        : await extractFromImage(buffer.toString('base64'), file.type);
+        : await extractFromImage(buffer.toString('base64'), 'image/jpeg');
 
     } else if (isDoc) {
-      // Legacy .doc — try mammoth (works for many .doc files), fallback vision
+      // Legacy .doc — try mammoth, fallback to vision
       try {
+        const mammoth = await import('mammoth');
         const result = await mammoth.extractRawText({ buffer });
         const text = result.value ?? '';
         tasks = text.trim().length > 20
           ? await extractFromText(text)
-          : await extractFromImage(buffer.toString('base64'), file.type);
+          : await extractFromImage(buffer.toString('base64'), 'image/jpeg');
       } catch {
-        tasks = await extractFromImage(buffer.toString('base64'), file.type);
+        tasks = await extractFromImage(buffer.toString('base64'), 'image/jpeg');
       }
 
     } else if (isText) {

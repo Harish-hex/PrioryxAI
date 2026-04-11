@@ -4,7 +4,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ["apify-client", "proxy-agent"],
+    serverComponentsExternalPackages: ["apify-client", "proxy-agent", "pdf-parse", "mammoth"],
   },
 };
 
