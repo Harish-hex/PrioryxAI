@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowUpRight, Banknote, Brain, Briefcase, Clock3, Flame, MapPin, Plus, Sparkles, Target } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowUpRight, Banknote, Brain, Briefcase, ChevronRight, Clock3, Flame, MapPin, Plus, Settings, Sparkles, Target, X } from "lucide-react";
 import { useState } from "react";
 import { FocusSessionModal } from "@/components/focus-session-modal";
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
@@ -45,7 +45,10 @@ interface Stats {
 interface DashboardViewProps {
   loading: boolean;
   tasks: Task[];
+  setupItems?: any[];
   stats: Stats | null;
+  isPro: boolean;
+  hasMore: boolean;
   onAddTask: (text: string) => void;
   onCompleteTask: (id: string) => void;
   onSnoozeTask: (id: string, hours: number) => void;
@@ -78,7 +81,10 @@ function formatDeadline(due_at: string | null): string {
 export function DashboardView({
   loading,
   tasks,
+  setupItems = [],
   stats,
+  isPro,
+  hasMore,
   onAddTask,
   onCompleteTask,
   onSnoozeTask,
@@ -87,6 +93,7 @@ export function DashboardView({
   onOpenPricing,
 }: DashboardViewProps) {
   const [focusTask, setFocusTask] = useState<EnrichedTask | null>(null);
+  const [dismissedSetup, setDismissedSetup] = useState<Set<string>>(new Set());
 
   // Enrich tasks with UI fields
   const enriched: EnrichedTask[] = tasks.map((t) => ({
@@ -98,6 +105,7 @@ export function DashboardView({
   }));
 
   const nextTask = enriched[0] ?? null;
+  const visibleSetup = setupItems.filter((s) => !dismissedSetup.has(s.id));
 
   function completeFocusSession() {
     if (!focusTask) return;
@@ -134,18 +142,29 @@ export function DashboardView({
           task={nextTask}
           onPrimaryAction={handleNextMoveAction}
         />
+        {/* Setup nudge strip — only shown when there are pending setup steps */}
+        {!loading && visibleSetup.length > 0 && (
+          <SetupStrip
+            items={visibleSetup}
+            onDismiss={(id) => setDismissedSetup((prev) => { const next = new Set(prev); next.add(id); return next; })}
+            onOpenSettings={onOpenSettings}
+          />
+        )}
         <TaskCaptureBar onAddTask={onAddTask} />
         <PriorityFeed
           loading={loading}
           tasks={enriched}
+          isPro={isPro}
+          hasMore={hasMore}
           onComplete={onCompleteTask}
           onSnooze={onSnoozeTask}
+          onOpenPricing={onOpenPricing}
         />
       </section>
 
       <aside className="space-y-5">
         <StatsPanel stats={stats} loading={loading} />
-        <FocusPanel onOpenPricing={onOpenPricing} stats={stats} />
+        <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
         <InsightPanel nextTask={nextTask} />
       </aside>
 
@@ -315,11 +334,11 @@ function NextMoveCard({
           <div className="py-3">
             <div className="inline-flex items-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-3 py-1.5 text-sm text-mint">
               <Sparkles size={15} />
-              All clear
+              Slate is clear
             </div>
-            <h2 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">Your priority feed is empty.</h2>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">Nothing ranked yet.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-              Add a task in plain English and PrioryxAI will rank the next move.
+              Type a task below — <span className="text-white">"DBMS exam Friday"</span>, <span className="text-white">"ML assignment due Sunday"</span>, <span className="text-white">"apply to internship by Thursday"</span> — and PrioryxAI will rank it and tell you exactly what to do first.
             </p>
           </div>
         )}
@@ -343,14 +362,30 @@ function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: s
 function PriorityFeed({
   loading,
   tasks,
+  isPro,
+  hasMore,
   onComplete,
   onSnooze,
+  onOpenPricing,
 }: {
   loading: boolean;
   tasks: any[];
+  isPro: boolean;
+  hasMore: boolean;
   onComplete: (id: string) => void;
   onSnooze: (id: string, hours: number) => void;
+  onOpenPricing: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"priority" | "all">("priority");
+
+  const priorityTasks = tasks.filter(
+    (t) => t.priority === "red" || t.priority === "amber" || (!t.due_at && (t.score ?? 0) >= 110)
+  );
+  const allTasks = tasks.filter(
+    (t) => t.priority === "green" && (t.score ?? 0) < 110
+  );
+  const displayed = activeTab === "priority" ? priorityTasks : allTasks;
+
   return (
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-3">
@@ -360,15 +395,25 @@ function PriorityFeed({
         </div>
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex gap-2">
+        <TabButton active={activeTab === "priority"} count={priorityTasks.length} onClick={() => setActiveTab("priority")}>
+          Priority
+        </TabButton>
+        <TabButton active={activeTab === "all"} count={allTasks.length} onClick={() => setActiveTab("all")}>
+          All Tasks
+        </TabButton>
+      </div>
+
       {loading ? (
         <div className="space-y-3">
           <LoadingCard />
           <LoadingCard />
           <LoadingCard />
         </div>
-      ) : tasks.length ? (
+      ) : displayed.length ? (
         <div className="space-y-3">
-          {tasks.map((task, index) =>
+          {displayed.map((task, index) =>
             task.type === "job" ? (
               <JobCard key={task.id} task={task} index={index} onComplete={onComplete} />
             ) : (
@@ -415,14 +460,70 @@ function PriorityFeed({
               </motion.article>
             )
           )}
+
+          {/* Blur wall — free users with more tasks hidden */}
+          {hasMore && !isPro && activeTab === "priority" && (
+            <div className="relative">
+              <div className="space-y-3 blur-sm select-none pointer-events-none">
+                <div className="glass rounded-lg p-4 h-20" />
+                <div className="glass rounded-lg p-4 h-20" />
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent rounded-lg">
+                <p className="text-center text-sm font-semibold text-white">
+                  25+ tasks hidden — Upgrade to see full feed
+                </p>
+                <button
+                  type="button"
+                  onClick={onOpenPricing}
+                  className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:scale-[1.02]"
+                >
+                  <Sparkles size={14} /> Upgrade to see full feed
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="glass rounded-lg p-6 text-center">
-          <h3 className="text-lg font-semibold text-white">No active tasks</h3>
-          <p className="mt-2 text-sm text-neutral-500">Capture your next deadline or idea above.</p>
+          {activeTab === "priority" ? (
+            <>
+              <p className="text-lg font-semibold text-white">No urgent tasks — you&apos;re on track! 🎉</p>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-semibold text-white">No low-priority tasks</p>
+            </>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  count,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  count: number;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+        active ? "bg-white text-black" : "border border-white/10 bg-transparent text-neutral-400 hover:text-white"
+      }`}
+    >
+      {children}
+      <span className={`rounded-md px-1.5 py-0.5 text-xs ${active ? "bg-black/15 text-black" : "bg-white/10 text-neutral-500"}`}>
+        {count}
+      </span>
+    </button>
   );
 }
 
@@ -625,7 +726,7 @@ function StatsPanel({ stats, loading }: { stats: Stats | null; loading: boolean 
   );
 }
 
-function FocusPanel({ onOpenPricing, stats }: { onOpenPricing: () => void; stats: Stats | null }) {
+function FocusPanel({ onOpenPricing, stats, isPro }: { onOpenPricing: () => void; stats: Stats | null; isPro: boolean }) {
   const healthScore = stats?.github.health_score ?? 0;
   return (
     <motion.div className="glass rounded-lg p-4" whileHover={{ scale: 1.01 }}>
@@ -644,15 +745,58 @@ function FocusPanel({ onOpenPricing, stats }: { onOpenPricing: () => void; stats
           style={{ width: `${healthScore}%` }}
         />
       </div>
-      <button
-        type="button"
-        onClick={onOpenPricing}
-        className="mt-5 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1]"
-      >
-        Unlock auto-scheduling
-      </button>
+      {isPro ? (
+        <div className="mt-5 flex items-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-3 py-2.5 text-sm font-semibold text-mint">
+          <Sparkles size={15} /> Auto-scheduling Active
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onOpenPricing}
+          className="mt-5 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1]"
+        >
+          Unlock auto-scheduling
+        </button>
+      )}
     </motion.div>
   );
+}
+
+function generateInsight(task: any): string {
+  if (!task) return "Add your first task — an exam, assignment, or internship deadline — and PrioryxAI will tell you exactly what to do next.";
+
+  const daysLeft = task.due_at
+    ? Math.ceil((new Date(task.due_at).getTime() - Date.now()) / 86_400_000)
+    : null;
+
+  if (task.type === "job") {
+    const [role, company] = task.title.includes(" @ ") ? task.title.split(" @ ", 2) : [task.title, null];
+    const skills: string[] = task.subject ? task.subject.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+    const urgency = daysLeft !== null && daysLeft <= 7
+      ? `Deadline in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — apply today before it fills.`
+      : `Apply now while the listing is live.`;
+    const skillHint = skills.length > 0
+      ? `Your ${skills[0]} background is a direct match.`
+      : "Strong match for your skill profile.";
+    return `${company ? `${role} at ${company}` : role} — ${skillHint} ${urgency}`;
+  }
+
+  if (task.type === "exam") {
+    if (daysLeft !== null && daysLeft <= 1) return "Exam tomorrow — skip new topics. Do active recall on what you already know. One focused hour now beats three distracted ones.";
+    if (daysLeft !== null && daysLeft <= 3) return `${daysLeft} days to exam. Past papers over re-reading — every time. Start with your weakest topic, not your strongest.`;
+    if (daysLeft !== null && daysLeft <= 7) return `${daysLeft} days left. Build a topic list, estimate hours per topic, and block calendar time today.`;
+    return "Exam in the calendar. Start chunking study sessions now — cramming compounds stress, not retention.";
+  }
+
+  if (task.type === "assignment") {
+    if (daysLeft !== null && daysLeft <= 1) return "Due tomorrow. Rough draft now — start writing anything. Editing a bad first draft is 10× faster than staring at a blank page.";
+    if (daysLeft !== null && daysLeft <= 3) return `${daysLeft} days. Break it: outline → draft → polish. Each pass takes less time than you think.`;
+    return "Assignment on deck. Spend 20 minutes defining the exact scope before writing a single line.";
+  }
+
+  if (task.type === "github") return "GitHub streak at risk. A single commit — even a README fix — keeps momentum and keeps your graph green.";
+
+  return task.reason ?? `${task.title} is ranked #1 right now. Clear it before context-switching to anything else.`;
 }
 
 function InsightPanel({ nextTask }: { nextTask: any }) {
@@ -663,10 +807,58 @@ function InsightPanel({ nextTask }: { nextTask: any }) {
         AI insight
       </div>
       <p className="mt-3 text-sm leading-6 text-neutral-300">
-        {nextTask
-          ? `Your highest-leverage move is "${nextTask.title}". Tackle it in a single deep-work block before context-switching.`
-          : "Add tasks to get AI-ranked insights on your next best move."}
+        {generateInsight(nextTask)}
       </p>
     </div>
+  );
+}
+
+function SetupStrip({
+  items,
+  onDismiss,
+  onOpenSettings,
+}: {
+  items: any[];
+  onDismiss: (id: string) => void;
+  onOpenSettings: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-lg border border-white/10 bg-white/[0.04] p-4 space-y-2"
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Get started</p>
+        <div className="space-y-1.5">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-white/[0.05] transition group">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-1.5 w-1.5 rounded-full bg-volt shrink-0" />
+                <p className="text-sm text-neutral-300 truncate">{item.title}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-500 hover:text-white transition"
+                >
+                  <Settings size={11} /> Fix
+                  <ChevronRight size={11} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDismiss(item.id)}
+                  className="rounded p-1 text-neutral-600 hover:text-neutral-300 transition opacity-0 group-hover:opacity-100"
+                  aria-label="Dismiss"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

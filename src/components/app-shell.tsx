@@ -46,6 +46,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [pricingOpen, setPricingOpen] = useState(false);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [setupItems, setSetupItems] = useState<any[]>([]);
   const [stats, setStats] = useState(null);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -86,6 +87,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       if (res.ok) {
         const data = await res.json();
         setTasks(data.feed ?? []);
+        setSetupItems(data.setup ?? []);
         setHasMore(data.hasMore ?? false);
       }
     } catch {}
@@ -200,6 +202,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       <DashboardView
         loading={loadingTasks}
         tasks={pendingTasks}
+        setupItems={setupItems}
         stats={stats}
         isPro={isPro}
         hasMore={hasMore}

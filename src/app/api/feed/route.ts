@@ -143,6 +143,45 @@ async function buildRepoGuidanceTask({
   };
 }
 
+function buildJobReason(task: any, userSubjects: string[]): string {
+  const skills: string[] = task.subject
+    ? task.subject.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  // Find which skills the user actually has
+  const matched = skills.filter(skill =>
+    userSubjects.some(subj =>
+      subj.toLowerCase().includes(skill.toLowerCase()) ||
+      skill.toLowerCase().includes(subj.toLowerCase())
+    )
+  );
+
+  const skillText =
+    matched.length > 0
+      ? `Matched on ${matched.slice(0, 2).join(' + ')}`
+      : skills.length > 0
+        ? `Requires ${skills.slice(0, 2).join(' + ')}`
+        : 'Matches your skill profile';
+
+  const stipendText = task.stipend ? ` · ${task.stipend}/mo` : '';
+
+  const daysLeft = task.due_at
+    ? Math.ceil((new Date(task.due_at).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const urgencyText =
+    daysLeft !== null
+      ? daysLeft <= 0
+        ? ' · Deadline today'
+        : daysLeft <= 3
+          ? ` · ${daysLeft}d left to apply`
+          : daysLeft <= 14
+            ? ` · ${daysLeft} days left`
+            : ''
+      : '';
+
+  return `${skillText}${stipendText}${urgencyText}`;
+}
+
 export async function GET() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -161,7 +200,7 @@ export async function GET() {
   const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
     supabase
       .from('users')
-      .select('college, semester, subjects, github_username')
+      .select('college, semester, subjects, github_username, pro_status, pro_expires_at')
       .eq('id', user.id)
       .single(),
     supabase
@@ -170,6 +209,9 @@ export async function GET() {
       .eq('user_id', user.id)
       .single(),
   ]);
+
+  const isPro = Boolean(userProfile?.pro_status) &&
+    (!userProfile?.pro_expires_at || new Date(userProfile.pro_expires_at) > new Date());
 
   const shouldSyncJobs =
     Boolean(process.env.APIFY_TOKEN) &&
@@ -200,24 +242,41 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 });
   }
 
+  const userSubjects: string[] = userProfile?.subjects ?? [];
+
+  // Enrich job tasks with a specific match reason (skills + stipend + urgency)
+  // so the Next Move Card and feed cards show concrete context, not a generic label.
   const scored = (tasks ?? [])
-    .map(t => ({ ...t, score: computePriorityScore(t) }))
+    .map(t => {
+      const enriched = { ...t, score: computePriorityScore(t) };
+      if (t.type === 'job' && !t.reason) {
+        enriched.reason = buildJobReason(t, userSubjects);
+      }
+      return enriched;
+    })
     .filter(t => t.score > 0);
 
   const repoGuidanceTask = await buildRepoGuidanceTask({ githubCache, userProfile });
 
-  const combined = [
-    ...buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] }),
+  // Real feed: only actual work tasks + AI repo guidance.
+  // Setup nudges are returned separately so they never displace real next moves.
+  const realFeed = [
     ...(repoGuidanceTask ? [repoGuidanceTask] : []),
     ...scored,
-  ]
-    .sort((a, b) => b.score - a.score);
+  ].sort((a, b) => b.score - a.score);
 
-  const nextMove = combined[0]
-    ? { task: combined[0], reason: combined[0].reason ?? getNextMoveReason(combined[0]) }
+  // Setup items: what the user still needs to configure (shown as a strip, not the hero card)
+  const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
+
+  const FREE_LIMIT = 25;
+  const hasMore = !isPro && realFeed.length > FREE_LIMIT;
+  const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
+
+  const nextMove = feed[0]
+    ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const result = { feed: combined, nextMove };
+  const result = { feed, setup, nextMove, hasMore };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);
