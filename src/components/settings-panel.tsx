@@ -63,6 +63,9 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
 
   useEffect(() => {
+    // Run schema migrations silently on first settings open
+    fetch("/api/admin/migrate", { method: "POST" }).catch(() => {});
+
     fetch("/api/user/profile")
       .then((r) => r.json())
       .then((data) => {

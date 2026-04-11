@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-// redis imports removed — no upload limits on vision
+// @ts-ignore — pdf-parse has no bundled types
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 export const runtime = 'nodejs';
 
@@ -12,54 +14,81 @@ const ALLOWED_DOC_MIME = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'text/plain',
 ];
-const ALLOWED_MIME = [...ALLOWED_IMAGE_MIME, ...ALLOWED_DOC_MIME];
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB (docs can be larger)
+const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
 const YEAR = new Date().getFullYear();
+
 const EXTRACT_PROMPT = `You are parsing a student's academic schedule document. It may be any of:
-- A FULL-YEAR exam timetable (dozens of entries spread across Jan-Dec)
-- A SEMESTER timetable (one term, multiple subjects)
-- A WEEKLY class schedule (recurring Mon-Fri slots)
+- A FULL-YEAR academic/exam calendar (dozens of entries across all 12 months)
+- A SEMESTER exam timetable (one term, multiple subjects)
+- A WEEKLY class schedule (recurring Mon–Fri slots)
 - An assignment/lab submission schedule
-- A single exam notice, handout, or circular
+- A single exam notice, circular, or handout
 
 CRITICAL RULES:
-1. Extract EVERY exam, test, quiz, viva, practical, lab submission, assignment deadline, project deadline, and report due date.
-2. If you see months listed (Jan through Dec), extract entries from ALL months, not just the first few.
-3. If it is a weekly recurring timetable (Mon/Tue/Wed/Thu/Fri slots), list each unique session as a separate item using its next upcoming date.
-4. For PDFs and Word documents, read ALL pages and sections before responding.
-5. If there are 40 items, return all 40. Do NOT summarise, group, or skip entries.
-6. Use the current year (${YEAR}) when the year is not shown in the document.
+1. Extract EVERY exam, test, quiz, viva, practical, lab submission, assignment deadline, project milestone, and report due date you can find.
+2. If the document has months listed (Jan–Dec), extract events from ALL months — never stop at the first few.
+3. If it is a weekly recurring timetable (Mon/Tue/Wed slots), produce one entry per unique subject/session using its next upcoming date from today.
+4. Read every section, table row, and footnote before responding. Miss nothing.
+5. If there are 50 events, return all 50. Do NOT summarise, group, truncate, or skip entries.
+6. Use the current year (${YEAR}) when the year is not printed in the document. Prefer the next upcoming date if month/day is ambiguous.
+7. Academic calendars often list events like "Internal Assessment I – 14 to 20 Sep". Create one entry for the START date.
 
-Return ONLY a valid JSON array (no explanation, no markdown fences). Each object:
+Return ONLY a valid JSON array — no explanation, no markdown fences, no comments. Each object:
 {
   "type": "exam" | "assignment" | "manual",
-  "title": "Full descriptive name e.g. 'Database Management Systems End Semester Exam'",
+  "title": "Full descriptive name e.g. 'Database Management Systems — End Semester Exam'",
   "subject": "Subject code or short name e.g. 'DBMS' or 'CS6302', or null",
-  "due_at": "ISO 8601 datetime. Use T09:00:00 for morning exams, T23:59:00 when time unknown. null ONLY if date is completely absent.",
+  "due_at": "ISO 8601 datetime string. Use T09:00:00 for morning exams, T23:59:00 when time unknown. null ONLY if date is completely absent.",
   "weightage": number or null,
-  "notes": "Room number, hall, duration, instructions, or any other relevant detail. null if none."
+  "notes": "Room, hall, duration, venue, instructions, or any other detail. null if none."
 }
 
 Type rules:
-- "exam" -> end-semester, mid-semester, internal test, quiz, viva, practical exam, lab exam
-- "assignment" -> submission deadlines, lab records, project milestones, reports, presentations
-- "manual" -> any other schedule entry worth tracking
+- "exam"       → end-semester exam, mid-semester exam, internal assessment/test, quiz, viva, practical exam, lab exam
+- "assignment" → submission deadlines, lab records, project milestones, reports, presentations
+- "manual"     → holidays with exams, study holidays, result dates, or any other trackable academic event
 
-If nothing extractable is found, return [].`;
+If absolutely nothing extractable is found, return [].`;
 
+// ── Text path (PDFs, DOCXs, TXTs extracted to plain text) ─────────────────────
 async function extractFromText(text: string): Promise<any[]> {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: EXTRACT_PROMPT },
-      { role: 'user', content: `Document text (read ALL of it before responding):\n\n${text.slice(0, 16000)}` },
-    ],
-    max_tokens: 6000,
+  // Chunk large documents: GPT-4o context window is ~128k tokens, but we cap at ~60k chars for reliability
+  const CHUNK = 60_000;
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += CHUNK) {
+    chunks.push(text.slice(i, i + CHUNK));
+  }
+
+  const allTasks: any[] = [];
+  for (const chunk of chunks) {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: EXTRACT_PROMPT },
+        {
+          role: 'user',
+          content: `Academic calendar / schedule text (read ALL of it before responding):\n\n${chunk}`,
+        },
+      ],
+      max_tokens: 8000,
+      temperature: 0,
+    });
+    const tasks = parseTasksFromRaw(response.choices[0].message.content ?? '[]');
+    allTasks.push(...tasks);
+  }
+
+  // Deduplicate by title + due_at
+  const seen = new Set<string>();
+  return allTasks.filter((t) => {
+    const key = `${String(t.title).toLowerCase()}|${t.due_at ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-  return parseTasksFromRaw(response.choices[0].message.content ?? '[]');
 }
 
+// ── Vision path (images only) ─────────────────────────────────────────────────
 async function extractFromImage(base64: string, mimeType: string): Promise<any[]> {
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -67,31 +96,33 @@ async function extractFromImage(base64: string, mimeType: string): Promise<any[]
       {
         role: 'user',
         content: [
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
+          {
+            type: 'image_url',
+            image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' },
+          },
           { type: 'text', text: EXTRACT_PROMPT },
         ],
       },
     ],
-    max_tokens: 6000,
+    max_tokens: 8000,
+    temperature: 0,
   });
   return parseTasksFromRaw(response.choices[0].message.content ?? '[]');
 }
 
 function parseTasksFromRaw(raw: string): any[] {
-  const cleaned = raw.replace(/```json|```/g, '').trim();
+  const cleaned = raw.replace(/```json\s*|```/g, '').trim();
   try {
     const parsed = JSON.parse(cleaned);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
+    // Try to extract the first JSON array from a mixed response
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch {}
+    }
     return [];
   }
-}
-
-async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  // Use pdf-parse if available, otherwise extract raw text via OpenAI file API
-  // Fallback: convert to base64 and treat as image (GPT-4o can read PDFs via vision)
-  // We pass as image using the PDF base64 trick — GPT-4o handles PDFs natively
-  return ''; // signals caller to use vision path instead
 }
 
 export async function POST(request: NextRequest) {
@@ -102,8 +133,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // No upload limits — schedule extraction is available to all users
-
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
 
@@ -112,17 +141,20 @@ export async function POST(request: NextRequest) {
   }
 
   const isImage = ALLOWED_IMAGE_MIME.includes(file.type);
-  const isDoc = ALLOWED_DOC_MIME.includes(file.type);
+  const isPdf   = file.type === 'application/pdf';
+  const isDocx  = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const isDoc   = file.type === 'application/msword';
+  const isText  = file.type === 'text/plain';
 
-  if (!isImage && !isDoc) {
+  if (!isImage && !isPdf && !isDocx && !isDoc && !isText) {
     return NextResponse.json(
-      { error: 'Invalid file type. Use JPG, PNG, WebP, HEIC, PDF, DOC, DOCX, or TXT.' },
+      { error: 'Invalid file type. Use JPG, PNG, WebP, HEIC, PDF, DOCX, DOC, or TXT.' },
       { status: 400 }
     );
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'File too large. Max 10MB.' }, { status: 400 });
+    return NextResponse.json({ error: 'File too large. Max 20 MB.' }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -130,20 +162,51 @@ export async function POST(request: NextRequest) {
   try {
     let tasks: any[] = [];
 
-    if (isImage || file.type === 'application/pdf') {
-      // Images + PDFs → vision path (GPT-4o reads PDFs natively as images)
+    if (isImage) {
+      // Pure images → GPT-4o vision
       const mimeType = file.type === 'image/heic' ? 'image/jpeg' : file.type;
-      const base64 = buffer.toString('base64');
-      tasks = await extractFromImage(base64, mimeType);
-    } else if (file.type === 'text/plain') {
-      // Plain text → text extraction path
-      const text = buffer.toString('utf-8');
-      tasks = await extractFromText(text);
-    } else {
-      // DOC/DOCX — extract text content as base64 and use vision
-      // GPT-4o can process DOCX as raw content; treat as binary → base64
-      const base64 = buffer.toString('base64');
-      tasks = await extractFromImage(base64, file.type);
+      tasks = await extractFromImage(buffer.toString('base64'), mimeType);
+
+    } else if (isPdf) {
+      // PDF → extract text with pdf-parse → GPT-4o text path
+      let extractedText = '';
+      try {
+        const parsed = await pdfParse(buffer);
+        extractedText = parsed.text ?? '';
+      } catch (pdfErr) {
+        console.error('[vision] pdf-parse failed:', pdfErr);
+      }
+
+      if (extractedText.trim().length > 50) {
+        tasks = await extractFromText(extractedText);
+      } else {
+        // Scanned/image PDF fallback — send first page as image
+        console.warn('[vision] PDF has no extractable text — falling back to vision');
+        tasks = await extractFromImage(buffer.toString('base64'), 'application/pdf');
+      }
+
+    } else if (isDocx) {
+      // DOCX → mammoth text extraction → GPT-4o text path
+      const result = await mammoth.extractRawText({ buffer });
+      const text = result.value ?? '';
+      tasks = text.trim().length > 20
+        ? await extractFromText(text)
+        : await extractFromImage(buffer.toString('base64'), file.type);
+
+    } else if (isDoc) {
+      // Legacy .doc — try mammoth (works for many .doc files), fallback vision
+      try {
+        const result = await mammoth.extractRawText({ buffer });
+        const text = result.value ?? '';
+        tasks = text.trim().length > 20
+          ? await extractFromText(text)
+          : await extractFromImage(buffer.toString('base64'), file.type);
+      } catch {
+        tasks = await extractFromImage(buffer.toString('base64'), file.type);
+      }
+
+    } else if (isText) {
+      tasks = await extractFromText(buffer.toString('utf-8'));
     }
 
     if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -169,12 +232,15 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('[ingest/vision] DB error:', dbError);
-      return NextResponse.json({ error: 'Failed to save tasks' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to save tasks.' }, { status: 500 });
     }
 
     return NextResponse.json({ tasks: inserted });
   } catch (err: any) {
     console.error('[ingest/vision]', err);
-    return NextResponse.json({ error: 'Failed to process file. Try a clearer image or a different format.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to process file. Try a clearer image or different format.' },
+      { status: 500 }
+    );
   }
 }
