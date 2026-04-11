@@ -24,20 +24,22 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
 
       if (!res.ok) {
         setError(data.error ?? "Failed to start subscription. Please try again.");
+        setLoading(false);
         return;
       }
 
       if (data.short_url) {
-        // Redirect to Razorpay hosted payment page.
+        // Keep the spinner going — the page is navigating away.
         // user_id is embedded in subscription notes so the webhook can
         // reliably activate pro_status without guessing from email.
         window.location.href = data.short_url;
+        // Do NOT setLoading(false) here; let the spinner persist until navigation.
       } else {
         setError("No payment URL returned. Please contact support.");
+        setLoading(false);
       }
     } catch {
       setError("Network error. Please check your connection and try again.");
-    } finally {
       setLoading(false);
     }
   }

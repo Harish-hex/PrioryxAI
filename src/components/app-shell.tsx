@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CalendarClock, Command, Sparkles } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Bell, CalendarClock, CheckCircle2, Command, Loader2, Sparkles } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
 import { PricingModal } from "@/components/pricing-modal";
@@ -40,6 +40,7 @@ interface AppShellProps {
 export default function AppShell({ username, initialView = "dashboard" }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -47,10 +48,36 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState(null);
   const [loadingTasks, setLoadingTasks] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+
+  // Pro state
+  const [isPro, setIsPro] = useState(false);
+  const [messagesUsedToday, setMessagesUsedToday] = useState(0);
+  const [visionUsedToday, setVisionUsedToday] = useState(0);
+
+  // Post-payment activation state
+  const [paymentPending, setPaymentPending] = useState(false);
+  const [paymentActivated, setPaymentActivated] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setActiveView(initialView);
   }, [initialView]);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/status");
+      if (res.ok) {
+        const data = await res.json();
+        const effectivePro =
+          Boolean(data.pro_status) &&
+          (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+        setIsPro(effectivePro);
+        setMessagesUsedToday(data.messages_today ?? 0);
+        setVisionUsedToday(data.vision_uploads_today ?? 0);
+      }
+    } catch {}
+  }, []);
 
   const fetchFeed = useCallback(async () => {
     setLoadingTasks(true);
@@ -58,12 +85,11 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       const res = await fetch("/api/feed");
       if (res.ok) {
         const data = await res.json();
-        // /api/feed returns { feed: Task[], nextMove }
         setTasks(data.feed ?? []);
+        setHasMore(data.hasMore ?? false);
       }
-    } catch {
-      // silently fail — user still sees empty state
-    } finally {
+    } catch {}
+    finally {
       setLoadingTasks(false);
     }
   }, []);
@@ -78,7 +104,53 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   useEffect(() => {
     fetchFeed();
     fetchStats();
-  }, [fetchFeed, fetchStats]);
+    fetchStatus();
+  }, [fetchFeed, fetchStats, fetchStatus]);
+
+  // Detect return from Razorpay payment page (?payment=success)
+  useEffect(() => {
+    if (searchParams.get("payment") !== "success") return;
+
+    // Strip the query param from the URL without a page reload
+    const cleanUrl = pathname;
+    router.replace(cleanUrl);
+
+    setPaymentPending(true);
+
+    // Poll /api/user/status every 3 s (up to ~90 s) until pro activates
+    let attempts = 0;
+    const MAX_ATTEMPTS = 30;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch("/api/user/status");
+        if (res.ok) {
+          const data = await res.json();
+          const activated =
+            Boolean(data.pro_status) &&
+            (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+          if (activated) {
+            setIsPro(true);
+            setPaymentPending(false);
+            setPaymentActivated(true);
+            if (pollRef.current) clearInterval(pollRef.current);
+            // Hide the success banner after 6 s
+            setTimeout(() => setPaymentActivated(false), 6000);
+            return;
+          }
+        }
+      } catch {}
+      if (attempts >= MAX_ATTEMPTS) {
+        setPaymentPending(false);
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function navigateToView(view: string) {
     setActiveView(view);
@@ -129,6 +201,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         loading={loadingTasks}
         tasks={pendingTasks}
         stats={stats}
+        isPro={isPro}
+        hasMore={hasMore}
         onAddTask={handleAddTask}
         onCompleteTask={handleCompleteTask}
         onSnoozeTask={handleSnoozeTask}
@@ -137,9 +211,26 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         onOpenPricing={() => setPricingOpen(true)}
       />
     ),
-    assistant: <AssistantPanel tasks={pendingTasks} />,
+    assistant: (
+      <AssistantPanel
+        tasks={pendingTasks}
+        isPro={isPro}
+        messagesUsedToday={messagesUsedToday}
+        onMessageSent={fetchStatus}
+        onOpenPricing={() => setPricingOpen(true)}
+      />
+    ),
     profile: <ProfilePage username={username} />,
-    settings: <SettingsPanel onOpenPricing={() => setPricingOpen(true)} />,
+    settings: (
+      <SettingsPanel
+        onOpenPricing={() => setPricingOpen(true)}
+        isPro={isPro}
+        visionUsedToday={visionUsedToday}
+        onVisionUploaded={async () => {
+          await Promise.all([fetchStatus(), fetchFeed(), fetchStats()]);
+        }}
+      />
+    ),
   };
 
   return (
@@ -147,6 +238,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       <Sidebar
         activeView={activeView}
         collapsed={collapsed}
+        isPro={isPro}
         onNavigate={navigateToView}
         onOpenPricing={() => setPricingOpen(true)}
         onToggle={() => setCollapsed((v) => !v)}
@@ -186,18 +278,52 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
             >
               <Bell size={18} />
             </button>
-            <button
-              type="button"
-              onClick={() => setPricingOpen(true)}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-black shadow-glow transition hover:scale-[1.02] hover:bg-neutral-100"
-            >
-              <span className="inline-flex items-center gap-2">
-                <Sparkles size={16} />
-                Pro
-              </span>
-            </button>
+            {isPro ? (
+              <div className="rounded-lg border border-mint/25 bg-mint/10 px-3 py-2 text-sm font-semibold text-mint">
+                <span className="inline-flex items-center gap-1.5">
+                  <Sparkles size={14} /> Pro ✓
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPricingOpen(true)}
+                className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-black shadow-glow transition hover:scale-[1.02] hover:bg-neutral-100"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles size={16} />
+                  Upgrade to Pro
+                </span>
+              </button>
+            )}
           </div>
         </header>
+
+        {/* Post-payment activation banners */}
+        <AnimatePresence>
+          {paymentPending && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mx-auto mb-4 max-w-7xl flex items-center gap-3 rounded-lg border border-aura/30 bg-aura/10 px-4 py-3 text-sm text-violet-200"
+            >
+              <Loader2 size={15} className="animate-spin shrink-0" />
+              Payment received — activating Pro on your account…
+            </motion.div>
+          )}
+          {paymentActivated && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mx-auto mb-4 max-w-7xl flex items-center gap-3 rounded-lg border border-mint/30 bg-mint/10 px-4 py-3 text-sm font-semibold text-mint"
+            >
+              <CheckCircle2 size={15} className="shrink-0" />
+              Pro is now active on your account. Enjoy unlimited access!
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           <motion.section
@@ -213,7 +339,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         </AnimatePresence>
       </div>
 
-      <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} />
+      <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} isPro={isPro} />
     </main>
   );
 }

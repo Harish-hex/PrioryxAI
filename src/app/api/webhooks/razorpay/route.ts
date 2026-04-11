@@ -10,6 +10,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
+    console.error('[webhook/razorpay] RAZORPAY_WEBHOOK_SECRET env var is not set — cannot verify webhook');
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+  }
+
   const body = await request.text();
 
   let isValid = false;

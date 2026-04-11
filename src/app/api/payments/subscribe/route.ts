@@ -12,7 +12,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET || !process.env.RAZORPAY_PLAN_ID) {
+    console.error('[payments/subscribe] Missing Razorpay env vars');
     return NextResponse.json({ error: 'Payments not configured' }, { status: 503 });
   }
 
@@ -23,6 +24,7 @@ export async function POST() {
   });
 
   try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.prioryxai.in';
     const subscription = await razorpay.subscriptions.create({
       plan_id: process.env.RAZORPAY_PLAN_ID!,
       customer_notify: 1,
@@ -31,7 +33,10 @@ export async function POST() {
         user_id: user.id,
         email: user.email ?? '',
       },
-    });
+      // Redirect user back to the app after payment so we can show
+      // an activation message and refresh their pro status.
+      callback_url: `${appUrl}/feed?payment=success`,
+    } as any);
 
     // Store initial subscription record
     await supabase.from('subscriptions').upsert(
