@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, GitBranch, ImagePlus, Loader2, Lock, LogOut, Save, Shield, Sparkles, User, CheckCircle2 } from "lucide-react";
+import { ArrowDownToLine, BookOpen, CalendarCheck, CalendarDays, CheckCircle2, FileText, GitBranch, ImagePlus, Loader2, Lock, LogOut, Save, Shield, Sparkles, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
@@ -15,14 +15,25 @@ interface UserProfile {
   pro_expires_at: string | null;
 }
 
+interface ExtractedTask {
+  id: string;
+  type: string;
+  title: string;
+  subject: string | null;
+  due_at: string | null;
+  weightage: number | null;
+  notes: string | null;
+}
+
 interface SettingsPanelProps {
   onOpenPricing: () => void;
   isPro: boolean;
   visionUsedToday: number;
   onVisionUploaded: () => void;
+  onNavigateToDashboard: () => void;
 }
 
-export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionUploaded }: SettingsPanelProps) {
+export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionUploaded, onNavigateToDashboard }: SettingsPanelProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -41,13 +52,14 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Resume generation state
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
 
-  const FREE_VISION_LIMIT = 3;
+  const FREE_VISION_LIMIT = 1;
   const PRO_VISION_LIMIT = 10;
   const visionLimit = isPro ? PRO_VISION_LIMIT : FREE_VISION_LIMIT;
   const visionRemaining = Math.max(0, visionLimit - visionUsedToday);
@@ -121,6 +133,13 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     setUploading(true);
     setUploadError(null);
     setUploadResult(null);
+    setExtractedTasks(null);
+
+    if (timetableFile.size > 10 * 1024 * 1024) {
+      setUploadError("File too large. Max 10 MB.");
+      setUploading(false);
+      return;
+    }
 
     try {
       const form = new FormData();
@@ -129,21 +148,28 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
       const data = await res.json();
 
       if (!res.ok) {
-        setUploadError(data.error ?? "Failed to parse timetable");
+        setUploadError(data.error ?? "Failed to parse document. Try a clearer image or different file.");
         return;
       }
 
-      const count = data.tasks?.length ?? 0;
+      const tasks: ExtractedTask[] = data.tasks ?? [];
       onVisionUploaded();
-      if (count === 0) {
-        setUploadResult("No exam or assignment dates found in the image. Try a clearer photo.");
+
+      if (tasks.length === 0) {
+        setUploadResult("No exam or assignment dates found. Try a clearer image or a different format.");
       } else {
-        setUploadResult(`${count} task${count === 1 ? "" : "s"} added to your feed from the timetable.`);
+        const sorted = [...tasks].sort((a, b) => {
+          if (!a.due_at) return 1;
+          if (!b.due_at) return -1;
+          return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+        });
+        setExtractedTasks(sorted);
+        setUploadResult(`${tasks.length} item${tasks.length === 1 ? "" : "s"} extracted and added to your feed.`);
         setTimetableFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch {
-      setUploadError("Network error uploading timetable.");
+      setUploadError("Network error uploading document.");
     } finally {
       setUploading(false);
     }
@@ -287,29 +313,34 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </form>
         </div>
 
-        {/* Timetable / schedule image upload */}
+        {/* Timetable / schedule upload */}
         <div className="glass rounded-lg p-5">
           <h3 className="text-lg font-semibold text-white">Upload timetable or exam schedule</h3>
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Photograph your printed timetable, a whiteboard schedule, or any image with exam/assignment dates.
-            PrioryxAI will extract all dates and add them to your feed automatically — no typing needed.
+            Upload a photo, PDF, or Word doc of your timetable — weekly, semester, or full-year.
+            PrioryxAI extracts every exam, assignment deadline, and lab date automatically.
           </p>
 
           <div className="mt-4 space-y-3">
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-white/15 bg-black/25 px-4 py-4 text-sm text-neutral-300 transition hover:border-white/25 hover:bg-black/35">
-              <ImagePlus size={18} className="shrink-0 text-volt" />
+              {timetableFile ? (
+                <FileText size={18} className="shrink-0 text-volt" />
+              ) : (
+                <Upload size={18} className="shrink-0 text-volt" />
+              )}
               <span className="flex-1 min-w-0 truncate">
-                {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, or HEIC — up to 5 MB"}
+                {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
               </span>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic"
+                accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                 className="hidden"
                 onChange={(e) => {
                   setTimetableFile(e.target.files?.[0] ?? null);
                   setUploadResult(null);
                   setUploadError(null);
+                  setExtractedTasks(null);
                 }}
               />
             </label>
@@ -334,9 +365,9 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1] disabled:opacity-40"
               >
                 {uploading ? (
-                  <><Loader2 size={15} className="animate-spin" /> Parsing image…</>
+                  <><Loader2 size={15} className="animate-spin" /> Extracting schedule…</>
                 ) : (
-                  <><ImagePlus size={15} /> Extract dates from image</>
+                  <><CalendarCheck size={15} /> Extract schedule</>
                 )}
               </button>
               {isPro ? (
@@ -355,7 +386,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <div className="rounded-lg border border-aura/20 bg-aura/5 p-4">
                 <p className="text-sm font-semibold text-white">Daily upload limit reached</p>
                 <p className="mt-1 text-xs leading-5 text-neutral-400">
-                  Free plan: 3 uploads/day. Pro includes 10/day — scan every handout, lab sheet, and whiteboard without limits.
+                  Free plan: 1 upload/day. Pro includes 10/day — scan every handout, lab sheet, and timetable without limits.
                 </p>
                 <button
                   type="button"
@@ -364,6 +395,59 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 >
                   <Sparkles size={12} /> Upgrade to Pro — ₹99/month
                 </button>
+              </div>
+            )}
+
+            {/* Extracted schedule list */}
+            {extractedTasks && extractedTasks.length > 0 && (
+              <div className="mt-2 rounded-lg border border-white/10 bg-black/30 overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
+                  <span className="text-sm font-semibold text-white flex items-center gap-2">
+                    <CalendarCheck size={15} className="text-mint" />
+                    {extractedTasks.length} item{extractedTasks.length === 1 ? "" : "s"} extracted
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onNavigateToDashboard}
+                    className="text-xs text-volt hover:underline underline-offset-2"
+                  >
+                    View in feed →
+                  </button>
+                </div>
+                <ul className="divide-y divide-white/[0.06] max-h-[420px] overflow-y-auto">
+                  {extractedTasks.map((task, i) => {
+                    const typeIcon = task.type === "exam" ? "📝" : task.type === "assignment" ? "📋" : "📌";
+                    const dateStr = task.due_at
+                      ? new Date(task.due_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                      : null;
+                    return (
+                      <li key={task.id ?? i} className="flex items-start gap-3 px-4 py-3">
+                        <span className="text-base mt-0.5 shrink-0">{typeIcon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
+                            {dateStr && (
+                              <span className="text-xs text-neutral-400 shrink-0 tabular-nums">{dateStr}</span>
+                            )}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {task.subject && (
+                              <span className="text-xs text-neutral-500">{task.subject}</span>
+                            )}
+                            {task.weightage != null && (
+                              <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-neutral-300">
+                                {task.weightage}%
+                              </span>
+                            )}
+                          </div>
+                          {task.notes && (
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">{task.notes}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
           </div>

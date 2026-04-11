@@ -288,6 +288,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         onVisionUploaded={async () => {
           await Promise.all([fetchStatus(), fetchFeed(), fetchStats()]);
         }}
+        onNavigateToDashboard={() => navigateToView("dashboard")}
       />
     ),
   };
