@@ -1,8 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, Brain, Briefcase, ChevronRight, Clock3, Flame, MapPin, Plus, Settings, Sparkles, Target, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, ChevronRight, Clock3, Code2, Flame, GitBranch, Lock, MapPin, Plus, Settings, Sparkles, Target, X, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { FocusSessionModal } from "@/components/focus-session-modal";
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
 import { priorityStyles, typeStyles } from "@/components/task-styles";
@@ -158,6 +158,7 @@ export function DashboardView({
 
       <aside className="space-y-5">
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
+        <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
         <InsightPanel nextTask={nextTask} />
       </aside>
@@ -878,6 +879,190 @@ function InsightPanel({ nextTask }: { nextTask: any }) {
       <p className="mt-3 text-sm leading-6 text-neutral-300">
         {generateInsight(nextTask)}
       </p>
+    </div>
+  );
+}
+
+const difficultyStyles: Record<string, string> = {
+  Beginner: 'text-mint border-mint/20 bg-mint/10',
+  Intermediate: 'text-volt border-volt/20 bg-volt/10',
+  Advanced: 'text-aura border-aura/20 bg-aura/10',
+};
+
+function ProjectIdeasPanel({ isPro, onOpenPricing }: { isPro: boolean; onOpenPricing: () => void }) {
+  const [ideas, setIdeas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/projects/ideas')
+      .then((r) => r.json())
+      .then((data) => { if (data.ideas) setIdeas(data.ideas); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const FREE_LIMIT = 1;
+
+  return (
+    <div className="glass rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Code2 size={16} className="text-volt" />
+          <h3 className="text-lg font-semibold text-white">Project ideas for you</h3>
+        </div>
+        {!isPro && (
+          <span className="rounded-lg border border-volt/20 bg-volt/10 px-2 py-0.5 text-[10px] font-semibold text-volt">
+            1 of 3 free
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-xs leading-5 text-neutral-500">
+        Skill-matched projects to boost your GitHub profile before internship season.
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {loading ? (
+          <>
+            <div className="h-20 rounded-lg border border-white/10 bg-white/[0.03] animate-pulse" />
+            <div className="h-20 rounded-lg border border-white/10 bg-white/[0.03] animate-pulse opacity-60" />
+          </>
+        ) : ideas.length === 0 ? (
+          <p className="text-xs text-neutral-500">Add subjects in Settings to get personalized project ideas.</p>
+        ) : (
+          ideas.map((idea, i) => {
+            const locked = !isPro && i >= FREE_LIMIT;
+            const isOpen = expanded === i;
+
+            if (locked) {
+              return (
+                <div key={i} className="relative rounded-lg border border-white/10 bg-white/[0.03] p-3 overflow-hidden">
+                  {/* Blurred preview */}
+                  <div className="blur-[3px] select-none pointer-events-none">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${difficultyStyles[idea.difficulty] ?? difficultyStyles.Beginner}`}>
+                        {idea.difficulty}
+                      </span>
+                      <span className="text-xs text-neutral-500">{idea.estimate}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-semibold text-white">{idea.title}</p>
+                    <p className="mt-1 text-xs text-neutral-500">{idea.description}</p>
+                  </div>
+                  {/* Lock overlay */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 backdrop-blur-[1px]">
+                    <Lock size={14} className="text-neutral-400" />
+                    <button
+                      type="button"
+                      onClick={onOpenPricing}
+                      className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:scale-[1.03]"
+                    >
+                      <Sparkles size={11} /> Unlock with Pro
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div key={i} className="rounded-lg border border-white/10 bg-white/[0.03] transition hover:border-volt/20 hover:bg-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(isOpen ? null : i)}
+                  className="w-full p-3 text-left"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${difficultyStyles[idea.difficulty] ?? difficultyStyles.Beginner}`}>
+                          {idea.difficulty}
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] text-neutral-500">
+                          <Clock3 size={9} /> {idea.estimate}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm font-semibold text-white">{idea.title}</p>
+                      <p className="mt-0.5 text-xs leading-5 text-neutral-500">{idea.description}</p>
+                    </div>
+                    <ChevronRight
+                      size={14}
+                      className={`mt-1 shrink-0 text-neutral-600 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                    />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-white/[0.07] px-3 pb-3 pt-3 space-y-3">
+                        {/* Why it matters */}
+                        <div className="flex items-start gap-2">
+                          <Zap size={12} className="mt-0.5 shrink-0 text-volt" />
+                          <p className="text-xs leading-5 text-neutral-400">{idea.whyItMatters}</p>
+                        </div>
+
+                        {/* Tech stack */}
+                        <div>
+                          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">Tech stack</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(idea.techStack ?? []).map((tech: string) => (
+                              <span key={tech} className="rounded border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-neutral-300">
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2">
+                          {(idea.githubTopics ?? []).length > 0 && (
+                            <a
+                              href={`https://github.com/topics/${idea.githubTopics[0]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[10px] font-semibold text-neutral-300 transition hover:border-white/20 hover:text-white"
+                            >
+                              <GitBranch size={10} /> Find examples on GitHub
+                              <ArrowUpRight size={9} />
+                            </a>
+                          )}
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(`${idea.title} tutorial ${(idea.techStack ?? []).slice(0, 2).join(' ')}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-volt/15 bg-volt/10 px-2.5 py-1.5 text-[10px] font-semibold text-volt transition hover:bg-volt/20"
+                          >
+                            <BookOpen size={10} /> Find tutorials
+                            <ArrowUpRight size={9} />
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {!isPro && ideas.length > 0 && (
+        <button
+          type="button"
+          onClick={onOpenPricing}
+          className="mt-4 w-full rounded-lg border border-aura/20 bg-aura/5 px-3 py-2.5 text-xs font-semibold text-violet-300 transition hover:bg-aura/10"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles size={12} />
+            Unlock all 3 ideas + weekly refreshes — Pro
+          </span>
+        </button>
+      )}
     </div>
   );
 }
