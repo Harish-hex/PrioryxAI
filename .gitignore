@@ -36,5 +36,9 @@ pnpm-debug.log*
 # local-only archives and stray workspaces
 /Frontend/
 
+# local planning docs
+*.docx
+priorix_plan_final.md
+
 # certificates and keys
 *.pem

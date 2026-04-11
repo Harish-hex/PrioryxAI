@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { syncInternshalaJobsForUser } from "@/lib/job-sync";
 
 const GITHUB_GRAPHQL = `
 query($login: String!) {
@@ -86,6 +87,14 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
   }));
 
   const supabase = createServiceClient();
+
+  // Fetch user's subjects to merge with GitHub languages for job matching
+  const { data: userData } = await supabase
+    .from("users")
+    .select("subjects, college")
+    .eq("id", userId)
+    .single();
+
   await Promise.all([
     supabase.from("github_cache").upsert(
       {
@@ -101,6 +110,16 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
     ),
     supabase.from("users").update({ last_active_at: new Date().toISOString() }).eq("id", userId),
   ]);
+
+  // Auto-trigger Internshala job sync using GitHub languages + user subjects.
+  // Fire-and-forget — don't block the GitHub sync response.
+  syncInternshalaJobsForUser({
+    userId,
+    subjects: userData?.subjects ?? [],
+    college: userData?.college ?? null,
+    languages: langMap,
+    force: false,
+  }).catch((err) => console.error("[github-sync] auto job sync failed:", err));
 
   return { streak_days: streak, health_score: healthScore, repos_count: repos.length };
 }
