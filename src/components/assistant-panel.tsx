@@ -1,9 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, CornerDownLeft, Sparkles, UserRound, Wand2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Bot, CornerDownLeft, Sparkles, UserRound, Wand2, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { typeStyles } from "@/components/task-styles";
+
+const FREE_MSG_LIMIT = 5;
+const UPGRADE_SENTINEL = "__UPGRADE_PROMPT__";
 
 interface Task {
   id: string;
@@ -21,6 +24,31 @@ interface Message {
 
 interface AssistantPanelProps {
   tasks: Task[];
+  isPro: boolean;
+  messagesUsedToday: number;
+  initialTask?: Task | null;
+  onTaskConsumed?: () => void;
+  onMessageSent: () => void;
+  onOpenPricing: () => void;
+}
+
+function buildTaskPrompt(task: Task): string {
+  const deadline = task.deadline ?? (task.due_at ? new Date(task.due_at).toLocaleDateString("en-IN") : null);
+  const deadlineStr = deadline ? `, deadline: ${deadline}` : "";
+
+  if (task.type === "job") {
+    const [role, company] = task.title.includes(" @ ")
+      ? task.title.split(" @ ", 2)
+      : [task.title, null];
+    return `I need to apply to: ${role}${company ? ` at ${company}` : ""}${deadlineStr}. What's the single highest-leverage thing I can do in the next 2 hours to maximise my chances? Be specific.`;
+  }
+  if (task.type === "exam") {
+    return `I have an exam: "${task.title}"${deadlineStr}. Give me a concrete study plan I can start in the next 30 minutes — exact topics, exact order, exact time per block.`;
+  }
+  if (task.type === "assignment") {
+    return `I need to complete: "${task.title}"${deadlineStr}. Break it into specific steps with time estimates. What do I do first, right now?`;
+  }
+  return `My top priority is: "${task.title}"${deadlineStr}. Give me an exact action plan for the next 2 hours. No vague advice.`;
 }
 
 const INITIAL_MESSAGES: Message[] = [
@@ -31,27 +59,29 @@ const INITIAL_MESSAGES: Message[] = [
   },
 ];
 
-export function AssistantPanel({ tasks }: AssistantPanelProps) {
+export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, onTaskConsumed, onMessageSent, onOpenPricing }: AssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sentInitialRef = useRef(false);
 
   const contextCards = useMemo(() => tasks.slice(0, 3), [tasks]);
+  const msgsLeft = Math.max(0, FREE_MSG_LIMIT - messagesUsedToday);
+  const nearLimit = !isPro && messagesUsedToday >= FREE_MSG_LIMIT - 1;
 
-  async function sendMessage(event: React.FormEvent) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || loading) return;
+  // Core send function — accepts text directly so it can be called programmatically
+  async function send(text: string, currentMessages: Message[]) {
+    if (!text.trim() || loading) return;
 
     const userMsg: Message = { id: Date.now(), role: "user", text };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...currentMessages, userMsg];
+    setMessages(updatedMessages);
     setDraft("");
     setLoading(true);
 
-    // Build history (exclude initial greeting, last 10 messages)
-    const history = messages
-      .filter((m) => m.id !== 1)
+    const history = currentMessages
+      .filter((m) => m.id !== 1 && m.text !== UPGRADE_SENTINEL)
       .slice(-10)
       .map((m) => ({ role: m.role, content: m.text }));
 
@@ -64,18 +94,19 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Assistant error");
+        if (res.status === 403 && body.upgrade) {
+          setMessages((prev) => [...prev, { id: Date.now() + 1, role: "assistant", text: UPGRADE_SENTINEL }]);
+        } else {
+          throw new Error(body.error ?? "Assistant error");
+        }
+        return;
       }
 
       if (!res.body) {
         const reply = await res.text();
         setMessages((prev) => [
           ...prev,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            text: reply || "Sorry, I couldn't generate a response.",
-          },
+          { id: Date.now() + 1, role: "assistant", text: reply || "No response." },
         ]);
       } else {
         const reader = res.body.getReader();
@@ -94,9 +125,7 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
             setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: accumulated }]);
           } else {
             setMessages((prev) =>
-              prev.map((message) =>
-                message.id === assistantId ? { ...message, text: accumulated } : message
-              )
+              prev.map((m) => (m.id === assistantId ? { ...m, text: accumulated } : m))
             );
           }
         }
@@ -104,14 +133,12 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
         if (!started) {
           setMessages((prev) => [
             ...prev,
-            {
-              id: assistantId,
-              role: "assistant",
-              text: "Sorry, I couldn't generate a response.",
-            },
+            { id: assistantId, role: "assistant", text: "No response generated." },
           ]);
         }
       }
+
+      onMessageSent();
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -122,6 +149,22 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }
+
+  async function sendMessage(event: React.FormEvent) {
+    event.preventDefault();
+    await send(draft.trim(), messages);
+  }
+
+  // Auto-fire prompt when arriving from "Plan with AI" on a specific task
+  useEffect(() => {
+    if (!initialTask || sentInitialRef.current) return;
+    sentInitialRef.current = true;
+    const prompt = buildTaskPrompt(initialTask);
+    onTaskConsumed?.();
+    // Small delay so the panel renders first
+    setTimeout(() => send(prompt, INITIAL_MESSAGES), 150);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTask]);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -151,20 +194,36 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
                 initial={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.2 }}
               >
-                {message.role === "assistant" && (
+                {message.role === "assistant" && message.text !== UPGRADE_SENTINEL && (
                   <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-volt">
                     <Sparkles size={16} />
                   </div>
                 )}
-                <div
-                  className={`max-w-[78%] rounded-lg px-4 py-3 text-sm leading-6 ${
-                    message.role === "user"
-                      ? "bg-white text-black"
-                      : "border border-white/10 bg-black/35 text-neutral-200"
-                  }`}
-                >
-                  {message.text}
-                </div>
+                {message.text === UPGRADE_SENTINEL ? (
+                  <div className="w-full rounded-lg border border-aura/20 bg-aura/10 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-violet-200">
+                      <Zap size={15} /> Daily message limit reached
+                    </div>
+                    <p className="mt-1 text-xs text-neutral-400">Free plan includes {FREE_MSG_LIMIT} messages/day. Upgrade to Pro for unlimited access.</p>
+                    <button
+                      type="button"
+                      onClick={onOpenPricing}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:scale-[1.02]"
+                    >
+                      <Sparkles size={12} /> Upgrade to Pro
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className={`max-w-[78%] rounded-lg px-4 py-3 text-sm leading-6 ${
+                      message.role === "user"
+                        ? "bg-white text-black"
+                        : "border border-white/10 bg-black/35 text-neutral-200"
+                    }`}
+                  >
+                    {message.text}
+                  </div>
+                )}
                 {message.role === "user" && (
                   <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-black">
                     <UserRound size={16} />
@@ -196,26 +255,41 @@ export function AssistantPanel({ tasks }: AssistantPanelProps) {
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={sendMessage} className="border-t border-white/10 p-4">
-          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-2 transition focus-within:border-volt/50 focus-within:shadow-[0_0_0_4px_rgba(40,215,255,0.09)]">
-            <Wand2 size={18} className="ml-2 shrink-0 text-volt" />
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask how to plan the next 3 hours"
-              className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-white outline-none placeholder:text-neutral-500"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !draft.trim()}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-black transition hover:scale-[1.02] disabled:opacity-50"
-              aria-label="Send message"
-            >
-              <CornerDownLeft size={17} />
-            </button>
-          </div>
-        </form>
+        <div className="border-t border-white/10 p-4 space-y-2">
+          {/* Usage counter for free users */}
+          {!isPro && (
+            <div className={`flex items-center justify-between text-xs ${nearLimit ? "text-amber-400" : "text-neutral-500"}`}>
+              <span>{messagesUsedToday} / {FREE_MSG_LIMIT} messages used today</span>
+              {nearLimit && msgsLeft === 0 ? (
+                <button type="button" onClick={onOpenPricing} className="text-volt underline-offset-2 hover:underline">
+                  Upgrade for unlimited →
+                </button>
+              ) : nearLimit ? (
+                <span className="text-amber-400">Running low</span>
+              ) : null}
+            </div>
+          )}
+          <form onSubmit={sendMessage}>
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-2 transition focus-within:border-volt/50 focus-within:shadow-[0_0_0_4px_rgba(40,215,255,0.09)]">
+              <Wand2 size={18} className="ml-2 shrink-0 text-volt" />
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={!isPro && msgsLeft === 0 ? "Upgrade to send more messages" : "Ask how to plan the next 3 hours"}
+                className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-white outline-none placeholder:text-neutral-500"
+                disabled={loading || (!isPro && msgsLeft === 0)}
+              />
+              <button
+                type="submit"
+                disabled={loading || !draft.trim() || (!isPro && msgsLeft === 0)}
+                className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-black transition hover:scale-[1.02] disabled:opacity-50"
+                aria-label="Send message"
+              >
+                <CornerDownLeft size={17} />
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
 
       <aside className="space-y-5">

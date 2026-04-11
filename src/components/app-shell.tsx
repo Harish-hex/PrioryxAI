@@ -56,6 +56,9 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [messagesUsedToday, setMessagesUsedToday] = useState(0);
   const [visionUsedToday, setVisionUsedToday] = useState(0);
 
+  // Task context passed from "Plan with AI" — carried into AssistantPanel
+  const [assistantTask, setAssistantTask] = useState<any | null>(null);
+
   // Post-payment activation state
   const [paymentPending, setPaymentPending] = useState(false);
   const [paymentActivated, setPaymentActivated] = useState(false);
@@ -209,7 +212,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         onAddTask={handleAddTask}
         onCompleteTask={handleCompleteTask}
         onSnoozeTask={handleSnoozeTask}
-        onOpenAssistant={() => navigateToView("assistant")}
+        onOpenAssistant={(task) => { setAssistantTask(task ?? null); navigateToView("assistant"); }}
         onOpenSettings={() => navigateToView("settings")}
         onOpenPricing={() => setPricingOpen(true)}
       />
@@ -219,6 +222,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         tasks={pendingTasks}
         isPro={isPro}
         messagesUsedToday={messagesUsedToday}
+        initialTask={assistantTask}
+        onTaskConsumed={() => setAssistantTask(null)}
         onMessageSent={fetchStatus}
         onOpenPricing={() => setPricingOpen(true)}
       />

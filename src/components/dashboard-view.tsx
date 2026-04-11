@@ -52,7 +52,7 @@ interface DashboardViewProps {
   onAddTask: (text: string) => void;
   onCompleteTask: (id: string) => void;
   onSnoozeTask: (id: string, hours: number) => void;
-  onOpenAssistant: () => void;
+  onOpenAssistant: (task?: Task | null) => void;
   onOpenSettings: () => void;
   onOpenPricing: () => void;
 }
@@ -119,19 +119,8 @@ export function DashboardView({
       onOpenSettings();
       return;
     }
-    if (nextTask.action_view === "assistant") {
-      onOpenAssistant();
-      return;
-    }
-    if (nextTask.action_view === "external" && nextTask.external_url) {
-      window.open(nextTask.external_url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (nextTask.type === "job" && nextTask.external_url) {
-      window.open(nextTask.external_url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    setFocusTask(nextTask);
+    // All real tasks → Plan with AI (opens assistant with pre-filled prompt)
+    onOpenAssistant(nextTask);
   }
 
   return (
@@ -190,8 +179,8 @@ function NextMoveCard({
   onPrimaryAction: () => void;
   task: any;
 }) {
-  const actionLabel = task?.action_label ?? "Start focus session";
-  const modeLabel = task?.action_view ? "Guided setup" : "Deep work";
+  const actionLabel = task?.action_view === "settings" ? (task?.action_label ?? "Open settings") : "Plan with AI";
+  const modeLabel = task?.action_view === "settings" ? "Guided setup" : "AI-assisted";
 
   return (
     <div className="sticky top-28 z-20 rounded-lg accent-border p-px shadow-glow">
