@@ -20,6 +20,7 @@ function LoginForm() {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,12 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     setInfo(null);
+
+    if (tab === "signup" && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
 
     const endpoint = tab === "signin" ? "/api/auth/signin" : "/api/auth/signup";
@@ -97,7 +104,7 @@ function LoginForm() {
               <button
                 key={t}
                 type="button"
-                onClick={() => { setTab(t); setError(null); setInfo(null); }}
+                onClick={() => { setTab(t); setError(null); setInfo(null); setConfirmPassword(""); }}
                 className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
                   tab === t
                     ? "bg-white text-black"
@@ -210,6 +217,21 @@ function LoginForm() {
                     </button>
                   </div>
                 </div>
+
+                {tab === "signup" && (
+                  <div>
+                    <label className="mb-1.5 block text-xs text-neutral-400">Confirm password</label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter your password"
+                      autoComplete="new-password"
+                      required
+                      className="input-base"
+                    />
+                  </div>
+                )}
 
                 {error && (
                   <p className="rounded-lg border border-signal/25 bg-signal/10 px-3 py-2.5 text-sm text-signal">
