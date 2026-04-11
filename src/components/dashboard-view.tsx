@@ -528,7 +528,7 @@ function StatsPanel({ stats, loading }: { stats: Stats | null; loading: boolean 
   );
 }
 
-function FocusPanel({ onOpenPricing, stats }: { onOpenPricing: () => void; stats: Stats | null }) {
+function FocusPanel({ onOpenPricing, stats, isPro }: { onOpenPricing: () => void; stats: Stats | null; isPro?: boolean }) {
   const healthScore = stats?.github.health_score ?? 0;
   return (
     <motion.div className="glass rounded-lg p-4" whileHover={{ scale: 1.01 }}>
