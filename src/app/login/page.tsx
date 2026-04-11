@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, GitBranch, Mail } from "lucide-react";
+import { ArrowRight, Bot, Briefcase, Check, Eye, EyeOff, GitBranch, Gem, ImagePlus, Lock, Mail, Sparkles, Target } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 const ERROR_COPY: Record<string, string> = {
   oauth_failed: "OAuth sign-in could not be started. Please try again.",
@@ -16,6 +16,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/feed";
   const urlError = searchParams.get("error");
+  const oauthCode = searchParams.get("code");
+  const oauthProviderError = searchParams.get("error_description")
+    ? "auth_failed"
+    : searchParams.get("error_code")
+      ? "auth_failed"
+      : null;
 
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -28,6 +34,29 @@ function LoginForm() {
     urlError ? (ERROR_COPY[urlError] ?? "Sign-in failed.") : null
   );
   const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!oauthCode && !oauthProviderError) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    window.location.replace(`/api/auth/callback?${params.toString()}`);
+  }, [oauthCode, oauthProviderError, searchParams]);
+
+  if (oauthCode || oauthProviderError) {
+    return (
+      <main className="app-background flex min-h-screen items-center justify-center px-4 py-8 text-neutral-100 sm:px-6">
+        <section className="glass w-full max-w-lg rounded-lg p-6 text-center sm:p-8">
+          <p className="text-sm font-semibold tracking-wide text-volt">PrioryxAI</p>
+          <h1 className="mt-4 text-2xl font-semibold text-white">Completing sign-in…</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Redirecting your OAuth session back into the app.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,21 +107,84 @@ function LoginForm() {
     <main className="app-background flex min-h-screen items-center justify-center px-4 py-8 text-neutral-100 sm:px-6">
       <section className="grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
         {/* Left panel */}
-        <div className="glass-strong rounded-lg p-6 sm:p-8">
-          <p className="text-sm font-semibold tracking-wide text-volt">PrioryxAI</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-            Your academic &amp; career command center.
+        <div className="glass-strong flex flex-col rounded-lg p-6 sm:p-8">
+          {/* Brand */}
+          <a href="/" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg accent-border p-px">
+              <div className="flex h-full w-full items-center justify-center rounded-[5px] bg-black text-white">
+                <Gem size={15} />
+              </div>
+            </div>
+            <span className="text-sm font-semibold text-volt">PrioryxAI</span>
+          </a>
+
+          {/* Headline */}
+          <h1 className="mt-6 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+            Your academic &amp; career<br />command center.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-400">
-            Connect GitHub or Google, pull your deadlines into one place, and let the
-            AI rank your next high-leverage move.
+          <p className="mt-3 text-sm leading-7 text-neutral-400">
+            Connect GitHub, upload your timetable, and let AI rank your highest-leverage move — exam, internship, or project — in one feed.
           </p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {["AI-ranked feed", "GitHub insights", "Career readiness"].map((item) => (
-              <div key={item} className="rounded-lg border border-white/10 bg-black/25 p-4">
-                <p className="text-sm font-medium text-white">{item}</p>
+
+          {/* Feature list */}
+          <div className="mt-8 space-y-4">
+            {[
+              {
+                icon: Sparkles,
+                color: "text-volt border-volt/20 bg-volt/10",
+                title: "AI-ranked priority feed",
+                desc: "Every deadline scored by urgency × career impact. Always know what to do next.",
+              },
+              {
+                icon: GitBranch,
+                color: "text-mint border-mint/20 bg-mint/10",
+                title: "GitHub sync & health score",
+                desc: "Streak, languages, top repos — synced automatically and shown to recruiters.",
+              },
+              {
+                icon: ImagePlus,
+                color: "text-aura border-aura/20 bg-aura/10",
+                title: "Timetable scanner",
+                desc: "Photograph your printed schedule. GPT-4o Vision extracts every exam date instantly.",
+              },
+              {
+                icon: Briefcase,
+                color: "text-volt border-volt/20 bg-volt/10",
+                title: "Matched internship openings",
+                desc: "Live Internshala listings matched to your skills, with stipend and apply deadline.",
+              },
+              {
+                icon: Bot,
+                color: "text-mint border-mint/20 bg-mint/10",
+                title: "Context-aware AI assistant",
+                desc: "Knows your deadlines, GitHub, and load. Ask it to plan your day in one message.",
+              },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <div className={`mt-0.5 shrink-0 rounded-lg border p-1.5 ${color}`}>
+                  <Icon size={14} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{title}</p>
+                  <p className="mt-0.5 text-xs leading-5 text-neutral-500">{desc}</p>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* Trust strip */}
+          <div className="mt-auto pt-8">
+            <div className="flex flex-wrap items-center gap-4 border-t border-white/[0.07] pt-5">
+              {[
+                { icon: Lock, label: "SSL secured" },
+                { icon: Check, label: "Razorpay payments" },
+                { icon: Target, label: "Free to start" },
+              ].map(({ icon: Icon, label }) => (
+                <span key={label} className="flex items-center gap-1.5 text-xs text-neutral-500">
+                  <Icon size={12} className="text-neutral-600" /> {label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch, ImagePlus, Loader2, LogOut, Save, Shield, User, CheckCircle2 } from "lucide-react";
+import { ArrowDownToLine, GitBranch, ImagePlus, Loader2, Lock, LogOut, Save, Shield, Sparkles, User, CheckCircle2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
@@ -16,9 +16,12 @@ interface UserProfile {
 
 interface SettingsPanelProps {
   onOpenPricing: () => void;
+  isPro: boolean;
+  visionUsedToday: number;
+  onVisionUploaded: () => void;
 }
 
-export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
+export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionUploaded }: SettingsPanelProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,6 +40,15 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Resume generation state
+  const [generatingResume, setGeneratingResume] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+
+  const FREE_VISION_LIMIT = 3;
+  const PRO_VISION_LIMIT = 10;
+  const visionLimit = isPro ? PRO_VISION_LIMIT : FREE_VISION_LIMIT;
+  const visionRemaining = Math.max(0, visionLimit - visionUsedToday);
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -118,6 +130,7 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
       }
 
       const count = data.tasks?.length ?? 0;
+      onVisionUploaded();
       if (count === 0) {
         setUploadResult("No exam or assignment dates found in the image. Try a clearer photo.");
       } else {
@@ -139,6 +152,39 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
 
   function handleGithubOAuth() {
     window.location.href = "/api/auth/login?provider=github&next=/settings";
+  }
+
+  async function handleGenerateResume() {
+    setGeneratingResume(true);
+    setResumeError(null);
+
+    try {
+      const res = await fetch("/api/resume/generate", { method: "POST" });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 403 && data.upgrade) {
+          onOpenPricing();
+          return;
+        }
+        setResumeError(data.error ?? "Failed to generate resume.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "resume.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setResumeError("Network error generating resume.");
+    } finally {
+      setGeneratingResume(false);
+    }
   }
 
   return (
@@ -263,18 +309,46 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
               </p>
             )}
 
-            <button
-              type="button"
-              onClick={handleTimetableUpload}
-              disabled={!timetableFile || uploading}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1] disabled:opacity-40"
-            >
-              {uploading ? (
-                <><Loader2 size={15} className="animate-spin" /> Parsing image…</>
-              ) : (
-                <><ImagePlus size={15} /> Extract dates from image</>
-              )}
-            </button>
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleTimetableUpload}
+                disabled={!timetableFile || uploading || visionRemaining === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1] disabled:opacity-40"
+              >
+                {uploading ? (
+                  <><Loader2 size={15} className="animate-spin" /> Parsing image…</>
+                ) : (
+                  <><ImagePlus size={15} /> Extract dates from image</>
+                )}
+              </button>
+              {isPro ? (
+                <span className="text-xs text-mint">
+                  {visionRemaining} of {PRO_VISION_LIMIT} uploads remaining today
+                </span>
+              ) : visionRemaining > 0 ? (
+                <span className="text-xs text-neutral-500">
+                  {visionRemaining} of {FREE_VISION_LIMIT} remaining today
+                </span>
+              ) : null}
+            </div>
+
+            {/* Vision limit reached — upgrade card for free users */}
+            {!isPro && visionRemaining === 0 && (
+              <div className="rounded-lg border border-aura/20 bg-aura/5 p-4">
+                <p className="text-sm font-semibold text-white">Daily upload limit reached</p>
+                <p className="mt-1 text-xs leading-5 text-neutral-400">
+                  Free plan: 3 uploads/day. Pro includes 10/day — scan every handout, lab sheet, and whiteboard without limits.
+                </p>
+                <button
+                  type="button"
+                  onClick={onOpenPricing}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black transition hover:scale-[1.02]"
+                >
+                  <Sparkles size={12} /> Upgrade to Pro — ₹99/month
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -286,8 +360,8 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
             <h3 className="text-lg font-semibold text-white">Account</h3>
             <div className="mt-4 space-y-3">
               <Row label="Username" value={`@${profile.username}`} />
-              <Row label="Plan" value={profile.pro_status ? "Pro" : "Free"} highlight={profile.pro_status} />
-              {profile.pro_expires_at && (
+              <Row label="Plan" value={isPro ? "Pro" : "Free"} highlight={isPro} />
+              {profile.pro_expires_at && isPro && (
                 <Row label="Renews" value={new Date(profile.pro_expires_at).toLocaleDateString()} />
               )}
             </div>
@@ -316,7 +390,71 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
           </div>
         )}
 
-        {!profile?.pro_status && (
+        {isPro ? (
+          <div className="glass rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg border border-mint/20 bg-mint/10 p-2 text-mint">
+                <ArrowDownToLine size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold text-white">Generate Resume</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  Turn your GitHub repos, languages, completed tasks, and profile into a recruiter-ready PDF — in seconds.
+                </p>
+              </div>
+            </div>
+            {resumeError && (
+              <p className="mt-4 rounded-lg border border-signal/25 bg-signal/10 px-4 py-2 text-sm text-signal">
+                {resumeError}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleGenerateResume}
+              disabled={generatingResume}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-4 py-3 text-sm font-semibold text-mint transition hover:bg-mint/15 disabled:opacity-60"
+            >
+              {generatingResume ? (
+                <><Loader2 size={15} className="animate-spin" /> Generating resume…</>
+              ) : (
+                <><ArrowDownToLine size={15} /> Download resume.pdf</>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-lg accent-border p-px">
+            <div className="rounded-[7px] bg-black/85 p-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] p-2 text-neutral-400">
+                  <Lock size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-white">AI-generated Resume</h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-400">
+                    PrioryxAI reads your GitHub repos, languages, and completed tasks to write a recruiter-ready PDF — no templates, no manual formatting.
+                  </p>
+                </div>
+              </div>
+              <ul className="mt-4 space-y-1.5 text-xs text-neutral-500">
+                {["Your top repos → project bullets", "GitHub languages → skills section", "Completed tasks → achievements", "Downloaded as resume.pdf instantly"].map((f) => (
+                  <li key={f} className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-neutral-600 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={onOpenPricing}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:scale-[1.02]"
+              >
+                <Sparkles size={15} /> Unlock — Upgrade to Pro
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isPro && (
           <div className="rounded-lg accent-border p-px">
             <div className="rounded-[7px] bg-black/85 p-4">
               <h3 className="text-lg font-semibold text-white">Upgrade to Pro</h3>
@@ -328,7 +466,10 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
                 onClick={onOpenPricing}
                 className="mt-4 w-full rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
               >
-                Upgrade
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles size={15} />
+                  Upgrade
+                </span>
               </button>
             </div>
           </div>

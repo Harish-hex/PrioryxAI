@@ -7,14 +7,37 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/feed';
+  const providerError = searchParams.get('error');
+  const providerErrorDescription = searchParams.get('error_description');
+  let next = searchParams.get('next') ?? '/feed';
+
+  if (!next.startsWith('/')) {
+    next = '/feed';
+  }
+
+  if (providerError || providerErrorDescription) {
+    console.error('[auth/callback] Provider returned an error', {
+      providerError,
+      providerErrorDescription,
+    });
+    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  }
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=no_code`);
   }
 
-  // Prepare a redirect response so Supabase can write session cookies onto it
-  const tentativeRedirect = NextResponse.redirect(`${origin}${next}`);
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+  const isLocalEnv = process.env.NODE_ENV === 'development';
+  const baseUrl =
+    !isLocalEnv && forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : origin;
+
+  // Prepare a redirect response so Supabase can write session cookies onto it.
+  // We keep the final response object and move cookies onto the final destination explicitly.
+  const cookieCarrier = NextResponse.next();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,7 +49,7 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            tentativeRedirect.cookies.set(name, value, options);
+            cookieCarrier.cookies.set(name, value, options);
           });
         },
       },
@@ -92,9 +115,11 @@ export async function GET(request: NextRequest) {
   // `next` is also used by the onboarding flow itself: after connecting GitHub during
   // onboarding, we pass next=/onboarding?step=3 so they jump back into the wizard.
   const destination = isNew ? '/onboarding' : next;
+  const finalRedirect = NextResponse.redirect(`${baseUrl}${destination}`);
 
-  // Rewrite the redirect URL on the response we already attached cookies to
-  return NextResponse.redirect(`${origin}${destination}`, {
-    headers: tentativeRedirect.headers,
+  cookieCarrier.cookies.getAll().forEach((cookie) => {
+    finalRedirect.cookies.set(cookie);
   });
+
+  return finalRedirect;
 }

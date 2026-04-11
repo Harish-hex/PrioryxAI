@@ -269,14 +269,15 @@ export async function GET() {
   const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
 
   const FREE_LIMIT = 25;
-  const hasMore = !isPro && realFeed.length > FREE_LIMIT;
+  const totalCount = realFeed.length;
+  const hasMore = !isPro && totalCount > FREE_LIMIT;
   const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
 
   const nextMove = feed[0]
     ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const result = { feed, setup, nextMove, hasMore };
+  const result = { feed, setup, nextMove, hasMore, totalCount };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);

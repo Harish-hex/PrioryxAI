@@ -1,8 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CalendarClock, CheckCircle2, Command, Loader2, Sparkles } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Command, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
@@ -38,9 +37,6 @@ interface AppShellProps {
 }
 
 export default function AppShell({ username, initialView = "dashboard" }: AppShellProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -50,6 +46,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [stats, setStats] = useState(null);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
 
   // Pro state
   const [isPro, setIsPro] = useState(false);
@@ -62,6 +59,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   // Post-payment activation state
   const [paymentPending, setPaymentPending] = useState(false);
   const [paymentActivated, setPaymentActivated] = useState(false);
+  const [paymentFailed, setPaymentFailed] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -92,6 +90,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         setTasks(data.feed ?? []);
         setSetupItems(data.setup ?? []);
         setHasMore(data.hasMore ?? false);
+        setTotalCount(data.totalCount);
       }
     } catch {}
     finally {
@@ -112,44 +111,95 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     fetchStatus();
   }, [fetchFeed, fetchStats, fetchStatus]);
 
-  // Detect return from Razorpay payment page (?payment=success)
+  // Sync active view with browser back/forward navigation
   useEffect(() => {
-    if (searchParams.get("payment") !== "success") return;
+    function handlePopState() {
+      const path = window.location.pathname;
+      const viewEntry = Object.entries(viewToPath).find(([, p]) => p === path);
+      if (viewEntry) setActiveView(viewEntry[0]);
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-    // Strip the query param from the URL without a page reload
-    const cleanUrl = pathname;
-    router.replace(cleanUrl);
+  // Detect return from Razorpay payment page (?payment=success&razorpay_*)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") !== "success") return;
+
+    // Grab Razorpay redirect params before stripping URL
+    const razorpayParams = {
+      razorpay_payment_id: params.get("razorpay_payment_id"),
+      razorpay_payment_link_id: params.get("razorpay_payment_link_id"),
+      razorpay_payment_link_reference_id: params.get("razorpay_payment_link_reference_id"),
+      razorpay_payment_link_status: params.get("razorpay_payment_link_status"),
+      razorpay_signature: params.get("razorpay_signature"),
+    };
+    const hasRedirectParams = Boolean(razorpayParams.razorpay_payment_id && razorpayParams.razorpay_signature);
+
+    // Strip all query params from the URL without a page reload
+    window.history.replaceState(null, "", window.location.pathname);
 
     setPaymentPending(true);
 
-    // Poll /api/user/status every 3 s (up to ~90 s) until pro activates
-    let attempts = 0;
-    const MAX_ATTEMPTS = 30;
-    pollRef.current = setInterval(async () => {
-      attempts++;
+    async function activateViaRedirect() {
       try {
-        const res = await fetch("/api/user/status");
+        const res = await fetch("/api/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(razorpayParams),
+        });
         if (res.ok) {
-          const data = await res.json();
-          const activated =
-            Boolean(data.pro_status) &&
-            (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
-          if (activated) {
-            setIsPro(true);
-            setPaymentPending(false);
-            setPaymentActivated(true);
-            if (pollRef.current) clearInterval(pollRef.current);
-            // Hide the success banner after 6 s
-            setTimeout(() => setPaymentActivated(false), 6000);
-            return;
-          }
+          setIsPro(true);
+          setPaymentPending(false);
+          setPaymentActivated(true);
+          setTimeout(() => setPaymentActivated(false), 6000);
+          return true;
         }
       } catch {}
-      if (attempts >= MAX_ATTEMPTS) {
-        setPaymentPending(false);
-        if (pollRef.current) clearInterval(pollRef.current);
-      }
-    }, 3000);
+      return false;
+    }
+
+    async function startPolling() {
+      let attempts = 0;
+      const MAX_ATTEMPTS = 30;
+      pollRef.current = setInterval(async () => {
+        attempts++;
+        try {
+          const res = await fetch("/api/user/status");
+          if (res.ok) {
+            const data = await res.json();
+            const activated =
+              Boolean(data.pro_status) &&
+              (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+            if (activated) {
+              setIsPro(true);
+              setPaymentPending(false);
+              setPaymentActivated(true);
+              if (pollRef.current) clearInterval(pollRef.current);
+              setTimeout(() => setPaymentActivated(false), 6000);
+              return;
+            }
+          }
+        } catch {}
+        if (attempts >= MAX_ATTEMPTS) {
+          setPaymentPending(false);
+          setPaymentFailed(true);
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      }, 3000);
+    }
+
+    if (hasRedirectParams) {
+      // Try direct verification first; fall back to polling (for webhook path)
+      activateViaRedirect().then((activated) => {
+        if (!activated) startPolling();
+      });
+    } else {
+      // No redirect params — rely on webhook + polling
+      startPolling();
+    }
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -160,8 +210,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   function navigateToView(view: string) {
     setActiveView(view);
     const nextPath = viewToPath[view] ?? "/feed";
-    if (pathname !== nextPath) {
-      router.push(nextPath);
+    if (typeof window !== "undefined" && window.location.pathname !== nextPath) {
+      window.history.pushState(null, "", nextPath);
     }
   }
 
@@ -209,6 +259,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         stats={stats}
         isPro={isPro}
         hasMore={hasMore}
+        totalCount={totalCount}
         onAddTask={handleAddTask}
         onCompleteTask={handleCompleteTask}
         onSnoozeTask={handleSnoozeTask}
@@ -329,6 +380,43 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
             >
               <CheckCircle2 size={15} className="shrink-0" />
               Pro is now active on your account. Enjoy unlimited access!
+            </motion.div>
+          )}
+          {paymentFailed && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mx-auto mb-4 max-w-7xl flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+            >
+              <span className="flex items-center gap-2">
+                <AlertTriangle size={15} className="shrink-0 text-amber-400" />
+                Payment received but Pro activation is delayed — this can take a minute.
+              </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  setPaymentFailed(false);
+                  await fetchStatus();
+                  const res = await fetch("/api/user/status");
+                  if (res.ok) {
+                    const data = await res.json();
+                    const activated = Boolean(data.pro_status) && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+                    if (activated) {
+                      setIsPro(true);
+                      setPaymentActivated(true);
+                      setTimeout(() => setPaymentActivated(false), 6000);
+                    } else {
+                      setPaymentFailed(true);
+                    }
+                  } else {
+                    setPaymentFailed(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/20"
+              >
+                <RefreshCw size={12} /> Refresh now
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

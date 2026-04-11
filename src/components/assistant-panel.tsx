@@ -256,17 +256,22 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
         </div>
 
         <div className="border-t border-white/10 p-4 space-y-2">
-          {/* Usage counter for free users */}
-          {!isPro && (
-            <div className={`flex items-center justify-between text-xs ${nearLimit ? "text-amber-400" : "text-neutral-500"}`}>
+          {/* 1 message left — amber urgent nudge */}
+          {!isPro && msgsLeft === 1 && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs">
+              <span className="font-medium text-amber-300">1 message left today</span>
+              <button type="button" onClick={onOpenPricing} className="font-semibold text-volt underline-offset-2 hover:underline">
+                Upgrade for unlimited →
+              </button>
+            </div>
+          )}
+          {/* Regular counter when not at limit */}
+          {!isPro && msgsLeft > 1 && (
+            <div className="flex items-center justify-between text-xs text-neutral-500">
               <span>{messagesUsedToday} / {FREE_MSG_LIMIT} messages used today</span>
-              {nearLimit && msgsLeft === 0 ? (
-                <button type="button" onClick={onOpenPricing} className="text-volt underline-offset-2 hover:underline">
-                  Upgrade for unlimited →
-                </button>
-              ) : nearLimit ? (
-                <span className="text-amber-400">Running low</span>
-              ) : null}
+              <button type="button" onClick={onOpenPricing} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-neutral-500 hover:text-neutral-300 transition">
+                Context: {Math.min(tasks.length, 3)} tasks · GitHub hidden · <span className="text-volt">Pro →</span>
+              </button>
             </div>
           )}
           <form onSubmit={sendMessage}>

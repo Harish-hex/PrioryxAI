@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { checkRateLimit, visionRatelimit, visionRatelimitPro } from '@/lib/redis';
+import { checkRateLimit, visionRatelimit, visionRatelimitPro, redis, withFallback, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 
@@ -16,13 +16,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check pro status for rate limit tier
+  // Check pro status for rate limit tier (include expiry)
   const { data: userData } = await supabase
     .from('users')
-    .select('pro_status')
+    .select('pro_status, pro_expires_at')
     .eq('id', user.id)
     .single();
-  const isPro = userData?.pro_status ?? false;
+  const isPro = Boolean(userData?.pro_status) &&
+    (!userData?.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
   // Rate limit — 3/day free, 10/day pro — fail closed
   const limiter = isPro ? visionRatelimitPro : visionRatelimit;
@@ -123,6 +124,11 @@ If nothing is found, return [].`,
       console.error('[ingest/vision] DB error:', dbError);
       return NextResponse.json({ error: 'Failed to save tasks' }, { status: 500 });
     }
+
+    // Increment daily vision upload counter
+    const visionKey = `vision_count:${user.id}`;
+    const current = await withFallback(() => redis.get<number>(visionKey), 0);
+    await withFallback(() => redis.set(visionKey, (current ?? 0) + 1, { ex: midnightISTttl() }), undefined);
 
     return NextResponse.json({ tasks: inserted });
   } catch (err: any) {

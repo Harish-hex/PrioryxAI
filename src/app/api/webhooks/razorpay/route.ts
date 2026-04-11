@@ -4,6 +4,16 @@ import { verifyRazorpaySignature } from '@/lib/security';
 
 export const runtime = 'nodejs';
 
+// Diagnostic endpoint — safe to call anytime, reveals no secret values
+export async function GET() {
+  return NextResponse.json({
+    webhook_secret_set: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET),
+    service_role_set: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    key_secret_set: Boolean(process.env.RAZORPAY_KEY_SECRET),
+    note: 'If all three are true and Pro still does not activate, check Razorpay Dashboard → Webhooks → payment_link.paid is enabled.',
+  });
+}
+
 export async function POST(request: NextRequest) {
   const sig = request.headers.get('x-razorpay-signature');
   if (!sig) {
@@ -129,23 +139,45 @@ export async function POST(request: NextRequest) {
   if (eventType === 'payment_link.paid') {
     const payment = event?.payload?.payment?.entity;
     const paymentLink = event?.payload?.payment_link?.entity;
+
+    // Log the full set of email candidates so any mismatch is immediately visible
+    const emailCandidates = {
+      payment_email: payment?.email,
+      customer_email: paymentLink?.customer?.email,
+    };
+    console.log('[webhook/razorpay] payment_link.paid — email candidates:', JSON.stringify(emailCandidates));
+
     const email: string | undefined = payment?.email ?? paymentLink?.customer?.email;
     const paymentId: string | undefined = payment?.id;
+    const paymentLinkId: string | undefined = paymentLink?.id;
 
     if (!email) {
-      console.error('[webhook/razorpay] payment_link.paid — missing email');
+      console.error('[webhook/razorpay] payment_link.paid — no email in payload. paymentId:', paymentId, 'paymentLinkId:', paymentLinkId);
       return NextResponse.json({ received: true });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const { data: user } = await supabase
+    console.log(`[webhook/razorpay] payment_link.paid — looking up user by email: ${normalizedEmail}`);
+
+    const { data: user, error: lookupError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, email')
       .eq('email', normalizedEmail)
       .maybeSingle();
 
+    if (lookupError) {
+      console.error('[webhook/razorpay] payment_link.paid — DB lookup error:', lookupError.message);
+      return NextResponse.json({ received: true });
+    }
+
     if (!user?.id) {
-      console.warn(`[webhook/razorpay] payment_link.paid — no user for email ${normalizedEmail}`);
+      // EMAIL MISMATCH — this is the most common silent failure.
+      // Log clearly so it can be fixed manually via /api/admin/activate-pro.
+      console.error(
+        `[webhook/razorpay] payment_link.paid — NO USER FOUND for email "${normalizedEmail}". ` +
+        `Payment ${paymentId} received but Pro NOT activated. ` +
+        `Fix: POST /api/admin/activate-pro with the correct account email.`
+      );
       return NextResponse.json({ received: true });
     }
 
@@ -156,11 +188,11 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('[webhook/razorpay] Failed to activate Pro:', updateError);
+      console.error('[webhook/razorpay] payment_link.paid — DB update failed for user', user.id, ':', updateError.message, updateError.code);
       return NextResponse.json({ received: true });
     }
 
-    console.log(`[webhook/razorpay] Pro activated via payment link — ${normalizedEmail} (${paymentId})`);
+    console.log(`[webhook/razorpay] Pro activated via payment link — user ${user.id} (${normalizedEmail}), payment ${paymentId}, expires ${proExpiresAt}`);
     return NextResponse.json({ received: true });
   }
 

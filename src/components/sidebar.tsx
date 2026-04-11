@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronLeft, ChevronRight, Gem, LayoutDashboard, Settings, UserRound } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, Gem, LayoutDashboard, Settings, Sparkles, UserRound } from "lucide-react";
 import { motion } from "framer-motion";
 
 const navItems = [
@@ -13,12 +13,13 @@ const navItems = [
 interface SidebarProps {
   activeView: string;
   collapsed: boolean;
+  isPro: boolean;
   onNavigate: (view: string) => void;
   onOpenPricing: () => void;
   onToggle: () => void;
 }
 
-export function Sidebar({ activeView, collapsed, onNavigate, onOpenPricing, onToggle }: SidebarProps) {
+export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricing, onToggle }: SidebarProps) {
   return (
     <aside
       className={`fixed bottom-4 left-4 top-4 z-40 hidden flex-col rounded-lg border border-white/10 bg-black/55 p-3 shadow-glass backdrop-blur-2xl transition-[width] duration-300 lg:flex ${
@@ -107,13 +108,25 @@ export function Sidebar({ activeView, collapsed, onNavigate, onOpenPricing, onTo
             </>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onOpenPricing}
-          className="w-full rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
-        >
-          {collapsed ? "Pro" : "Upgrade to Pro"}
-        </button>
+
+        {isPro ? (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-3 py-2.5 text-sm font-semibold text-mint">
+            {collapsed ? "✓" : (
+              <>
+                <Sparkles size={14} />
+                Pro Active
+              </>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenPricing}
+            className="w-full rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
+          >
+            {collapsed ? "Pro" : "Upgrade to Pro"}
+          </button>
+        )}
       </div>
     </aside>
   );

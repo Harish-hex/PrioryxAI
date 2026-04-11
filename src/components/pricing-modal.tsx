@@ -14,34 +14,15 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleUpgrade() {
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/payments/subscribe", { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Failed to start subscription. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      if (data.short_url) {
-        // Keep the spinner going — the page is navigating away.
-        // user_id is embedded in subscription notes so the webhook can
-        // reliably activate pro_status without guessing from email.
-        window.location.href = data.short_url;
-        // Do NOT setLoading(false) here; let the spinner persist until navigation.
-      } else {
-        setError("No payment URL returned. Please contact support.");
-        setLoading(false);
-      }
-    } catch {
-      setError("Network error. Please check your connection and try again.");
-      setLoading(false);
+  function handleUpgrade() {
+    const paymentUrl = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
+    if (!paymentUrl) {
+      setError("Payment link not configured. Please contact support.");
+      return;
     }
+    setLoading(true);
+    // Keep spinner going — page is navigating away
+    window.location.href = paymentUrl;
   }
 
   return (

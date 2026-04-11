@@ -49,6 +49,7 @@ interface DashboardViewProps {
   stats: Stats | null;
   isPro: boolean;
   hasMore: boolean;
+  totalCount?: number;
   onAddTask: (text: string) => void;
   onCompleteTask: (id: string) => void;
   onSnoozeTask: (id: string, hours: number) => void;
@@ -85,6 +86,7 @@ export function DashboardView({
   stats,
   isPro,
   hasMore,
+  totalCount,
   onAddTask,
   onCompleteTask,
   onSnoozeTask,
@@ -145,6 +147,7 @@ export function DashboardView({
           tasks={enriched}
           isPro={isPro}
           hasMore={hasMore}
+          totalCount={totalCount}
           onComplete={onCompleteTask}
           onSnooze={onSnoozeTask}
           onOpenPricing={onOpenPricing}
@@ -152,7 +155,7 @@ export function DashboardView({
       </section>
 
       <aside className="space-y-5">
-        <StatsPanel stats={stats} loading={loading} />
+        <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
         <InsightPanel nextTask={nextTask} />
       </aside>
@@ -353,6 +356,7 @@ function PriorityFeed({
   tasks,
   isPro,
   hasMore,
+  totalCount,
   onComplete,
   onSnooze,
   onOpenPricing,
@@ -361,6 +365,7 @@ function PriorityFeed({
   tasks: any[];
   isPro: boolean;
   hasMore: boolean;
+  totalCount?: number;
   onComplete: (id: string) => void;
   onSnooze: (id: string, hours: number) => void;
   onOpenPricing: () => void;
@@ -404,7 +409,7 @@ function PriorityFeed({
         <div className="space-y-3">
           {displayed.map((task, index) =>
             task.type === "job" ? (
-              <JobCard key={task.id} task={task} index={index} onComplete={onComplete} />
+              <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
             ) : (
               <motion.article
                 key={task.id}
@@ -436,6 +441,15 @@ function PriorityFeed({
                       >
                         +2h
                       </button>
+                      {isPro && (
+                        <button
+                          type="button"
+                          onClick={() => onSnooze(task.id, 24)}
+                          className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-neutral-400 hover:text-white transition"
+                        >
+                          +24h
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => onComplete(task.id)}
@@ -451,22 +465,39 @@ function PriorityFeed({
           )}
 
           {/* Blur wall — free users with more tasks hidden */}
-          {hasMore && !isPro && activeTab === "priority" && (
-            <div className="relative">
-              <div className="space-y-3 blur-sm select-none pointer-events-none">
-                <div className="glass rounded-lg p-4 h-20" />
-                <div className="glass rounded-lg p-4 h-20" />
+          {hasMore && !isPro && (
+            <div className="relative mt-2">
+              <div className="space-y-3 select-none pointer-events-none">
+                <div className="glass rounded-lg p-4 h-16 blur-[3px] opacity-60">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                    <div className="h-3 w-2/3 rounded bg-white/10" />
+                  </div>
+                  <div className="mt-2 h-3 w-1/2 rounded bg-white/5 ml-6" />
+                </div>
+                <div className="glass rounded-lg p-4 h-16 blur-[3px] opacity-40">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                    <div className="h-3 w-3/5 rounded bg-white/10" />
+                  </div>
+                  <div className="mt-2 h-3 w-2/5 rounded bg-white/5 ml-6" />
+                </div>
               </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent rounded-lg">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent rounded-lg pt-6">
                 <p className="text-center text-sm font-semibold text-white">
-                  25+ tasks hidden — Upgrade to see full feed
+                  {totalCount && totalCount > 25
+                    ? `+${totalCount - 25} tasks hidden behind this wall`
+                    : "More tasks hidden — Upgrade to see full feed"}
+                </p>
+                <p className="text-center text-xs text-neutral-400 max-w-xs">
+                  Pro unlocks your full queue, ranked by impact — not just date.
                 </p>
                 <button
                   type="button"
                   onClick={onOpenPricing}
                   className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:scale-[1.02]"
                 >
-                  <Sparkles size={14} /> Upgrade to see full feed
+                  <Sparkles size={14} /> {totalCount ? `See all ${totalCount} tasks` : "Upgrade to Pro"}
                 </button>
               </div>
             </div>
@@ -519,11 +550,15 @@ function TabButton({
 function JobCard({
   task,
   index,
+  isPro,
   onComplete,
+  onOpenPricing,
 }: {
   task: any;
   index: number;
+  isPro: boolean;
   onComplete: (id: string) => void;
+  onOpenPricing: () => void;
 }) {
   // title format from job-sync: "Role @ Company"
   const [role, company] = task.title.includes(" @ ")
@@ -535,6 +570,8 @@ function JobCard({
     : [];
 
   const isPlaceholder = task.source === "system";
+  // Free users see skill chips but not stipend/company/apply link
+  const gated = !isPro && !isPlaceholder;
 
   return (
     <motion.article
@@ -556,29 +593,36 @@ function JobCard({
                 Sync pending
               </span>
             )}
+            {gated && (
+              <span className="rounded-lg border border-aura/20 bg-aura/10 px-2.5 py-1 text-xs text-violet-300">
+                Pro match
+              </span>
+            )}
           </div>
 
-          {/* Role + company */}
+          {/* Role + company (company blurred for free users) */}
           <h3 className="mt-2 text-base font-semibold text-white">{role}</h3>
           {company && (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-neutral-400">
               <MapPin size={12} className="shrink-0" />
-              {company}
+              {gated ? (
+                <span className="inline-block rounded bg-white/10 px-3 text-transparent blur-[5px] select-none">{company}</span>
+              ) : company}
             </p>
           )}
 
           {/* Reason / match rationale */}
           <p className="mt-2 text-sm leading-5 text-neutral-500">{task.reason}</p>
 
-          {/* Skill chips */}
+          {/* Skill chips — always visible (shows system knows the user's skills) */}
           {skills.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {skills.map((s) => (
                 <span
                   key={s}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-neutral-400"
+                  className="inline-flex items-center gap-1 rounded-lg border border-volt/15 bg-volt/10 px-2 py-0.5 text-xs text-volt"
                 >
-                  {s}
+                  {s} ✓
                 </span>
               ))}
             </div>
@@ -587,18 +631,34 @@ function JobCard({
 
         {/* Right column */}
         <div className="flex shrink-0 flex-col items-end gap-2">
-          {task.stipend && (
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
-              <Banknote size={13} className="text-mint" />
-              {task.stipend}
-            </span>
-          )}
+          {task.stipend ? (
+            gated ? (
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-neutral-500 select-none">
+                <Banknote size={13} className="text-neutral-600" />
+                <span className="blur-[4px]">₹{task.stipend}</span>
+                <span className="text-xs">/mo</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
+                <Banknote size={13} className="text-mint" />
+                {task.stipend}
+              </span>
+            )
+          ) : null}
           {task.deadline && task.deadline !== "No deadline" && (
             <p className="text-xs text-neutral-500">Apply by {task.deadline}</p>
           )}
 
           <div className="mt-1 flex gap-2">
-            {task.external_url ? (
+            {gated ? (
+              <button
+                type="button"
+                onClick={onOpenPricing}
+                className="inline-flex items-center gap-1 rounded-lg border border-aura/25 bg-aura/10 px-3 py-1.5 text-xs font-semibold text-violet-300 transition hover:bg-aura/20"
+              >
+                <Sparkles size={11} /> Unlock to apply
+              </button>
+            ) : task.external_url ? (
               <a
                 href={task.external_url}
                 target="_blank"
@@ -676,7 +736,7 @@ function TaskCaptureBar({ onAddTask }: { onAddTask: (text: string) => void }) {
   );
 }
 
-function StatsPanel({ stats, loading }: { stats: Stats | null; loading: boolean }) {
+function StatsPanel({ stats, loading, isPro, onOpenPricing }: { stats: Stats | null; loading: boolean; isPro: boolean; onOpenPricing: () => void }) {
   if (loading) {
     return (
       <div className="glass rounded-lg p-4">
@@ -693,23 +753,41 @@ function StatsPanel({ stats, loading }: { stats: Stats | null; loading: boolean 
 
   if (!stats) return null;
 
-  const items = [
+  const baseItems = [
     { label: "Pending", value: stats.pending_tasks },
     { label: "Done this week", value: stats.completed_this_week },
     { label: "Overdue", value: stats.overdue },
-    { label: "GitHub streak", value: `${stats.github.streak_days}d` },
   ];
 
   return (
     <div className="glass rounded-lg p-4">
       <h3 className="text-lg font-semibold text-white">This week</h3>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {items.map(({ label, value }) => (
+        {baseItems.map(({ label, value }) => (
           <div key={label} className="rounded-lg border border-white/10 bg-black/25 p-3">
             <p className="text-xs text-neutral-500">{label}</p>
             <p className="mt-1 text-xl font-semibold text-white">{value}</p>
           </div>
         ))}
+        {/* GitHub streak — blurred for free users */}
+        {isPro ? (
+          <div className="rounded-lg border border-white/10 bg-black/25 p-3">
+            <p className="text-xs text-neutral-500">GitHub streak</p>
+            <p className="mt-1 text-xl font-semibold text-white">{stats.github.streak_days}d</p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenPricing}
+            className="rounded-lg border border-aura/15 bg-aura/5 p-3 text-left transition hover:border-aura/30 hover:bg-aura/10"
+          >
+            <p className="text-xs text-neutral-500">GitHub streak</p>
+            <p className="mt-1 text-xl font-semibold text-transparent blur-[6px] select-none">
+              {stats.github.streak_days}d
+            </p>
+            <p className="mt-0.5 text-[10px] text-violet-400">Pro →</p>
+          </button>
+        )}
       </div>
     </div>
   );
