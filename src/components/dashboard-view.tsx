@@ -15,6 +15,8 @@ export interface Task {
   completed: boolean;
   weightage?: number | null;
   subject?: string | null;
+  external_url?: string | null;
+  stipend?: string | null;
   // UI-enriched fields
   priority?: string;
   deadline?: string;
@@ -111,6 +113,14 @@ export function DashboardView({
     }
     if (nextTask.action_view === "assistant") {
       onOpenAssistant();
+      return;
+    }
+    if (nextTask.action_view === "external" && nextTask.external_url) {
+      window.open(nextTask.external_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (nextTask.type === "job" && nextTask.external_url) {
+      window.open(nextTask.external_url, "_blank", "noopener,noreferrer");
       return;
     }
     setFocusTask(nextTask);
@@ -310,14 +320,28 @@ function PriorityFeed({
                 </div>
                 <div className="flex shrink-0 items-center gap-2 sm:block sm:text-right">
                   <p className="text-sm font-medium text-neutral-200">{task.deadline}</p>
+                  {task.stipend && (
+                    <p className="mt-0.5 text-xs text-neutral-500">{task.stipend}</p>
+                  )}
                   <div className="mt-2 flex gap-2 sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => onSnooze(task.id, 2)}
-                      className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-neutral-400 hover:text-white transition"
-                    >
-                      +2h
-                    </button>
+                    {task.type === "job" && task.external_url ? (
+                      <a
+                        href={task.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-volt/20 bg-volt/10 px-2.5 py-1 text-xs font-semibold text-volt hover:bg-volt/20 transition"
+                      >
+                        Apply <ArrowUpRight size={11} />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onSnooze(task.id, 2)}
+                        className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-neutral-400 hover:text-white transition"
+                      >
+                        +2h
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onComplete(task.id)}

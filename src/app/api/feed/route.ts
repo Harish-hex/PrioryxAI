@@ -90,16 +90,17 @@ function buildSetupTasks({
   } else if (!hasJobs) {
     setupTasks.push({
       id: 'setup-jobs',
-      type: 'manual',
-      title: 'Review the latest Internshala openings matched to your skill profile',
+      type: 'job',
+      title: 'Browse Internshala openings matched to your skill profile',
       due_at: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 115,
       source: 'system',
       estimate: '5 min',
-      action_label: 'Open settings',
-      action_view: 'settings',
-      reason: 'No live internship openings are in your feed yet, so the next step is to refresh that lane.',
+      action_label: 'Browse openings',
+      action_view: 'external',
+      external_url: 'https://internshala.com/internships',
+      reason: 'No live internship openings have synced yet. Browse Internshala directly or reconnect GitHub to trigger auto-matching.',
     });
   }
 
