@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { redis, withFallback, midnightISTttl } from '@/lib/redis';
+// redis imports removed — no upload limits on vision
 
 export const runtime = 'nodejs';
 
@@ -102,32 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check pro status
-  const { data: userData } = await supabase
-    .from('users')
-    .select('pro_status, pro_expires_at')
-    .eq('id', user.id)
-    .single();
-  const isPro = Boolean(userData?.pro_status) &&
-    (!userData?.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
-
-  // Daily upload quota — uses the same midnight-IST counter the UI reads
-  // Free: 1/day, Pro: 10/day
-  const FREE_DAILY_LIMIT = 1;
-  const PRO_DAILY_LIMIT = 10;
-  const dailyLimit = isPro ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
-  const visionKey = `vision_count:${user.id}`;
-  const usedToday = await withFallback(() => redis.get<number>(visionKey), 0);
-  if ((usedToday ?? 0) >= dailyLimit) {
-    return NextResponse.json(
-      {
-        error: isPro
-          ? `Vision limit reached (${PRO_DAILY_LIMIT}/day — resets at midnight)`
-          : `Vision limit reached (${FREE_DAILY_LIMIT}/day for free users — upgrade to Pro for ${PRO_DAILY_LIMIT}/day)`,
-      },
-      { status: 429 }
-    );
-  }
+  // No upload limits — schedule extraction is available to all users
 
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
@@ -196,9 +171,6 @@ export async function POST(request: NextRequest) {
       console.error('[ingest/vision] DB error:', dbError);
       return NextResponse.json({ error: 'Failed to save tasks' }, { status: 500 });
     }
-
-    // Increment daily vision upload counter (same key checked above)
-    await withFallback(() => redis.set(visionKey, (usedToday ?? 0) + 1, { ex: midnightISTttl() }), undefined);
 
     return NextResponse.json({ tasks: inserted });
   } catch (err: any) {

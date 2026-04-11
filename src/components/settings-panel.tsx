@@ -59,10 +59,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
 
-  const FREE_VISION_LIMIT = 1;
-  const PRO_VISION_LIMIT = 10;
-  const visionLimit = isPro ? PRO_VISION_LIMIT : FREE_VISION_LIMIT;
-  const visionRemaining = Math.max(0, visionLimit - visionUsedToday);
+  const PRO_VISION_LIMIT = 10; // kept for pro counter display only
+  const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -361,7 +359,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <button
                 type="button"
                 onClick={handleTimetableUpload}
-                disabled={!timetableFile || uploading || visionRemaining === 0}
+                disabled={!timetableFile || uploading}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1] disabled:opacity-40"
               >
                 {uploading ? (
@@ -370,33 +368,12 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   <><CalendarCheck size={15} /> Extract schedule</>
                 )}
               </button>
-              {isPro ? (
+              {isPro && visionRemaining !== null && (
                 <span className="text-xs text-mint">
                   {visionRemaining} of {PRO_VISION_LIMIT} uploads remaining today
                 </span>
-              ) : visionRemaining > 0 ? (
-                <span className="text-xs text-neutral-500">
-                  {visionRemaining} of {FREE_VISION_LIMIT} remaining today
-                </span>
-              ) : null}
+              )}
             </div>
-
-            {/* Vision limit reached — upgrade card for free users */}
-            {!isPro && visionRemaining === 0 && (
-              <div className="rounded-lg border border-aura/20 bg-aura/5 p-4">
-                <p className="text-sm font-semibold text-white">Daily upload limit reached</p>
-                <p className="mt-1 text-xs leading-5 text-neutral-400">
-                  Free plan: 1 upload/day. Pro includes 10/day — scan every handout, lab sheet, and timetable without limits.
-                </p>
-                <button
-                  type="button"
-                  onClick={onOpenPricing}
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black transition hover:scale-[1.02]"
-                >
-                  <Sparkles size={12} /> Upgrade to Pro — ₹99/month
-                </button>
-              </div>
-            )}
 
             {/* Extracted schedule list */}
             {extractedTasks && extractedTasks.length > 0 && (

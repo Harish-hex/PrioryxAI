@@ -174,7 +174,7 @@ const proFeatures: { label: string; sub?: string }[] = [
 const freeItems: { label: string; locked: boolean }[] = [
   { label: "5 AI-ranked tasks visible", locked: false },
   { label: "3 AI messages/day", locked: false },
-  { label: "1 timetable upload/day", locked: false },
+  { label: "Unlimited timetable uploads", locked: false },
   { label: "Basic public profile", locked: false },
   { label: "Plan with AI", locked: true },
   { label: "Priority scoring", locked: true },
