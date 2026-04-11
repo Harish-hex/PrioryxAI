@@ -376,16 +376,35 @@ export async function GET() {
   // Setup items: what the user still needs to configure (shown as a strip, not the hero card)
   const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
 
-  const FREE_LIMIT = 25;
+  const FREE_LIMIT = 5;
   const totalCount = realFeed.length;
   const hasMore = !isPro && totalCount > FREE_LIMIT;
   const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
+
+  // Build hiddenPreview so the blur wall can show a specific tease (job title, breakdown)
+  let hiddenPreview: { count: number; topJobTitle: string | null; breakdown: string | null } | null = null;
+  if (!isPro && totalCount > FREE_LIMIT) {
+    const hiddenTasks = realFeed.slice(FREE_LIMIT);
+    const topJob = hiddenTasks.find((t) => t.type === 'job');
+    const examCount = hiddenTasks.filter((t) => t.type === 'exam').length;
+    const assignmentCount = hiddenTasks.filter((t) => t.type === 'assignment').length;
+    const jobCount = hiddenTasks.filter((t) => t.type === 'job').length;
+    const parts: string[] = [];
+    if (examCount > 0) parts.push(`${examCount} exam${examCount > 1 ? 's' : ''}`);
+    if (assignmentCount > 0) parts.push(`${assignmentCount} assignment${assignmentCount > 1 ? 's' : ''}`);
+    if (jobCount > 0) parts.push(`${jobCount} internship${jobCount > 1 ? 's' : ''}`);
+    hiddenPreview = {
+      count: totalCount - FREE_LIMIT,
+      topJobTitle: topJob?.title ?? null,
+      breakdown: parts.length > 0 ? parts.join(', ') : null,
+    };
+  }
 
   const nextMove = feed[0]
     ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const result = { feed, setup, nextMove, hasMore, totalCount };
+  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);

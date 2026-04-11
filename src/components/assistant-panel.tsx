@@ -5,7 +5,7 @@ import { Bot, CornerDownLeft, Sparkles, UserRound, Wand2, Zap } from "lucide-rea
 import { useEffect, useMemo, useRef, useState } from "react";
 import { typeStyles } from "@/components/task-styles";
 
-const FREE_MSG_LIMIT = 5;
+const FREE_MSG_LIMIT = 3;
 const UPGRADE_SENTINEL = "__UPGRADE_PROMPT__";
 
 interface Task {
@@ -180,7 +180,17 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                 <p className="text-sm text-neutral-500">Reading deadlines, career goals, and study load.</p>
               </div>
             </div>
-            <div className="rounded-lg border border-mint/20 bg-mint/10 px-3 py-1.5 text-sm text-mint">Live context</div>
+            <div className="flex items-center gap-2">
+              {isPro ? (
+                <div className="rounded-lg border border-mint/20 bg-mint/10 px-3 py-1.5 text-sm text-mint">
+                  <span className="flex items-center gap-1.5"><Sparkles size={13} /> Unlimited</span>
+                </div>
+              ) : (
+                <div className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${msgsLeft === 0 ? "border-red-500/25 bg-red-500/10 text-red-400" : msgsLeft === 1 ? "border-amber-500/25 bg-amber-500/10 text-amber-300" : "border-white/10 bg-white/[0.06] text-neutral-300"}`}>
+                  {msgsLeft}/{FREE_MSG_LIMIT} left
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -200,17 +210,34 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                   </div>
                 )}
                 {message.text === UPGRADE_SENTINEL ? (
-                  <div className="w-full rounded-lg border border-aura/20 bg-aura/10 p-4">
+                  <div className="w-full rounded-lg border border-aura/20 bg-aura/10 p-5">
                     <div className="flex items-center gap-2 text-sm font-semibold text-violet-200">
-                      <Zap size={15} /> Daily message limit reached
+                      <Zap size={15} className="shrink-0" /> You&apos;ve used your {FREE_MSG_LIMIT} free messages today
                     </div>
-                    <p className="mt-1 text-xs text-neutral-400">Free plan includes {FREE_MSG_LIMIT} messages/day. Upgrade to Pro for unlimited access.</p>
+                    <p className="mt-1.5 text-xs text-neutral-400 leading-5">
+                      Free plan: {FREE_MSG_LIMIT} AI messages/day. Pro gives you everything below — resets at midnight.
+                    </p>
+                    <ul className="mt-3 space-y-1.5">
+                      {[
+                        "Unlimited AI messages, no daily cap",
+                        "Plan with AI on any high-priority task",
+                        "Full task feed — all matches visible",
+                        "Auto-scheduled focus blocks",
+                        "Priority scoring (0–100) per task",
+                        "10 timetable uploads/day",
+                      ].map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-xs text-neutral-300">
+                          <Sparkles size={11} className="mt-0.5 shrink-0 text-mint" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
                     <button
                       type="button"
                       onClick={onOpenPricing}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:scale-[1.02]"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
                     >
-                      <Sparkles size={12} /> Upgrade to Pro
+                      <Sparkles size={13} /> Upgrade to Pro — ₹99/month
                     </button>
                   </div>
                 ) : (

@@ -42,6 +42,12 @@ interface Stats {
   github: { streak_days: number; health_score: number };
 }
 
+interface HiddenPreview {
+  count: number;
+  topJobTitle: string | null;
+  breakdown: string | null;
+}
+
 interface DashboardViewProps {
   loading: boolean;
   tasks: Task[];
@@ -50,6 +56,7 @@ interface DashboardViewProps {
   isPro: boolean;
   hasMore: boolean;
   totalCount?: number;
+  hiddenPreview?: HiddenPreview | null;
   onAddTask: (text: string) => void;
   onCompleteTask: (id: string) => void;
   onSnoozeTask: (id: string, hours: number) => void;
@@ -87,6 +94,7 @@ export function DashboardView({
   isPro,
   hasMore,
   totalCount,
+  hiddenPreview,
   onAddTask,
   onCompleteTask,
   onSnoozeTask,
@@ -131,7 +139,9 @@ export function DashboardView({
         <NextMoveCard
           loading={loading}
           task={nextTask}
+          isPro={isPro}
           onPrimaryAction={handleNextMoveAction}
+          onOpenPricing={onOpenPricing}
         />
         {/* Setup nudge strip — only shown when there are pending setup steps */}
         {!loading && visibleSetup.length > 0 && (
@@ -150,6 +160,7 @@ export function DashboardView({
           isPro={isPro}
           hasMore={hasMore}
           totalCount={totalCount}
+          hiddenPreview={hiddenPreview}
           onComplete={onCompleteTask}
           onSnooze={onSnoozeTask}
           onOpenPricing={onOpenPricing}
@@ -179,14 +190,19 @@ export function DashboardView({
 function NextMoveCard({
   loading,
   onPrimaryAction,
+  onOpenPricing,
   task,
+  isPro,
 }: {
   loading: boolean;
   onPrimaryAction: () => void;
+  onOpenPricing: () => void;
   task: any;
+  isPro: boolean;
 }) {
-  const actionLabel = task?.action_view === "settings" ? (task?.action_label ?? "Open settings") : "Plan with AI";
-  const modeLabel = task?.action_view === "settings" ? "Guided setup" : "AI-assisted";
+  const isSetupAction = task?.action_view === "settings";
+  const actionLabel = isSetupAction ? (task?.action_label ?? "Open settings") : "Plan with AI";
+  const modeLabel = isSetupAction ? "Guided setup" : "AI-assisted";
 
   return (
     <div className="sticky top-28 z-20 rounded-lg accent-border p-px shadow-glow">
@@ -313,14 +329,24 @@ function NextMoveCard({
                       {task.type}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={onPrimaryAction}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
-                  >
-                    {actionLabel}
-                    <ArrowUpRight size={16} />
-                  </button>
+                  {!isSetupAction && !isPro ? (
+                    <button
+                      type="button"
+                      onClick={onOpenPricing}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-aura/25 bg-aura/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-aura/20"
+                    >
+                      <Lock size={14} /> Plan with AI · Pro
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={onPrimaryAction}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
+                    >
+                      {actionLabel}
+                      <ArrowUpRight size={16} />
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -360,6 +386,7 @@ function PriorityFeed({
   isPro,
   hasMore,
   totalCount,
+  hiddenPreview,
   onComplete,
   onSnooze,
   onOpenPricing,
@@ -369,6 +396,7 @@ function PriorityFeed({
   isPro: boolean;
   hasMore: boolean;
   totalCount?: number;
+  hiddenPreview?: HiddenPreview | null;
   onComplete: (id: string) => void;
   onSnooze: (id: string, hours: number) => void;
   onOpenPricing: () => void;
@@ -469,38 +497,59 @@ function PriorityFeed({
 
           {/* Blur wall — free users with more tasks hidden */}
           {hasMore && !isPro && (
-            <div className="relative mt-2">
+            <div className="relative mt-2 rounded-lg overflow-hidden">
+              {/* Ghost skeleton cards */}
               <div className="space-y-3 select-none pointer-events-none">
-                <div className="glass rounded-lg p-4 h-16 blur-[3px] opacity-60">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                    <div className="h-3 w-2/3 rounded bg-white/10" />
+                {[
+                  { dot: "bg-red-400", w1: "w-2/3", w2: "w-1/2", opacity: "opacity-60" },
+                  { dot: "bg-amber-400", w1: "w-3/5", w2: "w-2/5", opacity: "opacity-40" },
+                  { dot: "bg-green-400", w1: "w-1/2", w2: "w-1/3", opacity: "opacity-20" },
+                ].map((s, i) => (
+                  <div key={i} className={`glass rounded-lg p-4 h-[72px] blur-[3px] ${s.opacity}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
+                      <div className={`h-3 ${s.w1} rounded bg-white/10`} />
+                    </div>
+                    <div className={`mt-2.5 h-3 ${s.w2} rounded bg-white/5 ml-6`} />
                   </div>
-                  <div className="mt-2 h-3 w-1/2 rounded bg-white/5 ml-6" />
-                </div>
-                <div className="glass rounded-lg p-4 h-16 blur-[3px] opacity-40">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                    <div className="h-3 w-3/5 rounded bg-white/10" />
-                  </div>
-                  <div className="mt-2 h-3 w-2/5 rounded bg-white/5 ml-6" />
-                </div>
+                ))}
               </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent rounded-lg pt-6">
-                <p className="text-center text-sm font-semibold text-white">
-                  {totalCount && totalCount > 25
-                    ? `+${totalCount - 25} tasks hidden behind this wall`
-                    : "More tasks hidden — Upgrade to see full feed"}
-                </p>
-                <p className="text-center text-xs text-neutral-400 max-w-xs">
-                  Pro unlocks your full queue, ranked by impact — not just date.
-                </p>
+
+              {/* Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-t from-black/95 via-black/70 to-transparent rounded-lg pt-8 px-4">
+                <div className="text-center space-y-1.5">
+                  <p className="text-base font-semibold text-white">
+                    {hiddenPreview?.count
+                      ? `${hiddenPreview.count} more task${hiddenPreview.count > 1 ? "s" : ""} matched your profile`
+                      : "More tasks hidden — upgrade to see all"}
+                  </p>
+                  {hiddenPreview?.topJobTitle && (
+                    <p className="text-xs text-neutral-400 max-w-xs mx-auto">
+                      Including{" "}
+                      <span className="text-volt font-medium">
+                        {hiddenPreview.topJobTitle.split(" @ ")[0]}
+                      </span>{" "}
+                      {hiddenPreview.topJobTitle.includes(" @ ") && (
+                        <>at {hiddenPreview.topJobTitle.split(" @ ")[1]}</>
+                      )}
+                      {hiddenPreview.breakdown && ` and ${hiddenPreview.breakdown}`}
+                    </p>
+                  )}
+                  {!hiddenPreview?.topJobTitle && hiddenPreview?.breakdown && (
+                    <p className="text-xs text-neutral-400 max-w-xs mx-auto">
+                      Includes {hiddenPreview.breakdown}
+                    </p>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={onOpenPricing}
-                  className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
                 >
-                  <Sparkles size={14} /> {totalCount ? `See all ${totalCount} tasks` : "Upgrade to Pro"}
+                  <Sparkles size={14} />
+                  {hiddenPreview?.count
+                    ? `Unlock all ${(totalCount ?? 0)} tasks · ₹99/month`
+                    : "Upgrade to Pro · ₹99/month"}
                 </button>
               </div>
             </div>

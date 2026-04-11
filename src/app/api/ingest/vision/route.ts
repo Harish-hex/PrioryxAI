@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Service temporarily unavailable. Try again shortly.' }, { status: 503 });
     }
     return NextResponse.json(
-      { error: isPro ? 'Vision limit reached (10/day)' : 'Vision limit reached (3/day for free users)' },
+      { error: isPro ? 'Vision limit reached (10/day)' : 'Vision limit reached (1/day for free users — upgrade to Pro for 10/day)' },
       { status: 429 }
     );
   }

@@ -47,6 +47,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
+  const [hiddenPreview, setHiddenPreview] = useState<{ count: number; topJobTitle: string | null; breakdown: string | null } | null>(null);
 
   // Pro state
   const [isPro, setIsPro] = useState(false);
@@ -91,6 +92,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         setSetupItems(data.setup ?? []);
         setHasMore(data.hasMore ?? false);
         setTotalCount(data.totalCount);
+        setHiddenPreview(data.hiddenPreview ?? null);
       }
     } catch {}
     finally {
@@ -292,6 +294,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         isPro={isPro}
         hasMore={hasMore}
         totalCount={totalCount}
+        hiddenPreview={hiddenPreview}
         onAddTask={handleAddTask}
         onCompleteTask={handleCompleteTask}
         onSnoozeTask={handleSnoozeTask}

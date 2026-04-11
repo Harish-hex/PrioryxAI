@@ -10,7 +10,7 @@ export const assistantRatelimit = new Ratelimit({
 
 export const visionRatelimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(3, '1 d'),
+  limiter: Ratelimit.slidingWindow(1, '1 d'),
 });
 
 export const visionRatelimitPro = new Ratelimit({

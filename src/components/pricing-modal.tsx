@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CreditCard, Loader2, Sparkles, X } from "lucide-react";
+import { Check, CreditCard, Loader2, Lock, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 interface PricingModalProps {
@@ -75,7 +75,6 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <Plan
                 cta="Continue free"
-                features={["25 AI-ranked tasks", "Basic profile page", "Manual task capture", "3 timetable uploads/day"]}
                 name="Free"
                 price="₹0"
                 onAction={onClose}
@@ -96,9 +95,12 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                     </div>
                     <ul className="mt-5 space-y-3">
                       {proFeatures.map((f) => (
-                        <li key={f} className="flex gap-3 text-sm text-neutral-300">
-                          <Check className="mt-0.5 shrink-0 text-mint" size={16} />
-                          <span>{f}</span>
+                        <li key={f.label} className="flex gap-3 text-sm">
+                          <Check className="mt-0.5 shrink-0 text-mint" size={15} />
+                          <span>
+                            <span className="text-neutral-200">{f.label}</span>
+                            {f.sub && <span className="block text-xs text-neutral-500 mt-0.5">{f.sub}</span>}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -121,9 +123,12 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                     </div>
                     <ul className="mt-5 space-y-3">
                       {proFeatures.map((f) => (
-                        <li key={f} className="flex gap-3 text-sm text-neutral-300">
-                          <Check className="mt-0.5 shrink-0 text-mint" size={16} />
-                          <span>{f}</span>
+                        <li key={f.label} className="flex gap-3 text-sm">
+                          <Check className="mt-0.5 shrink-0 text-mint" size={15} />
+                          <span>
+                            <span className="text-neutral-200">{f.label}</span>
+                            {f.sub && <span className="block text-xs text-neutral-500 mt-0.5">{f.sub}</span>}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -140,7 +145,10 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                       )}
                     </button>
                     <p className="mt-2 text-center text-xs text-neutral-500">
-                      Secure payment via Razorpay. Pro access activates within minutes.
+                      Secure payment via Razorpay · Pro activates within minutes
+                    </p>
+                    <p className="mt-1 text-center text-xs text-neutral-600">
+                      Join 100+ students who upgraded this semester
                     </p>
                   </div>
                 )}
@@ -153,17 +161,28 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
   );
 }
 
-const proFeatures = [
-  "Unlimited AI planning",
-  "Auto-scheduled focus blocks",
-  "Recruiter profile optimization",
-  "10 timetable uploads/day",
-  "Full feed — no task limit",
+const proFeatures: { label: string; sub?: string }[] = [
+  { label: "Unlimited AI messages", sub: "No daily cap, context aware" },
+  { label: "Full task feed", sub: "All matches ranked, no 5-task cap" },
+  { label: "Plan with AI on any task", sub: "Instant action plan per deadline" },
+  { label: "Priority scoring (0–100)", sub: "See which task to do first and why" },
+  { label: "Auto-scheduled focus blocks", sub: "AI slots tasks into your calendar" },
+  { label: "10 timetable uploads/day", sub: "PDF, DOC, image — all formats" },
+  { label: "Pro badge on public profile", sub: "Visible to recruiters" },
 ];
 
-function Plan({ cta, features, name, price, onAction }: {
+const freeItems: { label: string; locked: boolean }[] = [
+  { label: "5 AI-ranked tasks visible", locked: false },
+  { label: "3 AI messages/day", locked: false },
+  { label: "1 timetable upload/day", locked: false },
+  { label: "Basic public profile", locked: false },
+  { label: "Plan with AI", locked: true },
+  { label: "Priority scoring", locked: true },
+  { label: "Auto-scheduling", locked: true },
+];
+
+function Plan({ cta, name, price, onAction }: {
   cta: string;
-  features: string[];
   name: string;
   price: string;
   onAction: () => void;
@@ -178,11 +197,15 @@ function Plan({ cta, features, name, price, onAction }: {
         <span className="text-4xl font-semibold text-white">{price}</span>
         <span className="pb-1 text-sm text-neutral-500">/month</span>
       </div>
-      <ul className="mt-5 space-y-3">
-        {features.map((feature) => (
-          <li key={feature} className="flex gap-3 text-sm text-neutral-300">
-            <Check className="mt-0.5 shrink-0 text-mint" size={16} />
-            <span>{feature}</span>
+      <ul className="mt-5 space-y-2.5">
+        {freeItems.map(({ label, locked }) => (
+          <li key={label} className="flex items-center gap-3 text-sm">
+            {locked ? (
+              <Lock className="mt-0.5 shrink-0 text-neutral-600" size={14} />
+            ) : (
+              <Check className="mt-0.5 shrink-0 text-mint" size={14} />
+            )}
+            <span className={locked ? "text-neutral-600 line-through" : "text-neutral-300"}>{label}</span>
           </li>
         ))}
       </ul>
