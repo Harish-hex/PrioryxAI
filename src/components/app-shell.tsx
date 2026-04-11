@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Command, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, Command, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
@@ -56,6 +56,21 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   // Task context passed from "Plan with AI" — carried into AssistantPanel
   const [assistantTask, setAssistantTask] = useState<any | null>(null);
+
+  // Notification dropdown
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Close notification dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    if (notifOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [notifOpen]);
 
   // Post-payment activation state
   const [paymentPending, setPaymentPending] = useState(false);
@@ -359,20 +374,150 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            {/* Profile shortcut */}
             <button
               type="button"
+              onClick={() => navigateToView("profile")}
               className="hidden rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.1] md:inline-flex items-center gap-2"
+              title="View your public profile"
             >
               <CalendarClock size={16} />
               <span>@{username}</span>
             </button>
-            <button
-              type="button"
-              className="rounded-lg border border-white/10 bg-white/[0.06] p-2.5 text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.1]"
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-            </button>
+
+            {/* Notification bell + dropdown */}
+            <div ref={notifRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen((v) => !v)}
+                className={`relative rounded-lg border p-2.5 transition ${
+                  notifOpen
+                    ? "border-volt/30 bg-volt/10 text-volt"
+                    : "border-white/10 bg-white/[0.06] text-neutral-200 hover:border-white/20 hover:bg-white/[0.1]"
+                }`}
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                {/* Red dot if urgent tasks */}
+                {pendingTasks.some((t) => {
+                  if (!t.due_at) return false;
+                  const h = (new Date(t.due_at).getTime() - Date.now()) / 3_600_000;
+                  return h < 48;
+                }) && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-black" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-white/10 bg-[#0d0d0d] shadow-2xl z-50 overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <Bell size={14} className="text-volt" /> Upcoming deadlines
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNotifOpen(false)}
+                        className="rounded-md p-1 text-neutral-500 hover:text-white transition"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    {/* Notification list */}
+                    <div className="max-h-96 overflow-y-auto divide-y divide-white/[0.06]">
+                      {(() => {
+                        const sorted = [...pendingTasks]
+                          .filter((t) => t.due_at)
+                          .sort((a, b) => new Date(a.due_at!).getTime() - new Date(b.due_at!).getTime())
+                          .slice(0, 10);
+
+                        const overdue = sorted.filter((t) => new Date(t.due_at!).getTime() < Date.now());
+                        const upcoming = sorted.filter((t) => new Date(t.due_at!).getTime() >= Date.now());
+
+                        const all = [...overdue, ...upcoming];
+
+                        if (all.length === 0) {
+                          return (
+                            <div className="px-4 py-8 text-center">
+                              <CheckCircle2 size={24} className="mx-auto text-mint mb-2" />
+                              <p className="text-sm font-medium text-white">All clear!</p>
+                              <p className="mt-1 text-xs text-neutral-500">No upcoming deadlines right now.</p>
+                            </div>
+                          );
+                        }
+
+                        return all.map((task) => {
+                          const due = new Date(task.due_at!);
+                          const diffH = (due.getTime() - Date.now()) / 3_600_000;
+                          const isOverdue = diffH < 0;
+                          const isUrgent = !isOverdue && diffH < 24;
+                          const isWarning = !isOverdue && diffH >= 24 && diffH < 72;
+
+                          const dotColor = isOverdue ? "bg-red-500" : isUrgent ? "bg-red-400" : isWarning ? "bg-amber-400" : "bg-green-400";
+                          const timeLabel = isOverdue
+                            ? `Overdue by ${Math.abs(Math.round(diffH))}h`
+                            : diffH < 24
+                            ? `Due in ${Math.round(diffH)}h`
+                            : diffH < 48
+                            ? `Due tomorrow`
+                            : due.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+
+                          return (
+                            <div
+                              key={task.id}
+                              className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.03] transition cursor-pointer"
+                              onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
+                            >
+                              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{task.title}</p>
+                                <div className="mt-0.5 flex items-center gap-2">
+                                  <Clock3 size={11} className="text-neutral-500 shrink-0" />
+                                  <span className={`text-xs ${isOverdue ? "text-red-400" : isUrgent ? "text-red-300" : isWarning ? "text-amber-300" : "text-neutral-400"}`}>
+                                    {timeLabel}
+                                  </span>
+                                  {task.type && (
+                                    <span className="text-xs text-neutral-600">· {task.type}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+
+                      {/* Tasks with no deadline */}
+                      {pendingTasks.filter((t) => !t.due_at).length > 0 && (
+                        <div className="px-4 py-2.5">
+                          <p className="text-xs text-neutral-600">
+                            +{pendingTasks.filter((t) => !t.due_at).length} task{pendingTasks.filter((t) => !t.due_at).length > 1 ? "s" : ""} with no deadline
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-white/10 px-4 py-2.5">
+                      <button
+                        type="button"
+                        onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
+                        className="text-xs text-volt hover:underline underline-offset-2 transition"
+                      >
+                        View all in feed →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             {isPro ? (
               <div className="rounded-lg border border-mint/25 bg-mint/10 px-3 py-2 text-sm font-semibold text-mint">
                 <span className="inline-flex items-center gap-1.5">
