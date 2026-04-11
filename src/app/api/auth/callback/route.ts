@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { syncGithubForUser } from '@/lib/github-sync';
-import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/feed';
@@ -13,7 +13,26 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=no_code`);
   }
 
-  const supabase = createClient();
+  // Prepare a redirect response so Supabase can write session cookies onto it
+  const tentativeRedirect = NextResponse.redirect(`${origin}${next}`);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            tentativeRedirect.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -22,60 +41,60 @@ export async function GET(request: Request) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    const provider = user.app_metadata?.provider ?? 'github';
-
-    // Extract provider-specific fields
-    const meta = user.user_metadata ?? {};
-    const githubUsername =
-      provider === 'github'
-        ? (meta.user_name ?? meta.preferred_username ?? null)
-        : null; // Google users have no GitHub username at signup
-
-    const name = meta.full_name ?? meta.name ?? null;
-    const avatarUrl = meta.avatar_url ?? meta.picture ?? null;
-
-    // Generate a username slug for Google users: first part of email
-    const username =
-      githubUsername ??
-      (user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9-]/g, '') : null);
-
-    // Check if this is a new user (no row yet)
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id, github_username')
-      .eq('id', user.id)
-      .single();
-
-    const isNew = !existing;
-
-    await supabase.from('users').upsert(
-      {
-        id: user.id,
-        email: user.email!,
-        name,
-        // Only set username on first insert — don't overwrite if user changed it
-        username: existing?.id ? undefined : username,
-        avatar_url: avatarUrl,
-        // Only set github_username if this is a GitHub login
-        ...(githubUsername ? { github_username: githubUsername } : {}),
-        last_active_at: new Date().toISOString(),
-      },
-      { onConflict: 'id', ignoreDuplicates: false }
-    );
-
-    if (githubUsername) {
-      try {
-        await syncGithubForUser(user.id, githubUsername);
-      } catch (syncError) {
-        console.error('[auth/callback] GitHub sync failed:', syncError);
-      }
-    }
-
-    // New users go to onboarding; returning users go to feed (or next param)
-    const redirectTo = isNew ? `${origin}/onboarding` : `${origin}${next}`;
-    return NextResponse.redirect(redirectTo);
+  if (!user) {
+    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
-  return NextResponse.redirect(`${origin}/feed`);
+  const provider = user.app_metadata?.provider ?? 'github';
+  const meta = user.user_metadata ?? {};
+  const githubUsername =
+    provider === 'github'
+      ? (meta.user_name ?? meta.preferred_username ?? null)
+      : null;
+
+  const name = meta.full_name ?? meta.name ?? null;
+  const avatarUrl = meta.avatar_url ?? meta.picture ?? null;
+
+  const username =
+    githubUsername ??
+    (user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9-]/g, '') : null);
+
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id, github_username')
+    .eq('id', user.id)
+    .single();
+
+  const isNew = !existing;
+
+  await supabase.from('users').upsert(
+    {
+      id: user.id,
+      email: user.email!,
+      name,
+      username: existing?.id ? undefined : username,
+      avatar_url: avatarUrl,
+      ...(githubUsername ? { github_username: githubUsername } : {}),
+      last_active_at: new Date().toISOString(),
+    },
+    { onConflict: 'id', ignoreDuplicates: false }
+  );
+
+  if (githubUsername) {
+    try {
+      await syncGithubForUser(user.id, githubUsername);
+    } catch (syncError) {
+      console.error('[auth/callback] GitHub sync failed:', syncError);
+    }
+  }
+
+  // New users (OAuth signup) go to onboarding; returning users go to `next`.
+  // `next` is also used by the onboarding flow itself: after connecting GitHub during
+  // onboarding, we pass next=/onboarding?step=3 so they jump back into the wizard.
+  const destination = isNew ? '/onboarding' : next;
+
+  // Rewrite the redirect URL on the response we already attached cookies to
+  return NextResponse.redirect(`${origin}${destination}`, {
+    headers: tentativeRedirect.headers,
+  });
 }
