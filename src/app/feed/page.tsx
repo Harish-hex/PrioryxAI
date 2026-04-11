@@ -2,7 +2,7 @@ import AppShell from "@/components/app-shell";
 import { requireAppUser } from "@/lib/app-user";
 
 export const metadata = {
-  title: "Feed — DeadlineOS",
+  title: "Feed — PrioryxAI",
   description: "Your AI-ranked priority feed",
 };
 

@@ -39,7 +39,7 @@ function buildSetupTasks({
       estimate: '5 min',
       action_label: 'Open settings',
       action_view: 'settings',
-      reason: 'DeadlineOS needs your exam dates to rank your real next step correctly.',
+      reason: 'PrioryxAI needs your exam dates to rank your real next step correctly.',
     });
   }
 
@@ -47,7 +47,7 @@ function buildSetupTasks({
     setupTasks.push({
       id: 'setup-github-username',
       type: 'manual',
-      title: 'Add your GitHub username so DeadlineOS can pull your repos',
+      title: 'Add your GitHub username so PrioryxAI can pull your repos',
       due_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 145,
@@ -69,7 +69,7 @@ function buildSetupTasks({
       estimate: '3 min',
       action_label: 'Refresh GitHub',
       action_view: 'settings',
-      reason: 'Your profile works best when DeadlineOS can see your repos and recent activity.',
+      reason: 'Your profile works best when PrioryxAI can see your repos and recent activity.',
     });
   }
 
@@ -77,7 +77,7 @@ function buildSetupTasks({
     setupTasks.push({
       id: 'setup-skills',
       type: 'manual',
-      title: 'Add your subjects and technical skills so DeadlineOS can track relevant internships',
+      title: 'Add your subjects and technical skills so PrioryxAI can track relevant internships',
       due_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 125,

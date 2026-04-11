@@ -161,7 +161,7 @@ function OnboardingFlow() {
           Let&apos;s set up your workspace.
         </h1>
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Three quick steps. DeadlineOS will pull your deadlines, rank them, and watch for
+          Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for
           internship openings automatically.
         </p>
 
@@ -260,7 +260,7 @@ function OnboardingFlow() {
             >
               <h2 className="text-xl font-semibold text-white">Step 2 — Connect GitHub</h2>
               <p className="mt-1 text-sm text-neutral-400">
-                DeadlineOS uses your repos, languages, and activity streak to rank tasks and
+                PrioryxAI uses your repos, languages, and activity streak to rank tasks and
                 match you with Internshala openings automatically.
               </p>
 
@@ -332,7 +332,7 @@ function OnboardingFlow() {
               <h2 className="text-xl font-semibold text-white">Step 3 — Add your schedule</h2>
               <p className="mt-1 text-sm text-neutral-400">
                 Upload a photo of your printed timetable, whiteboard schedule, or any image
-                with exam dates. DeadlineOS extracts every date and adds it to your feed.
+                with exam dates. PrioryxAI extracts every date and adds it to your feed.
               </p>
 
               <div className="mt-5 space-y-3">
@@ -408,7 +408,7 @@ function OnboardingFlow() {
               </div>
 
               <p className="mt-4 text-xs text-neutral-500">
-                No image handy? You can add tasks later from your feed — DeadlineOS will nudge
+                No image handy? You can add tasks later from your feed — PrioryxAI will nudge
                 you when something important is missing.
               </p>
             </motion.div>

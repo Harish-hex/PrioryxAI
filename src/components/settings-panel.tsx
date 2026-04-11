@@ -229,7 +229,7 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
           <h3 className="text-lg font-semibold text-white">Upload timetable or exam schedule</h3>
           <p className="mt-2 text-sm leading-6 text-neutral-400">
             Photograph your printed timetable, a whiteboard schedule, or any image with exam/assignment dates.
-            DeadlineOS will extract all dates and add them to your feed automatically — no typing needed.
+            PrioryxAI will extract all dates and add them to your feed automatically — no typing needed.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -302,7 +302,7 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
               </div>
               <p className="mt-2 text-xs leading-5 text-neutral-500">
                 {profile.github_username
-                  ? "DeadlineOS uses your repos, languages, and streak to rank tasks and match internships automatically."
+                  ? "PrioryxAI uses your repos, languages, and streak to rank tasks and match internships automatically."
                   : "Connect GitHub to auto-sync your repos, streak, and get matched Internshala openings — no manual input needed."}
               </p>
               <button

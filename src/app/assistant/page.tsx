@@ -2,7 +2,7 @@ import AppShell from "@/components/app-shell";
 import { requireAppUser } from "@/lib/app-user";
 
 export const metadata = {
-  title: "Assistant — DeadlineOS",
+  title: "Assistant — PrioryxAI",
   description: "Context-aware AI assistant for deadlines and planning",
 };
 

@@ -79,7 +79,7 @@ function LoginForm() {
       <section className="grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
         {/* Left panel */}
         <div className="glass-strong rounded-lg p-6 sm:p-8">
-          <p className="text-sm font-semibold tracking-wide text-volt">DeadlineOS</p>
+          <p className="text-sm font-semibold tracking-wide text-volt">PrioryxAI</p>
           <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
             Your academic &amp; career command center.
           </h1>

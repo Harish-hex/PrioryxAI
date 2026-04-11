@@ -38,7 +38,7 @@ export function Sidebar({ activeView, collapsed, onNavigate, onOpenPricing, onTo
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">DeadlineOS</p>
+              <p className="truncate text-sm font-semibold text-white">PrioryxAI</p>
               <p className="truncate text-xs text-neutral-500">Student command OS</p>
             </div>
           )}
@@ -102,7 +102,7 @@ export function Sidebar({ activeView, collapsed, onNavigate, onOpenPricing, onTo
           </div>
           {!collapsed && (
             <>
-              <p className="mt-3 text-sm font-medium text-white">DeadlineOS</p>
+              <p className="mt-3 text-sm font-medium text-white">PrioryxAI</p>
               <p className="mt-1 text-xs leading-5 text-neutral-500">Stay ahead of every deadline.</p>
             </>
           )}

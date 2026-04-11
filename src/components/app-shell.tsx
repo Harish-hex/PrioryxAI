@@ -161,7 +161,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm text-neutral-400">
               <Command size={15} />
-              <span>DeadlineOS</span>
+              <span>PrioryxAI</span>
             </div>
             <h1 className="mt-1 truncate text-2xl font-semibold text-white sm:text-3xl">
               {pageTitles[activeView]}

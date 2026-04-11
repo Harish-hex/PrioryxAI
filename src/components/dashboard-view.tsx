@@ -319,7 +319,7 @@ function NextMoveCard({
             </div>
             <h2 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">Your priority feed is empty.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-              Add a task in plain English and DeadlineOS will rank the next move.
+              Add a task in plain English and PrioryxAI will rank the next move.
             </p>
           </div>
         )}

@@ -2,8 +2,8 @@ import AppShell from "@/components/app-shell";
 import { requireAppUser } from "@/lib/app-user";
 
 export const metadata = {
-  title: "Settings — DeadlineOS",
-  description: "Update your DeadlineOS profile and workspace",
+  title: "Settings — PrioryxAI",
+  description: "Update your PrioryxAI profile and workspace",
 };
 
 export default async function SettingsPage() {

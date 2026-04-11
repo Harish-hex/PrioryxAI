@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DeadlineOS",
+  title: "PrioryxAI",
   description: "Your academic and career command center",
 };
 

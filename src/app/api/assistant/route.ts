@@ -91,7 +91,7 @@ Top languages: ${Object.keys(github?.languages ?? {}).slice(0, 3).join(', ') || 
   const messages = [
     {
       role: 'system' as const,
-      content: `You are DeadlineOS Assistant — a smart academic and career planner for Indian engineering students. Be concise, actionable, and empathetic. Use Indian context where relevant.
+      content: `You are PrioryxAI Assistant — a smart academic and career planner for Indian engineering students. Be concise, actionable, and empathetic. Use Indian context where relevant.
 
 ${context}`,
     },

@@ -45,7 +45,7 @@ function buildFallbackStep(repo: RepoSummary): RepoNextStep {
       title: `Clarify what ${repo.name} does and why it matters`,
       reason:
         `${repo.name} is synced, but its public description is still weak. ` +
-        `A sharper summary and README direction will help DeadlineOS infer stronger project follow-ups.`,
+        `A sharper summary and README direction will help PrioryxAI infer stronger project follow-ups.`,
       estimate: "25 min",
     };
   }
