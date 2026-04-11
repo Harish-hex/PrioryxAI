@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
+import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
 
 export const runtime = 'nodejs';
 
@@ -24,10 +25,14 @@ export async function GET() {
     .eq('id', user.id)
     .single();
 
-  // If cgpa column doesn't exist yet (migration not run), retry without it
-  if (error && error.message?.includes('cgpa')) {
-    const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
-    ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
+  if (errorMentionsColumn(error, 'cgpa')) {
+    try {
+      await ensureSchemaMigrations();
+      ({ data, error } = await supabase.from('users').select(SELF_FIELDS).eq('id', user.id).single());
+    } catch {
+      const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
+      ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
+    }
   }
 
   if (error || !data) {
@@ -61,6 +66,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (key === 'semester') {
+      if (val === null || val === '' || val === undefined) {
+        updates[key] = null;
+        continue;
+      }
       const n = Number(val);
       if (!Number.isInteger(n) || n < 1 || n > 12) {
         return NextResponse.json({ error: 'Semester must be an integer between 1 and 12.' }, { status: 400 });
@@ -90,6 +99,11 @@ export async function PATCH(request: NextRequest) {
       continue;
     }
 
+    if ((key === 'name' || key === 'college' || key === 'github_username') && (val === null || val === '')) {
+      updates[key] = null;
+      continue;
+    }
+
     if (typeof val === 'string') {
       updates[key] = val.slice(0, 200);
     }
@@ -97,6 +111,19 @@ export async function PATCH(request: NextRequest) {
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
+  }
+
+  const requestedCgpaUpdate = Object.prototype.hasOwnProperty.call(updates, 'cgpa');
+  let previousUsername: string | null = null;
+
+  if (updates.username) {
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+
+    previousUsername = currentUser?.username ?? null;
   }
 
   // Check username uniqueness if being changed
@@ -122,9 +149,28 @@ export async function PATCH(request: NextRequest) {
     .select(SELF_FIELDS)
     .single();
 
-  // If the cgpa column doesn't exist yet (migration not run), retry without it
-  if (error && error.message?.includes('cgpa')) {
-    console.warn('[user/profile PATCH] cgpa column missing — retrying without it. Run supabase-migration-v4.sql.');
+  if (errorMentionsColumn(error, 'cgpa')) {
+    try {
+      await ensureSchemaMigrations();
+      ({ data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', user.id)
+        .select(SELF_FIELDS)
+        .single());
+    } catch (migrationError) {
+      console.warn('[user/profile PATCH] auto-migration failed', migrationError);
+    }
+  }
+
+  if (errorMentionsColumn(error, 'cgpa') && requestedCgpaUpdate) {
+    return NextResponse.json(
+      { error: 'CGPA could not be saved because the profile schema is still updating. Please retry once.' },
+      { status: 503 }
+    );
+  }
+
+  if (errorMentionsColumn(error, 'cgpa')) {
     const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
     const safeUpdates = { ...updates };
     delete safeUpdates.cgpa;
@@ -142,6 +188,9 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Invalidate public profile cache
+  if (previousUsername && previousUsername !== data?.username) {
+    await withFallback(() => redis.del(`profile:${previousUsername}`), 0);
+  }
   if (data?.username) {
     await withFallback(() => redis.del(`profile:${data.username}`), 0);
   }

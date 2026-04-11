@@ -117,15 +117,24 @@ function OnboardingFlow() {
     try {
       const form = new FormData();
       form.append("file", timetableFile);
+      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
       const res = await fetch("/api/ingest/vision", { method: "POST", body: form });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
 
       if (!res.ok) {
-        setUploadError(data.error ?? "Failed to parse timetable");
+        setUploadError(data?.error ?? "Failed to parse timetable");
         return;
       }
 
-      const count = data.tasks?.length ?? 0;
+      const count = data?.tasks?.length ?? 0;
       if (count === 0) {
         setUploadResult("No exam or assignment dates found. You can try another image.");
       } else {

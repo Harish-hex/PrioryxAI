@@ -36,7 +36,7 @@ interface SettingsPanelProps {
 export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionUploaded, onNavigateToDashboard }: SettingsPanelProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -83,45 +83,78 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
       .catch(() => {});
   }, []);
 
+  async function readJsonSafely(response: Response) {
+    const text = await response.text();
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSaved(false);
+    setSuccessMessage(null);
 
     const subjectsArr = subjects
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const body: Record<string, unknown> = {};
-    if (name) body.name = name;
-    if (college) body.college = college;
-    if (semester) body.semester = parseInt(semester, 10);
-    if (cgpa !== "") body.cgpa = cgpa === "" ? null : parseFloat(cgpa);
-    if (subjectsArr.length) body.subjects = subjectsArr;
-    if (githubUsername) body.github_username = githubUsername.replace(/^@/, "").trim();
+    const trimmedGithubUsername = githubUsername.replace(/^@/, "").trim();
+    const trimmedCgpa = cgpa.trim();
+
+    if (trimmedCgpa !== "" && Number.isNaN(Number(trimmedCgpa))) {
+      setError("CGPA must be a number between 0 and 10.");
+      setSaving(false);
+      return;
+    }
+
+    const body: Record<string, unknown> = {
+      name: name.trim() || null,
+      college: college.trim() || null,
+      semester: semester ? parseInt(semester, 10) : null,
+      cgpa: trimmedCgpa === "" ? null : parseFloat(trimmedCgpa),
+      subjects: subjectsArr,
+      github_username: trimmedGithubUsername || null,
+    };
 
     try {
+      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const data = await readJsonSafely(res);
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Failed to save");
+        setError(data?.error ?? "Failed to save");
         return;
       }
 
+      const nextProfile = data?.profile as UserProfile | undefined;
+      if (nextProfile) {
+        setProfile(nextProfile);
+        setName(nextProfile.name ?? "");
+        setCollege(nextProfile.college ?? "");
+        setSemester(nextProfile.semester != null ? String(nextProfile.semester) : "");
+        setCgpa(nextProfile.cgpa != null ? String(nextProfile.cgpa) : "");
+        setSubjects(nextProfile.subjects?.join(", ") ?? "");
+        setGithubUsername(nextProfile.github_username ?? "");
+      }
+
       // Re-sync GitHub and jobs whenever profile is saved with a GitHub username
-      const github = githubUsername.replace(/^@/, "").trim();
-      if (github) {
+      if (trimmedGithubUsername) {
         fetch("/api/sync/github", { method: "POST" }).catch(() => {});
       }
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setSuccessMessage(trimmedGithubUsername ? "Profile saved. GitHub sync triggered in the background." : "Profile saved.");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
       setError(err.message ?? "Network error");
     } finally {
@@ -145,15 +178,16 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     try {
       const form = new FormData();
       form.append("file", timetableFile);
+      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
       const res = await fetch("/api/ingest/vision", { method: "POST", body: form });
-      const data = await res.json();
+      const data = await readJsonSafely(res);
 
       if (!res.ok) {
-        setUploadError(data.error ?? "Failed to parse document. Try a clearer image or different file.");
+        setUploadError(data?.error ?? "Failed to parse document. Try a clearer image or different file.");
         return;
       }
 
-      const tasks: ExtractedTask[] = data.tasks ?? [];
+      const tasks: ExtractedTask[] = data?.tasks ?? [];
       onVisionUploaded();
 
       if (tasks.length === 0) {
@@ -297,9 +331,9 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 {error}
               </p>
             )}
-            {saved && (
+            {successMessage && (
               <p className="rounded-lg border border-mint/25 bg-mint/10 px-4 py-2 text-sm text-mint">
-                Saved! GitHub sync triggered in background.
+                {successMessage}
               </p>
             )}
 

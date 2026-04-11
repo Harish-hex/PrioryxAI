@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
+import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
 // pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';
 
-const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_DOC_MIME = [
   'application/pdf',
   'application/msword',
@@ -123,6 +124,23 @@ function parseTasksFromRaw(raw: string): any[] {
   }
 }
 
+function getNormalizedMimeType(file: File) {
+  const rawMime = file.type?.toLowerCase();
+  if (rawMime === 'image/jpg') return 'image/jpeg';
+  if (rawMime) return rawMime;
+
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) return 'image/jpeg';
+  if (lowerName.endsWith('.png')) return 'image/png';
+  if (lowerName.endsWith('.webp')) return 'image/webp';
+  if (lowerName.endsWith('.pdf')) return 'application/pdf';
+  if (lowerName.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (lowerName.endsWith('.doc')) return 'application/msword';
+  if (lowerName.endsWith('.txt')) return 'text/plain';
+
+  return '';
+}
+
 export async function POST(request: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -138,15 +156,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
-  const isImage = ALLOWED_IMAGE_MIME.includes(file.type);
-  const isPdf   = file.type === 'application/pdf';
-  const isDocx  = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  const isDoc   = file.type === 'application/msword';
-  const isText  = file.type === 'text/plain';
+  const mimeType = getNormalizedMimeType(file);
+  const lowerName = file.name.toLowerCase();
+  const isHeic = mimeType === 'image/heic' || lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+  const isImage = ALLOWED_IMAGE_MIME.includes(mimeType);
+  const isPdf = mimeType === 'application/pdf';
+  const isDocx = mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const isDoc = mimeType === 'application/msword';
+  const isText = mimeType === 'text/plain';
+
+  if (isHeic) {
+    return NextResponse.json(
+      { error: 'HEIC images are not supported yet. Please convert the file to JPG or PNG and upload it again.' },
+      { status: 400 }
+    );
+  }
 
   if (!isImage && !isPdf && !isDocx && !isDoc && !isText) {
     return NextResponse.json(
-      { error: 'Invalid file type. Use JPG, PNG, WebP, HEIC, PDF, DOCX, DOC, or TXT.' },
+      { error: 'Invalid file type. Use JPG, PNG, WebP, PDF, DOCX, DOC, or TXT.' },
       { status: 400 }
     );
   }
@@ -162,14 +190,14 @@ export async function POST(request: NextRequest) {
 
     if (isImage) {
       // Pure images → GPT-4o vision
-      const mimeType = file.type === 'image/heic' ? 'image/jpeg' : file.type;
       tasks = await extractFromImage(buffer.toString('base64'), mimeType);
 
     } else if (isPdf) {
       // PDF → extract text with pdf-parse (dynamic import avoids webpack crash)
       let extractedText = '';
       try {
-        const pdfParse = (await import('pdf-parse')).default;
+        const pdfParseModule = await import('pdf-parse');
+        const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
         const parsed = await pdfParse(buffer);
         extractedText = parsed.text ?? '';
       } catch (pdfErr) {
@@ -179,9 +207,10 @@ export async function POST(request: NextRequest) {
       if (extractedText.trim().length > 50) {
         tasks = await extractFromText(extractedText);
       } else {
-        // Scanned/image-only PDF fallback
-        console.warn('[vision] PDF has no extractable text — falling back to vision');
-        tasks = await extractFromImage(buffer.toString('base64'), 'image/jpeg');
+        return NextResponse.json(
+          { error: 'This PDF looks like a scanned image. Please upload a clear photo of it or export it as a text-based PDF.' },
+          { status: 400 }
+        );
       }
 
     } else if (isDocx) {
@@ -189,9 +218,13 @@ export async function POST(request: NextRequest) {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
       const text = result.value ?? '';
-      tasks = text.trim().length > 20
-        ? await extractFromText(text)
-        : await extractFromImage(buffer.toString('base64'), 'image/jpeg');
+      if (text.trim().length <= 20) {
+        return NextResponse.json(
+          { error: 'This Word document has no readable text. Export it as PDF or upload a screenshot/photo instead.' },
+          { status: 400 }
+        );
+      }
+      tasks = await extractFromText(text);
 
     } else if (isDoc) {
       // Legacy .doc — try mammoth, fallback to vision
@@ -199,11 +232,18 @@ export async function POST(request: NextRequest) {
         const mammoth = await import('mammoth');
         const result = await mammoth.extractRawText({ buffer });
         const text = result.value ?? '';
-        tasks = text.trim().length > 20
-          ? await extractFromText(text)
-          : await extractFromImage(buffer.toString('base64'), 'image/jpeg');
+        if (text.trim().length <= 20) {
+          return NextResponse.json(
+            { error: 'This DOC file could not be read cleanly. Please upload a photo, PDF, or DOCX version instead.' },
+            { status: 400 }
+          );
+        }
+        tasks = await extractFromText(text);
       } catch {
-        tasks = await extractFromImage(buffer.toString('base64'), 'image/jpeg');
+        return NextResponse.json(
+          { error: 'This DOC file could not be parsed. Please convert it to PDF or upload a screenshot/photo instead.' },
+          { status: 400 }
+        );
       }
 
     } else if (isText) {
@@ -226,10 +266,22 @@ export async function POST(request: NextRequest) {
       completed: false,
     }));
 
-    const { data: inserted, error: dbError } = await supabase
+    let { data: inserted, error: dbError } = await supabase
       .from('tasks')
       .insert(rows)
       .select();
+
+    if (errorMentionsColumn(dbError, 'notes')) {
+      try {
+        await ensureSchemaMigrations();
+        ({ data: inserted, error: dbError } = await supabase
+          .from('tasks')
+          .insert(rows)
+          .select());
+      } catch (migrationError) {
+        console.warn('[ingest/vision] auto-migration failed', migrationError);
+      }
+    }
 
     if (dbError) {
       console.error('[ingest/vision] DB error:', dbError);
