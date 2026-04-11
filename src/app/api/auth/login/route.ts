@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${origin}/api/auth/callback`,
       scopes: provider === 'github' ? 'read:user user:email' : 'openid email profile',
     },
   });

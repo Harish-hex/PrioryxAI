@@ -1,7 +1,7 @@
 "use client";
 
-import { BellRing, LogOut, Save, Shield, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { BellRing, ImagePlus, LogOut, Save, Shield, User, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
   name: string | null;
@@ -23,6 +23,13 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageResult, setImageResult] = useState<{ count: number } | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -48,6 +55,26 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
       })
       .catch(() => {});
   }, []);
+
+  async function handleImageUpload(file: File) {
+    setImageUploading(true);
+    setImageError(null);
+    setImageResult(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/ingest/vision", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setImageResult({ count: data.tasks?.length ?? 0 });
+      setImageFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: any) {
+      setImageError(err.message ?? "Upload failed");
+    } finally {
+      setImageUploading(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -185,6 +212,57 @@ export function SettingsPanel({ onOpenPricing }: SettingsPanelProps) {
               placeholder={"OS exam on 18 April at 9 AM\nDBMS assignment due 25 April 11:59 PM"}
               className="input-base min-h-28"
             />
+            {/* Image upload */}
+            <div className="mt-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) { setImageFile(file); setImageResult(null); setImageError(null); }
+                }}
+              />
+              {!imageFile ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 rounded-lg border border-dashed border-white/20 bg-white/[0.03] px-4 py-2.5 text-sm text-neutral-400 transition hover:border-white/30 hover:bg-white/[0.06] hover:text-white w-full"
+                >
+                  <ImagePlus size={15} />
+                  Upload academic calendar / timetable image
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5">
+                  <ImagePlus size={15} className="shrink-0 text-neutral-400" />
+                  <span className="flex-1 truncate text-sm text-neutral-300">{imageFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setImageFile(null); setImageError(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="text-neutral-500 hover:text-white"
+                  >
+                    <X size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={imageUploading}
+                    onClick={() => handleImageUpload(imageFile)}
+                    className="rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white hover:bg-white/20 disabled:opacity-50 shrink-0"
+                  >
+                    {imageUploading ? "Extracting…" : "Extract dates"}
+                  </button>
+                </div>
+              )}
+              {imageResult && (
+                <p className="mt-1.5 text-xs text-mint">
+                  ✓ {imageResult.count} {imageResult.count === 1 ? "date" : "dates"} extracted and added to your feed
+                </p>
+              )}
+              {imageError && (
+                <p className="mt-1.5 text-xs text-signal">{imageError}</p>
+              )}
+            </div>
           </Field>
 
           {error && (

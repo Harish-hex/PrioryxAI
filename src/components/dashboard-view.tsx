@@ -50,6 +50,8 @@ interface DashboardViewProps {
   onOpenAssistant: () => void;
   onOpenSettings: () => void;
   onOpenPricing: () => void;
+  isPro?: boolean;
+  hasMore?: boolean;
 }
 
 function derivePriority(task: Task): string {
@@ -83,6 +85,8 @@ export function DashboardView({
   onOpenAssistant,
   onOpenSettings,
   onOpenPricing,
+  isPro = false,
+  hasMore = false,
 }: DashboardViewProps) {
   const [focusTask, setFocusTask] = useState<EnrichedTask | null>(null);
 
@@ -130,12 +134,15 @@ export function DashboardView({
           tasks={enriched}
           onComplete={onCompleteTask}
           onSnooze={onSnoozeTask}
+          isPro={isPro}
+          hasMore={hasMore}
+          onOpenPricing={onOpenPricing}
         />
       </section>
 
       <aside className="space-y-5">
         <StatsPanel stats={stats} loading={loading} />
-        <FocusPanel onOpenPricing={onOpenPricing} stats={stats} />
+        <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
         <InsightPanel nextTask={nextTask} />
       </aside>
 
@@ -259,17 +266,66 @@ function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: s
   );
 }
 
+function TabButton({
+  active,
+  count,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  count: number;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+        active
+          ? "bg-white text-black"
+          : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
+      }`}
+    >
+      {children}
+      <span
+        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+          active ? "bg-black/20 text-black" : "bg-white/10 text-neutral-400"
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
 function PriorityFeed({
   loading,
   tasks,
   onComplete,
   onSnooze,
+  isPro,
+  hasMore,
+  onOpenPricing,
 }: {
   loading: boolean;
   tasks: any[];
   onComplete: (id: string) => void;
   onSnooze: (id: string, hours: number) => void;
+  isPro: boolean;
+  hasMore: boolean;
+  onOpenPricing: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"priority" | "all">("priority");
+
+  const priorityTasks = tasks.filter(
+    (t) => t.priority === "red" || t.priority === "amber" || (!t.due_at && (t.score ?? 0) >= 110)
+  );
+  const allTasks = tasks.filter(
+    (t) => t.priority === "green" && (t.score ?? 0) < 110
+  );
+  const displayed = activeTab === "priority" ? priorityTasks : allTasks;
+
   return (
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-3">
@@ -279,15 +335,25 @@ function PriorityFeed({
         </div>
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex gap-2">
+        <TabButton active={activeTab === "priority"} count={priorityTasks.length} onClick={() => setActiveTab("priority")}>
+          Priority
+        </TabButton>
+        <TabButton active={activeTab === "all"} count={allTasks.length} onClick={() => setActiveTab("all")}>
+          All Tasks
+        </TabButton>
+      </div>
+
       {loading ? (
         <div className="space-y-3">
           <LoadingCard />
           <LoadingCard />
           <LoadingCard />
         </div>
-      ) : tasks.length ? (
+      ) : displayed.length ? (
         <div className="space-y-3">
-          {tasks.map((task, index) => (
+          {displayed.map((task, index) => (
             <motion.article
               key={task.id}
               animate={{ opacity: 1, y: 0 }}
@@ -330,11 +396,48 @@ function PriorityFeed({
               </div>
             </motion.article>
           ))}
+
+          {/* Blur wall for free users with more tasks */}
+          {hasMore && !isPro && activeTab === "priority" && (
+            <div className="relative overflow-hidden rounded-lg">
+              <div className="blur-sm pointer-events-none select-none opacity-50 space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="glass rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      <div className="h-3 w-20 rounded bg-white/10" />
+                    </div>
+                    <div className="h-4 w-3/4 rounded bg-white/10" />
+                    <div className="mt-2 h-3 w-1/2 rounded bg-white/10" />
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/90 via-black/50 to-transparent rounded-lg">
+                <div className="text-center px-4">
+                  <p className="text-sm font-semibold text-white">25+ tasks hidden</p>
+                  <p className="mt-1 text-xs text-neutral-400">Upgrade to see your full AI-ranked feed</p>
+                  <button
+                    type="button"
+                    onClick={onOpenPricing}
+                    className="mt-3 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:scale-[1.02]"
+                  >
+                    Unlock — ₹99/month
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="glass rounded-lg p-6 text-center">
-          <h3 className="text-lg font-semibold text-white">No active tasks</h3>
-          <p className="mt-2 text-sm text-neutral-500">Capture your next deadline or idea above.</p>
+          <h3 className="text-lg font-semibold text-white">
+            {activeTab === "priority" ? "No urgent tasks — you're on track! 🎉" : "No low-priority tasks"}
+          </h3>
+          <p className="mt-2 text-sm text-neutral-500">
+            {activeTab === "priority"
+              ? "Add a deadline or check All Tasks for upcoming items."
+              : "Tasks due in 3+ days will appear here."}
+          </p>
         </div>
       )}
     </div>

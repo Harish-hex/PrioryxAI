@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CreditCard, Sparkles, X } from "lucide-react";
+import { Check, CreditCard, Loader2, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 interface PricingModalProps {
@@ -10,10 +10,33 @@ interface PricingModalProps {
 }
 
 export function PricingModal({ open, onClose }: PricingModalProps) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleUpgrade() {
-    setError("Payments are disabled until Razorpay is configured on the hosted app.");
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/payments/subscribe", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Failed to start subscription. Please try again.");
+        return;
+      }
+
+      if (data.short_url) {
+        // Redirect to Razorpay hosted payment page
+        window.location.href = data.short_url;
+      } else {
+        setError("No payment URL returned. Please contact support.");
+      }
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -40,7 +63,7 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
                 </div>
                 <h2 className="mt-4 text-2xl font-semibold text-white">Plan every deadline before it becomes noise.</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
-                  Start free, then unlock deeper scheduling, recruiter polish, and unlimited assistant context once payments are configured.
+                  Start free, then unlock deeper scheduling, recruiter polish, and unlimited assistant context with Pro.
                 </p>
               </div>
               <button
@@ -67,8 +90,9 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
               />
               <div className="rounded-lg accent-border p-px shadow-glow">
                 <Plan
-                  cta="Payments coming soon"
+                  cta={loading ? "Redirecting to payment..." : "Upgrade to Pro"}
                   featured
+                  loading={loading}
                   features={[
                     "Unlimited AI planning",
                     "Auto-scheduled focus blocks",
@@ -78,6 +102,7 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
                   name="Pro"
                   price="₹99"
                   onAction={handleUpgrade}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -92,13 +117,14 @@ interface PlanProps {
   cta: string;
   featured?: boolean;
   features: string[];
+  loading?: boolean;
   name: string;
   price: string;
   onAction: () => void;
   disabled?: boolean;
 }
 
-function Plan({ cta, featured = false, features, name, price, onAction, disabled }: PlanProps) {
+function Plan({ cta, featured = false, features, loading = false, name, price, onAction, disabled }: PlanProps) {
   return (
     <div className={`h-full rounded-lg p-5 ${featured ? "bg-black/80" : "border border-white/10 bg-white/[0.045]"}`}>
       <div className="flex items-start justify-between gap-4">
@@ -128,7 +154,7 @@ function Plan({ cta, featured = false, features, name, price, onAction, disabled
           featured ? "bg-white text-black" : "border border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.1]"
         }`}
       >
-        {featured && <CreditCard size={16} />}
+        {loading ? <Loader2 size={16} className="animate-spin" /> : featured ? <CreditCard size={16} /> : null}
         {cta}
       </button>
     </div>

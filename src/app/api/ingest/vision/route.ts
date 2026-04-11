@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { checkRateLimit, visionRatelimit, visionRatelimitPro } from '@/lib/redis';
+import { checkRateLimit, visionRatelimit, visionRatelimitPro, withFallback, redis, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 
@@ -19,10 +19,12 @@ export async function POST(request: NextRequest) {
   // Check pro status for rate limit tier
   const { data: userData } = await supabase
     .from('users')
-    .select('pro_status')
+    .select('pro_status, pro_expires_at')
     .eq('id', user.id)
     .single();
-  const isPro = userData?.pro_status ?? false;
+  const isPro =
+    userData?.pro_status &&
+    (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
   // Rate limit — 3/day free, 10/day pro — fail closed
   const limiter = isPro ? visionRatelimitPro : visionRatelimit;
@@ -71,22 +73,34 @@ export async function POST(request: NextRequest) {
             },
             {
               type: 'text',
-              text: `You are parsing a student's timetable or schedule image.
-Extract ALL exams and assignments visible. Return ONLY a JSON array, no explanation.
-Each item must have:
+              text: `You are parsing a student's academic calendar, timetable, or schedule image — including Indian engineering college formats.
+
+Extract ALL academic events, tests, exams, and deadlines. This includes:
+- CAT-I, CAT-II, CAT-III (Continuous Assessment Tests → type: "exam")
+- End Semester Theory, End Semester Exam (→ type: "exam")
+- End Semester Practical, Lab Exam (→ type: "exam")
+- Project Review-1, Project Review-2, Project Review-3 (→ type: "assignment")
+- Assignments, submissions, online feedback deadlines (→ type: "assignment")
+- Any other dated academic event (→ type: "exam" or "assignment", whichever fits best)
+
+Skip non-academic events like holidays, counselling sessions, parents meet.
+
+For each event, if the calendar shows different dates per semester (e.g. VIII Sem, VI Sem, IV Sem, II Sem), extract one entry per semester with the correct date.
+
+Return ONLY a JSON array, no explanation. Each item must have:
 {
   "type": "exam" | "assignment",
-  "title": "subject or task name",
-  "subject": "subject code or name",
-  "due_at": "ISO 8601 datetime (assume current year, use 23:59 if time unknown, null if unclear)",
-  "weightage": number or null (percentage if visible)
+  "title": "event name e.g. CAT-I, End Semester Theory",
+  "subject": "semester label if visible e.g. II Sem B.E./B.Tech., or null",
+  "due_at": "ISO 8601 datetime using the date shown (use current year if year unclear, 09:00 for morning exams, 23:59 if time unknown, null if date is unclear)",
+  "weightage": number or null
 }
-If nothing is found, return [].`,
+If truly nothing academic is found, return [].`,
             },
           ],
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 3000,
     });
 
     const raw = response.choices[0].message.content ?? '[]';
@@ -123,6 +137,13 @@ If nothing is found, return [].`,
       console.error('[ingest/vision] DB error:', dbError);
       return NextResponse.json({ error: 'Failed to save tasks' }, { status: 500 });
     }
+
+    // Increment vision upload counter (same pattern as msg_count in assistant route)
+    const visionCountKey = `vision_count:${user.id}`;
+    await withFallback(async () => {
+      const current = (await redis.get<number>(visionCountKey)) ?? 0;
+      await redis.set(visionCountKey, current + 1, { ex: midnightISTttl() });
+    }, undefined);
 
     return NextResponse.json({ tasks: inserted });
   } catch (err: any) {

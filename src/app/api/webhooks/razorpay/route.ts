@@ -4,7 +4,8 @@ import { verifyRazorpaySignature } from '@/lib/security';
 
 export const runtime = 'nodejs';
 
-// Razorpay sends payment events here — update pro_status on confirmed payment
+// Razorpay Subscription webhook handler
+// Activates pro_status when subscription.activated or subscription.charged events are received
 export async function POST(request: NextRequest) {
   const sig = request.headers.get('x-razorpay-signature');
   if (!sig) {
@@ -13,7 +14,6 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text();
 
-  // Verify HMAC signature before trusting any payload data
   let isValid = false;
   try {
     isValid = verifyRazorpaySignature(body, sig);
@@ -32,65 +32,94 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
   const eventType: string = event?.event ?? '';
-  const subscription = event?.payload?.subscription?.entity;
-  const subscriptionId: string | undefined = subscription?.id;
+  console.log('[webhooks/razorpay] Received event:', eventType);
 
-  if (!subscriptionId) {
-    // Unknown event shape — ack and move on
-    return NextResponse.json({ received: true });
-  }
-
+  // Handle subscription activation (first payment) and recurring charges
   if (eventType === 'subscription.activated' || eventType === 'subscription.charged') {
-    // Fetch user from subscriptions table
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('razorpay_subscription_id', subscriptionId)
-      .single();
+    const subscriptionEntity = event?.payload?.subscription?.entity;
+    const paymentEntity = event?.payload?.payment?.entity;
 
-    if (sub?.user_id) {
-      const expiresAt = subscription?.current_end
-        ? new Date(subscription.current_end * 1000).toISOString()
-        : null;
+    // Extract user info from subscription notes (set during subscription creation)
+    // Fall back to payment entity email if notes are missing
+    const userId: string | undefined = subscriptionEntity?.notes?.user_id;
+    const emailFromNotes: string | undefined = subscriptionEntity?.notes?.email;
+    const emailFromPayment: string | undefined = paymentEntity?.email;
+    const email = emailFromNotes ?? emailFromPayment;
+    const subscriptionId: string | undefined = subscriptionEntity?.id;
+    const currentPeriodEnd: number | undefined = subscriptionEntity?.current_end;
 
-      await Promise.all([
-        supabase
-          .from('users')
-          .update({ pro_status: true, pro_expires_at: expiresAt })
-          .eq('id', sub.user_id),
+    const supabase = createServiceClient();
 
-        supabase
-          .from('subscriptions')
-          .update({ status: 'active', updated_at: new Date().toISOString() })
-          .eq('razorpay_subscription_id', subscriptionId),
-      ]);
+    let resolvedUserId: string | undefined = userId;
+
+    // If we don't have userId from notes, look up by email
+    if (!resolvedUserId && email) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
+      resolvedUserId = userData?.id;
     }
-  } else if (
-    eventType === 'subscription.cancelled' ||
-    eventType === 'subscription.expired' ||
-    eventType === 'subscription.halted'
-  ) {
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('razorpay_subscription_id', subscriptionId)
-      .single();
 
-    if (sub?.user_id) {
-      await Promise.all([
-        supabase
-          .from('users')
-          .update({ pro_status: false })
-          .eq('id', sub.user_id),
-
-        supabase
-          .from('subscriptions')
-          .update({ status: eventType.replace('subscription.', ''), updated_at: new Date().toISOString() })
-          .eq('razorpay_subscription_id', subscriptionId),
-      ]);
+    if (!resolvedUserId) {
+      console.error('[webhooks/razorpay] Could not resolve user for event. email:', email, 'userId:', userId);
+      return NextResponse.json({ received: true });
     }
+
+    // Calculate expiry: use Razorpay's current_end timestamp or default to 32 days from now
+    const proExpiresAt = currentPeriodEnd
+      ? new Date(currentPeriodEnd * 1000).toISOString()
+      : new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Activate pro status for the user
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .eq('id', resolvedUserId);
+
+    if (updateError) {
+      console.error('[webhooks/razorpay] Failed to update pro_status:', updateError);
+      return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
+    }
+
+    // Update subscription record status
+    if (subscriptionId) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          status: eventType === 'subscription.activated' ? 'active' : 'charged',
+          current_period_end: proExpiresAt,
+        })
+        .eq('razorpay_subscription_id', subscriptionId);
+    }
+
+    console.log('[webhooks/razorpay] Pro activated for user:', resolvedUserId, 'expires:', proExpiresAt);
+  } else if (eventType === 'subscription.cancelled' || eventType === 'subscription.completed') {
+    // Handle cancellation/completion — revoke pro status
+    const subscriptionEntity = event?.payload?.subscription?.entity;
+    const userId: string | undefined = subscriptionEntity?.notes?.user_id;
+    const subscriptionId: string | undefined = subscriptionEntity?.id;
+
+    if (userId) {
+      const supabase = createServiceClient();
+      await supabase
+        .from('users')
+        .update({ pro_status: false, pro_expires_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (subscriptionId) {
+        await supabase
+          .from('subscriptions')
+          .update({ status: eventType === 'subscription.cancelled' ? 'cancelled' : 'completed' })
+          .eq('razorpay_subscription_id', subscriptionId);
+      }
+
+      console.log('[webhooks/razorpay] Pro revoked for user:', userId, 'event:', eventType);
+    }
+  } else {
+    console.log('[webhooks/razorpay] Unhandled event type:', eventType);
   }
 
   return NextResponse.json({ received: true });

@@ -160,7 +160,7 @@ export async function GET() {
   const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
     supabase
       .from('users')
-      .select('college, semester, subjects, github_username')
+      .select('college, semester, subjects, github_username, pro_status, pro_expires_at')
       .eq('id', user.id)
       .single(),
     supabase
@@ -216,7 +216,15 @@ export async function GET() {
     ? { task: combined[0], reason: combined[0].reason ?? getNextMoveReason(combined[0]) }
     : null;
 
-  const result = { feed: combined, nextMove };
+  const isPro =
+    userProfile?.pro_status &&
+    (!userProfile.pro_expires_at || new Date(userProfile.pro_expires_at) > new Date());
+
+  const FREE_TASK_LIMIT = 25;
+  const hasMore = !isPro && combined.length > FREE_TASK_LIMIT;
+  const feed = isPro ? combined : combined.slice(0, FREE_TASK_LIMIT);
+
+  const result = { feed, nextMove, hasMore };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);
