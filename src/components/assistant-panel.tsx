@@ -68,9 +68,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
 
   const contextCards = useMemo(() => tasks.slice(0, 3), [tasks]);
   const msgsLeft = Math.max(0, FREE_MSG_LIMIT - messagesUsedToday);
-  const nearLimit = !isPro && messagesUsedToday >= FREE_MSG_LIMIT - 1;
 
-  // Core send function — accepts text directly so it can be called programmatically
   async function send(text: string, currentMessages: Message[]) {
     if (!text.trim() || loading) return;
 
@@ -104,10 +102,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
 
       if (!res.body) {
         const reply = await res.text();
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now() + 1, role: "assistant", text: reply || "No response." },
-        ]);
+        setMessages((prev) => [...prev, { id: Date.now() + 1, role: "assistant", text: reply || "No response." }]);
       } else {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -118,32 +113,23 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           accumulated += decoder.decode(value, { stream: true });
           if (!started) {
             started = true;
             setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: accumulated }]);
           } else {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantId ? { ...m, text: accumulated } : m))
-            );
+            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, text: accumulated } : m)));
           }
         }
 
         if (!started) {
-          setMessages((prev) => [
-            ...prev,
-            { id: assistantId, role: "assistant", text: "No response generated." },
-          ]);
+          setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "No response generated." }]);
         }
       }
 
       onMessageSent();
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: "assistant", text: `Error: ${err.message}` },
-      ]);
+      setMessages((prev) => [...prev, { id: Date.now() + 1, role: "assistant", text: `Error: ${err.message}` }]);
     } finally {
       setLoading(false);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
@@ -155,46 +141,49 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
     await send(draft.trim(), messages);
   }
 
-  // Auto-fire prompt when arriving from "Plan with AI" on a specific task
   useEffect(() => {
     if (!initialTask || sentInitialRef.current) return;
     sentInitialRef.current = true;
     const prompt = buildTaskPrompt(initialTask);
     onTaskConsumed?.();
-    // Small delay so the panel renders first
     setTimeout(() => send(prompt, INITIAL_MESSAGES), 150);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTask]);
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <section className="glass-strong flex min-h-[690px] flex-col rounded-lg">
-        <div className="border-b border-white/10 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Chat panel */}
+      <section className="glass-strong flex min-h-[680px] flex-col rounded-[32px]">
+        <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg border border-volt/20 bg-volt/10 p-2 text-volt">
+              <div className="rounded-2xl bg-slate-100 p-3 text-slate-900">
                 <Bot size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">Context-aware assistant</h2>
-                <p className="text-sm text-neutral-500">Reading deadlines, career goals, and study load.</p>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">Context-aware assistant</h2>
+                <p className="mt-1 text-sm text-slate-500">Uses the current feed to keep plans grounded and brief.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {isPro ? (
-                <div className="rounded-lg border border-mint/20 bg-mint/10 px-3 py-1.5 text-sm text-mint">
-                  <span className="flex items-center gap-1.5"><Sparkles size={13} /> Unlimited</span>
-                </div>
-              ) : (
-                <div className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${msgsLeft === 0 ? "border-red-500/25 bg-red-500/10 text-red-400" : msgsLeft === 1 ? "border-amber-500/25 bg-amber-500/10 text-amber-300" : "border-white/10 bg-white/[0.06] text-neutral-300"}`}>
-                  {msgsLeft}/{FREE_MSG_LIMIT} left
-                </div>
-              )}
-            </div>
+            {isPro ? (
+              <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+                <span className="flex items-center gap-1.5"><Sparkles size={13} /> Unlimited</span>
+              </div>
+            ) : (
+              <div className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                msgsLeft === 0
+                  ? "border-red-200 bg-red-50 text-red-600"
+                  : msgsLeft === 1
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-slate-200 bg-slate-50 text-slate-600"
+              }`}>
+                {msgsLeft}/{FREE_MSG_LIMIT} left today
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5" style={{ maxHeight: "520px" }}>
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-6 sm:px-6" style={{ maxHeight: "520px" }}>
           <AnimatePresence initial={false}>
             {messages.map((message) => (
               <motion.div
@@ -205,16 +194,17 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                 transition={{ duration: 0.2 }}
               >
                 {message.role === "assistant" && message.text !== UPGRADE_SENTINEL && (
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-volt">
+                  <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900">
                     <Sparkles size={16} />
                   </div>
                 )}
                 {message.text === UPGRADE_SENTINEL ? (
-                  <div className="w-full rounded-lg border border-aura/20 bg-aura/10 p-5">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-violet-200">
-                      <Zap size={15} className="shrink-0" /> You&apos;ve used your {FREE_MSG_LIMIT} free messages today
+                  <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                      <Zap size={15} className="shrink-0 text-amber-500" />
+                      You've used your {FREE_MSG_LIMIT} free messages today
                     </div>
-                    <p className="mt-1.5 text-xs text-neutral-400 leading-5">
+                    <p className="mt-1.5 text-xs leading-5 text-slate-500">
                       Free plan: {FREE_MSG_LIMIT} AI messages/day. Pro gives you everything below — resets at midnight.
                     </p>
                     <ul className="mt-3 space-y-1.5">
@@ -226,8 +216,8 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                         "Priority scoring (0–100) per task",
                         "10 timetable uploads/day",
                       ].map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-xs text-neutral-300">
-                          <Sparkles size={11} className="mt-0.5 shrink-0 text-mint" />
+                        <li key={item} className="flex items-start gap-2 text-xs text-slate-600">
+                          <Sparkles size={11} className="mt-0.5 shrink-0 text-slate-400" />
                           {item}
                         </li>
                       ))}
@@ -235,24 +225,24 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                     <button
                       type="button"
                       onClick={onOpenPricing}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Sparkles size={13} /> Upgrade to Pro — ₹99/month
                     </button>
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[78%] rounded-lg px-4 py-3 text-sm leading-6 ${
+                    className={`max-w-[80%] rounded-[24px] px-4 py-3.5 text-sm leading-7 ${
                       message.role === "user"
-                        ? "bg-white text-black"
-                        : "border border-white/10 bg-black/35 text-neutral-200"
+                        ? "bg-slate-950 text-white"
+                        : "border border-slate-200 bg-slate-50 text-slate-700"
                     }`}
                   >
                     {message.text}
                   </div>
                 )}
                 {message.role === "user" && (
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-black">
+                  <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-900">
                     <UserRound size={16} />
                   </div>
                 )}
@@ -262,18 +252,18 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
               <motion.div
                 key="loading"
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-3 justify-start"
+                className="flex justify-start gap-3"
                 initial={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-volt">
+                <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900">
                   <Sparkles size={16} />
                 </div>
-                <div className="rounded-lg border border-white/10 bg-black/35 px-4 py-3">
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3.5">
                   <div className="flex gap-1">
-                    <span className="h-2 w-2 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </motion.div>
@@ -282,39 +272,41 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-white/10 p-4 space-y-2">
-          {/* 1 message left — amber urgent nudge */}
+        <div className="space-y-2 border-t border-slate-200 p-4 sm:p-5">
           {!isPro && msgsLeft === 1 && (
-            <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs">
-              <span className="font-medium text-amber-300">1 message left today</span>
-              <button type="button" onClick={onOpenPricing} className="font-semibold text-volt underline-offset-2 hover:underline">
+            <div className="flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs">
+              <span className="font-medium text-amber-700">1 message left today</span>
+              <button type="button" onClick={onOpenPricing} className="font-semibold text-slate-700 underline-offset-2 hover:underline">
                 Upgrade for unlimited →
               </button>
             </div>
           )}
-          {/* Regular counter when not at limit */}
           {!isPro && msgsLeft > 1 && (
-            <div className="flex items-center justify-between text-xs text-neutral-500">
+            <div className="flex items-center justify-between text-xs text-slate-500">
               <span>{messagesUsedToday} / {FREE_MSG_LIMIT} messages used today</span>
-              <button type="button" onClick={onOpenPricing} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-neutral-500 hover:text-neutral-300 transition">
-                Context: {Math.min(tasks.length, 3)} tasks · GitHub hidden · <span className="text-volt">Pro →</span>
+              <button
+                type="button"
+                onClick={onOpenPricing}
+                className="rounded-2xl border border-slate-200 bg-white px-2 py-0.5 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
+              >
+                Pro →
               </button>
             </div>
           )}
           <form onSubmit={sendMessage}>
-            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-2 transition focus-within:border-volt/50 focus-within:shadow-[0_0_0_4px_rgba(40,215,255,0.09)]">
-              <Wand2 size={18} className="ml-2 shrink-0 text-volt" />
+            <div className="flex items-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 p-2.5 transition focus-within:border-slate-300 focus-within:bg-white">
+              <Wand2 size={18} className="ml-2 shrink-0 text-slate-400" />
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder={!isPro && msgsLeft === 0 ? "Upgrade to send more messages" : "Ask how to plan the next 3 hours"}
-                className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-white outline-none placeholder:text-neutral-500"
+                placeholder={!isPro && msgsLeft === 0 ? "Upgrade to send more messages" : "Ask for a calm plan for the next 3 hours"}
+                className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
                 disabled={loading || (!isPro && msgsLeft === 0)}
               />
               <button
                 type="submit"
                 disabled={loading || !draft.trim() || (!isPro && msgsLeft === 0)}
-                className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-black transition hover:scale-[1.02] disabled:opacity-50"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-[18px] bg-slate-950 text-white transition hover:bg-slate-800 disabled:opacity-50"
                 aria-label="Send message"
               >
                 <CornerDownLeft size={17} />
@@ -324,31 +316,37 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
         </div>
       </section>
 
-      <aside className="space-y-5">
-        <div className="glass rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-white">Working memory</h3>
+      {/* Sidebar */}
+      <aside className="space-y-6">
+        <div className="glass rounded-[28px] p-5">
+          <h3 className="text-xl font-semibold tracking-tight text-slate-950">Working memory</h3>
           {contextCards.length === 0 ? (
-            <p className="mt-3 text-sm text-neutral-500">No tasks yet. Add some to give the assistant context.</p>
+            <p className="mt-4 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm leading-6 text-slate-500">
+              Add a task from the dashboard and the assistant will keep it in view here.
+            </p>
           ) : (
             <div className="mt-4 space-y-3">
               {contextCards.map((task) => (
-                <div key={task.id} className="rounded-lg border border-white/10 bg-black/25 p-3">
+                <div key={task.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-lg px-2.5 py-1 text-xs ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-xs ${typeStyles[task.type] ?? "border border-slate-200 bg-white text-slate-600"}`}>
                       {task.type}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm font-medium text-white">{task.title}</p>
-                  <p className="mt-1 text-xs text-neutral-500">{task.deadline ?? task.due_at ?? "No deadline"}</p>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-950">{task.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">{task.deadline ?? task.due_at ?? "No deadline"}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="glass rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-white">Suggested prompts</h3>
-          <div className="mt-3 space-y-2">
+        <div className="glass rounded-[28px] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Sparkles size={16} />
+            Suggested prompts
+          </div>
+          <div className="mt-4 space-y-2">
             {[
               "Create a 2-hour plan that balances exam prep and assignment submission.",
               "Which task has the highest career impact this week?",
@@ -358,7 +356,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                 key={prompt}
                 type="button"
                 onClick={() => setDraft(prompt)}
-                className="w-full rounded-lg border border-white/10 bg-black/25 p-3 text-left text-xs text-neutral-300 transition hover:border-white/20 hover:bg-black/35"
+                className="w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm leading-6 text-slate-600 transition hover:border-slate-300 hover:bg-white"
               >
                 {prompt}
               </button>

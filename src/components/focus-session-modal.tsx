@@ -63,7 +63,6 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
   }, [running, task]);
 
   const progress = totalSeconds === 0 ? 0 : Math.round(((totalSeconds - secondsLeft) / totalSeconds) * 100);
-
   const deadlineLabel = task?.deadline ?? (task?.due_at ? new Date(task.due_at).toLocaleString() : "No deadline");
 
   return (
@@ -71,62 +70,62 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
       {task && (
         <motion.div
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4 backdrop-blur-xl"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/28 p-4 backdrop-blur-md"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
         >
           <motion.section
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="glass-strong w-full max-w-2xl rounded-lg p-5"
+            className="glass-strong w-full max-w-2xl rounded-[32px] p-6 sm:p-7"
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             initial={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={{ duration: 0.2 }}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-lg border border-volt/20 bg-volt/10 px-3 py-1.5 text-sm text-volt">
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">
                   <TimerReset size={15} />
                   Focus session
                 </div>
-                <h2 className="mt-4 text-2xl font-semibold leading-tight text-white">{task.title}</h2>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{task.title}</h2>
                 {task.reason && (
-                  <p className="mt-2 text-sm leading-6 text-neutral-400">{task.reason}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{task.reason}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-white/10 bg-white/[0.05] p-2 text-neutral-400 transition hover:text-white"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
                 aria-label="Close focus session"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="mt-6 rounded-lg border border-white/10 bg-black/35 p-4">
+            <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
-                  <span className={`rounded-lg px-3 py-1.5 text-sm ${priorityStyles[task.priority]?.pill ?? ""}`}>
+                  <span className={`rounded-full px-3 py-1.5 text-sm ${priorityStyles[task.priority]?.pill ?? "border border-slate-200 bg-white text-slate-600"}`}>
                     {priorityStyles[task.priority]?.label ?? task.priority}
                   </span>
-                  <span className={`rounded-lg px-3 py-1.5 text-sm ${typeStyles[task.type] ?? "border border-white/10 bg-white/[0.06] text-neutral-200"}`}>
+                  <span className={`rounded-full px-3 py-1.5 text-sm ${typeStyles[task.type] ?? "border border-slate-200 bg-white text-slate-600"}`}>
                     {task.type}
                   </span>
                 </div>
-                <p className="text-sm text-neutral-400">{deadlineLabel}</p>
+                <p className="text-sm text-slate-500">{deadlineLabel}</p>
               </div>
 
               <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-sm text-neutral-500">{running ? "In progress" : "Paused"}</p>
-                  <p className="mt-1 text-6xl font-semibold leading-none text-white">{formatTime(secondsLeft)}</p>
+                  <p className="text-sm text-slate-500">{running ? "In progress" : "Paused"}</p>
+                  <p className="mt-1 text-6xl font-semibold leading-none tracking-tight text-slate-950">{formatTime(secondsLeft)}</p>
                 </div>
-                <div className="text-sm text-neutral-500">{progress}% complete</div>
+                <div className="text-sm text-slate-500">{progress}% complete</div>
               </div>
 
-              <div className="mt-5 h-2 rounded-full bg-white/10">
+              <div className="mt-5 h-2 rounded-full bg-slate-200">
                 <div
-                  className="h-2 rounded-full bg-gradient-to-r from-aura via-volt to-mint transition-[width] duration-500"
+                  className="h-2 rounded-full bg-slate-900 transition-[width] duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -136,7 +135,7 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
               <button
                 type="button"
                 onClick={() => setRunning((v) => !v)}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1]"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 {running ? <Pause size={16} /> : <Play size={16} />}
                 {running ? "Pause" : "Resume"}
@@ -144,7 +143,7 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
               <button
                 type="button"
                 onClick={onAskAssistant}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1]"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 <MessageCircle size={16} />
                 Ask AI
@@ -152,7 +151,7 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
               <button
                 type="button"
                 onClick={onComplete}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 <CheckCircle2 size={16} />
                 Complete

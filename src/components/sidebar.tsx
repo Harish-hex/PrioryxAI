@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronLeft, ChevronRight, Gem, LayoutDashboard, Settings, Sparkles, UserRound } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, LayoutDashboard, Settings, Sparkles, UserRound } from "lucide-react";
 import { motion } from "framer-motion";
 
 const navItems = [
@@ -22,53 +22,38 @@ interface SidebarProps {
 export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricing, onToggle }: SidebarProps) {
   return (
     <aside
-      className={`fixed bottom-4 left-4 top-4 z-40 hidden flex-col rounded-lg border border-white/10 bg-black/55 p-3 shadow-glass backdrop-blur-2xl transition-[width] duration-300 lg:flex ${
-        collapsed ? "w-20" : "w-72"
+      className={`fixed bottom-6 left-6 top-6 z-40 hidden flex-col rounded-[32px] border border-slate-200/80 bg-white/88 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-[width] duration-300 lg:flex ${
+        collapsed ? "w-24" : "w-72"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => onNavigate("dashboard")}
-          className="flex min-w-0 items-center gap-3 rounded-lg p-2 text-left transition hover:bg-white/[0.07]"
+          className="flex min-w-0 items-center gap-3 rounded-2xl p-2 text-left transition hover:bg-slate-50"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg accent-border p-px">
-            <div className="flex h-full w-full items-center justify-center rounded-[7px] bg-black text-white">
-              <Gem size={19} />
-            </div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+            P
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">PrioryxAI</p>
-              <p className="truncate text-xs text-neutral-500">Student command OS</p>
+              <p className="truncate text-sm font-semibold text-slate-950">PrioryxAI</p>
+              <p className="truncate text-xs text-slate-500">Student command OS</p>
             </div>
           )}
         </button>
 
-        {!collapsed && (
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-lg border border-white/10 bg-white/[0.04] p-2 text-neutral-400 transition hover:text-white"
-            aria-label="Collapse sidebar"
-          >
-            <ChevronLeft size={17} />
-          </button>
-        )}
-      </div>
-
-      {collapsed && (
         <button
           type="button"
           onClick={onToggle}
-          className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] p-2 text-neutral-400 transition hover:text-white"
-          aria-label="Expand sidebar"
+          className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <ChevronRight size={17} />
+          {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
         </button>
-      )}
+      </div>
 
-      <nav className="mt-7 space-y-2">
+      <nav className="mt-8 space-y-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = activeView === item.id;
@@ -78,14 +63,14 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
               type="button"
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm transition ${
-                active ? "text-white" : "text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3 py-3 text-sm transition ${
+                active ? "text-slate-950" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
               {active && (
                 <motion.span
                   layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-lg border border-white/[0.12] bg-white/[0.09]"
+                  className="absolute inset-0 rounded-2xl bg-slate-100"
                   transition={{ duration: 0.2 }}
                 />
               )}
@@ -97,34 +82,34 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
       </nav>
 
       <div className="mt-auto space-y-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.045] p-3">
-          <div className="h-2 rounded-full bg-white/10">
-            <div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-aura via-volt to-mint" />
-          </div>
-          {!collapsed && (
+        <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+          {!collapsed ? (
             <>
-              <p className="mt-3 text-sm font-medium text-white">PrioryxAI</p>
-              <p className="mt-1 text-xs leading-5 text-neutral-500">Stay ahead of every deadline.</p>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Your workspace</p>
+              <p className="mt-3 text-sm leading-6 text-slate-500">Stay ahead of every deadline with AI-ranked priorities.</p>
             </>
+          ) : (
+            <div className="flex justify-center">
+              <span className="rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-950">AI</span>
+            </div>
           )}
         </div>
 
         {isPro ? (
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-3 py-2.5 text-sm font-semibold text-mint">
-            {collapsed ? "✓" : (
-              <>
-                <Sparkles size={14} />
-                Pro Active
-              </>
-            )}
+          <div className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700`}>
+            <Sparkles size={14} />
+            {!collapsed && "Pro Active"}
           </div>
         ) : (
           <button
             type="button"
             onClick={onOpenPricing}
-            className="w-full rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-neutral-100"
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 ${
+              collapsed ? "px-0" : ""
+            }`}
           >
-            {collapsed ? "Pro" : "Upgrade to Pro"}
+            <Sparkles size={16} />
+            {!collapsed && "Upgrade"}
           </button>
         )}
       </div>

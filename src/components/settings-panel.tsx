@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, BookOpen, CalendarCheck, CalendarDays, CheckCircle2, FileText, GitBranch, ImagePlus, Loader2, Lock, LogOut, Save, Shield, Sparkles, Upload, User } from "lucide-react";
+import { ArrowDownToLine, CalendarCheck, CheckCircle2, FileText, GitBranch, Loader2, Lock, LogOut, Save, Shield, Sparkles, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
@@ -39,7 +39,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
   const [semester, setSemester] = useState("");
@@ -47,7 +46,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [subjects, setSubjects] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
 
-  // Timetable upload state
   const [timetableFile, setTimetableFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
@@ -55,15 +53,13 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resume generation state
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
 
-  const PRO_VISION_LIMIT = 10; // kept for pro counter display only
+  const PRO_VISION_LIMIT = 10;
   const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
 
   useEffect(() => {
-    // Run schema migrations silently on first settings open
     fetch("/api/admin/migrate", { method: "POST" }).catch(() => {});
 
     fetch("/api/user/profile")
@@ -86,12 +82,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   async function readJsonSafely(response: Response) {
     const text = await response.text();
     if (!text) return null;
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      return null;
-    }
+    try { return JSON.parse(text); } catch { return null; }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -100,11 +91,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     setError(null);
     setSuccessMessage(null);
 
-    const subjectsArr = subjects
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
+    const subjectsArr = subjects.split(",").map((s) => s.trim()).filter(Boolean);
     const trimmedGithubUsername = githubUsername.replace(/^@/, "").trim();
     const trimmedCgpa = cgpa.trim();
 
@@ -132,10 +119,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
       });
       const data = await readJsonSafely(res);
 
-      if (!res.ok) {
-        setError(data?.error ?? "Failed to save");
-        return;
-      }
+      if (!res.ok) { setError(data?.error ?? "Failed to save"); return; }
 
       const nextProfile = data?.profile as UserProfile | undefined;
       if (nextProfile) {
@@ -148,7 +132,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
         setGithubUsername(nextProfile.github_username ?? "");
       }
 
-      // Re-sync GitHub and jobs whenever profile is saved with a GitHub username
       if (trimmedGithubUsername) {
         fetch("/api/sync/github", { method: "POST" }).catch(() => {});
       }
@@ -222,20 +205,14 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   async function handleGenerateResume() {
     setGeneratingResume(true);
     setResumeError(null);
-
     try {
       const res = await fetch("/api/resume/generate", { method: "POST" });
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 403 && data.upgrade) {
-          onOpenPricing();
-          return;
-        }
+        if (res.status === 403 && data.upgrade) { onOpenPricing(); return; }
         setResumeError(data.error ?? "Failed to generate resume.");
         return;
       }
-
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -253,16 +230,16 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Left — profile form */}
-      <section className="space-y-5">
-        <div className="glass-strong rounded-lg p-5 sm:p-6">
-          <h2 className="text-2xl font-semibold text-white">Profile settings</h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-400">
+      <section className="space-y-6">
+        <div className="glass-strong rounded-[32px] p-6 sm:p-8">
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">Workspace preferences</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-[15px]">
             Keep your profile accurate so the feed, job matching, and recruiter profile stay meaningful.
           </p>
 
-          <form onSubmit={handleSave} className="mt-6 space-y-4">
+          <form onSubmit={handleSave} className="mt-8 space-y-5">
             <Field label="Display name" icon={User}>
               <input
                 value={name}
@@ -282,7 +259,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Semester (1-12)" icon={Shield}>
+              <Field label="Semester (1–12)" icon={Shield}>
                 <input
                   type="number"
                   min="1"
@@ -293,7 +270,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   className="input-base"
                 />
               </Field>
-
               <Field label="CGPA (0–10)" icon={Shield}>
                 <input
                   type="number"
@@ -306,7 +282,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   className="input-base"
                 />
               </Field>
-
               <Field label="GitHub username" icon={GitBranch}>
                 <input
                   value={githubUsername}
@@ -327,12 +302,12 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </Field>
 
             {error && (
-              <p className="rounded-lg border border-signal/25 bg-signal/10 px-4 py-2 text-sm text-signal">
+              <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
               </p>
             )}
             {successMessage && (
-              <p className="rounded-lg border border-mint/25 bg-mint/10 px-4 py-2 text-sm text-mint">
+              <p className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 {successMessage}
               </p>
             )}
@@ -340,7 +315,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02] disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
             >
               <Save size={16} />
               {saving ? "Saving…" : "Save changes"}
@@ -348,22 +323,22 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </form>
         </div>
 
-        {/* Timetable / schedule upload */}
-        <div className="glass rounded-lg p-5">
-          <h3 className="text-lg font-semibold text-white">Upload timetable or exam schedule</h3>
-          <p className="mt-2 text-sm leading-6 text-neutral-400">
+        {/* Timetable upload */}
+        <div className="glass rounded-[28px] p-5 sm:p-6">
+          <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload timetable or exam schedule</h3>
+          <p className="mt-3 text-sm leading-7 text-slate-500">
             Upload a photo, PDF, or Word doc of your timetable — weekly, semester, or full-year.
             PrioryxAI extracts every exam, assignment deadline, and lab date automatically.
           </p>
 
-          <div className="mt-4 space-y-3">
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-white/15 bg-black/25 px-4 py-4 text-sm text-neutral-300 transition hover:border-white/25 hover:bg-black/35">
+          <div className="mt-5 space-y-3">
+            <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
               {timetableFile ? (
-                <FileText size={18} className="shrink-0 text-volt" />
+                <FileText size={18} className="shrink-0 text-slate-500" />
               ) : (
-                <Upload size={18} className="shrink-0 text-volt" />
+                <Upload size={18} className="shrink-0 text-slate-400" />
               )}
-              <span className="flex-1 min-w-0 truncate">
+              <span className="min-w-0 flex-1 truncate">
                 {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
               </span>
               <input
@@ -381,12 +356,12 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </label>
 
             {uploadError && (
-              <p className="rounded-lg border border-signal/25 bg-signal/10 px-4 py-2 text-sm text-signal">
+              <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {uploadError}
               </p>
             )}
             {uploadResult && (
-              <p className="rounded-lg border border-mint/25 bg-mint/10 px-4 py-2 text-sm text-mint flex items-center gap-2">
+              <p className="flex items-center gap-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 <CheckCircle2 size={15} />
                 {uploadResult}
               </p>
@@ -397,7 +372,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 type="button"
                 onClick={handleTimetableUpload}
                 disabled={!timetableFile || uploading}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1] disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
               >
                 {uploading ? (
                   <><Loader2 size={15} className="animate-spin" /> Extracting schedule…</>
@@ -406,29 +381,28 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 )}
               </button>
               {isPro && visionRemaining !== null && (
-                <span className="text-xs text-mint">
+                <span className="text-xs font-medium text-emerald-600">
                   {visionRemaining} of {PRO_VISION_LIMIT} uploads remaining today
                 </span>
               )}
             </div>
 
-            {/* Extracted schedule list */}
             {extractedTasks && extractedTasks.length > 0 && (
-              <div className="mt-2 rounded-lg border border-white/10 bg-black/30 overflow-hidden">
-                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
-                  <span className="text-sm font-semibold text-white flex items-center gap-2">
-                    <CalendarCheck size={15} className="text-mint" />
+              <div className="mt-2 overflow-hidden rounded-[22px] border border-slate-200 bg-white">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                    <CalendarCheck size={15} className="text-emerald-500" />
                     {extractedTasks.length} item{extractedTasks.length === 1 ? "" : "s"} extracted
                   </span>
                   <button
                     type="button"
                     onClick={onNavigateToDashboard}
-                    className="text-xs text-volt hover:underline underline-offset-2"
+                    className="text-xs font-medium text-slate-600 underline-offset-2 hover:underline"
                   >
                     View in feed →
                   </button>
                 </div>
-                <ul className="divide-y divide-white/[0.06] max-h-[420px] overflow-y-auto">
+                <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
                   {extractedTasks.map((task, i) => {
                     const typeIcon = task.type === "exam" ? "📝" : task.type === "assignment" ? "📋" : "📌";
                     const dateStr = task.due_at
@@ -436,26 +410,26 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                       : null;
                     return (
                       <li key={task.id ?? i} className="flex items-start gap-3 px-4 py-3">
-                        <span className="text-base mt-0.5 shrink-0">{typeIcon}</span>
-                        <div className="flex-1 min-w-0">
+                        <span className="mt-0.5 shrink-0 text-base">{typeIcon}</span>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
+                            <p className="text-sm font-medium leading-snug text-slate-950">{task.title}</p>
                             {dateStr && (
-                              <span className="text-xs text-neutral-400 shrink-0 tabular-nums">{dateStr}</span>
+                              <span className="shrink-0 tabular-nums text-xs text-slate-500">{dateStr}</span>
                             )}
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                             {task.subject && (
-                              <span className="text-xs text-neutral-500">{task.subject}</span>
+                              <span className="text-xs text-slate-500">{task.subject}</span>
                             )}
                             {task.weightage != null && (
-                              <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-neutral-300">
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs text-slate-600">
                                 {task.weightage}%
                               </span>
                             )}
                           </div>
                           {task.notes && (
-                            <p className="mt-1 text-xs leading-5 text-neutral-500">{task.notes}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">{task.notes}</p>
                           )}
                         </div>
                       </li>
@@ -469,11 +443,11 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
       </section>
 
       {/* Right sidebar */}
-      <aside className="space-y-5">
+      <aside className="space-y-6">
         {profile && (
-          <div className="glass rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white">Account</h3>
-            <div className="mt-4 space-y-3">
+          <div className="glass rounded-[28px] p-5">
+            <h3 className="text-xl font-semibold tracking-tight text-slate-950">Account</h3>
+            <div className="mt-5 space-y-3">
               <Row label="Username" value={`@${profile.username}`} />
               <Row label="Plan" value={isPro ? "Pro" : "Free"} highlight={isPro} />
               {profile.pro_expires_at && isPro && (
@@ -481,15 +455,14 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               )}
             </div>
 
-            {/* GitHub OAuth connect */}
-            <div className="mt-4 rounded-lg border border-white/10 bg-black/25 p-4">
+            <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
-                <GitBranch size={16} className="text-neutral-400" />
-                <h4 className="text-sm font-semibold text-white">
+                <GitBranch size={16} className="text-slate-500" />
+                <h4 className="text-sm font-semibold text-slate-950">
                   {profile.github_username ? `Connected: @${profile.github_username}` : "Connect GitHub"}
                 </h4>
               </div>
-              <p className="mt-2 text-xs leading-5 text-neutral-500">
+              <p className="mt-2 text-xs leading-5 text-slate-500">
                 {profile.github_username
                   ? "PrioryxAI uses your repos, languages, and streak to rank tasks and match internships automatically."
                   : "Connect GitHub to auto-sync your repos, streak, and get matched Internshala openings — no manual input needed."}
@@ -497,7 +470,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <button
                 type="button"
                 onClick={handleGithubOAuth}
-                className="mt-3 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.1]"
+                className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 {profile.github_username ? "Reconnect GitHub" : "Connect GitHub via OAuth"}
               </button>
@@ -506,20 +479,20 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
         )}
 
         {isPro ? (
-          <div className="glass rounded-lg p-4">
+          <div className="glass rounded-[28px] p-5">
             <div className="flex items-start gap-3">
-              <div className="rounded-lg border border-mint/20 bg-mint/10 p-2 text-mint">
+              <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
                 <ArrowDownToLine size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-semibold text-white">Generate Resume</h3>
-                <p className="mt-2 text-sm leading-6 text-neutral-400">
-                  Turn your GitHub repos, languages, completed tasks, and profile into a recruiter-ready PDF — in seconds.
+                <h3 className="text-xl font-semibold tracking-tight text-slate-950">Generate Resume</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Turn your GitHub repos, languages, and completed tasks into a recruiter-ready PDF — in seconds.
                 </p>
               </div>
             </div>
             {resumeError && (
-              <p className="mt-4 rounded-lg border border-signal/25 bg-signal/10 px-4 py-2 text-sm text-signal">
+              <p className="mt-4 rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {resumeError}
               </p>
             )}
@@ -527,7 +500,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               type="button"
               onClick={handleGenerateResume}
               disabled={generatingResume}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-mint/20 bg-mint/10 px-4 py-3 text-sm font-semibold text-mint transition hover:bg-mint/15 disabled:opacity-60"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               {generatingResume ? (
                 <><Loader2 size={15} className="animate-spin" /> Generating resume…</>
@@ -537,64 +510,61 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </button>
           </div>
         ) : (
-          <div className="rounded-lg accent-border p-px">
-            <div className="rounded-[7px] bg-black/85 p-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg border border-white/10 bg-white/[0.06] p-2 text-neutral-400">
-                  <Lock size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-semibold text-white">AI-generated Resume</h3>
-                  <p className="mt-2 text-sm leading-6 text-neutral-400">
-                    PrioryxAI reads your GitHub repos, languages, and completed tasks to write a recruiter-ready PDF — no templates, no manual formatting.
-                  </p>
-                </div>
+          <div className="glass rounded-[28px] p-5">
+            <div className="flex items-start gap-3">
+              <div className="rounded-2xl bg-slate-100 p-3 text-slate-500">
+                <Lock size={16} />
               </div>
-              <ul className="mt-4 space-y-1.5 text-xs text-neutral-500">
-                {["Your top repos → project bullets", "GitHub languages → skills section", "Completed tasks → achievements", "Downloaded as resume.pdf instantly"].map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <span className="h-1 w-1 rounded-full bg-neutral-600 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                onClick={onOpenPricing}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:scale-[1.02]"
-              >
-                <Sparkles size={15} /> Unlock — Upgrade to Pro
-              </button>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-950">AI-generated Resume</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  PrioryxAI reads your GitHub repos, languages, and completed tasks to write a recruiter-ready PDF — no templates.
+                </p>
+              </div>
             </div>
+            <ul className="mt-5 space-y-2 text-xs text-slate-500">
+              {["Your top repos → project bullets", "GitHub languages → skills section", "Completed tasks → achievements", "Downloaded as resume.pdf instantly"].map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <span className="h-1 w-1 shrink-0 rounded-full bg-slate-300" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={onOpenPricing}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Sparkles size={15} /> Unlock — Upgrade to Pro
+            </button>
           </div>
         )}
 
         {!isPro && (
-          <div className="rounded-lg accent-border p-px">
-            <div className="rounded-[7px] bg-black/85 p-4">
-              <h3 className="text-lg font-semibold text-white">Upgrade to Pro</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Unlimited AI planning, auto-scheduling, and recruiter profile optimization — ₹99/month.
-              </p>
-              <button
-                type="button"
-                onClick={onOpenPricing}
-                className="mt-4 w-full rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-black transition hover:scale-[1.02]"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles size={15} />
-                  Upgrade
-                </span>
-              </button>
+          <div className="glass rounded-[28px] p-5">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Sparkles size={16} />
+              Pro automation
             </div>
+            <h3 className="mt-3 text-xl font-semibold tracking-tight text-slate-950">Let the calendar do the heavy lifting</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Automatically place deadlines around classes, lab slots, and practice time without making the schedule feel crowded.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenPricing}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Upgrade
+            </button>
           </div>
         )}
 
-        <div className="glass rounded-lg p-4">
+        <div className="glass rounded-[28px] p-5">
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-lg border border-signal/20 bg-signal/10 px-4 py-3 text-sm font-semibold text-signal transition hover:bg-signal/20"
+            className="flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
           >
             <LogOut size={16} />
             Sign out
@@ -608,7 +578,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
 function Field({ label, icon: Icon, children }: { label: string; icon: any; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 flex items-center gap-2 text-sm text-neutral-400">
+      <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-500">
         <Icon size={14} />
         {label}
       </label>
@@ -619,9 +589,9 @@ function Field({ label, icon: Icon, children }: { label: string; icon: any; chil
 
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/25 p-3">
-      <span className="text-sm text-neutral-400">{label}</span>
-      <span className={`text-sm font-medium ${highlight ? "text-mint" : "text-white"}`}>{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-[22px] border border-slate-200 bg-slate-50 p-3">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className={`text-sm font-semibold ${highlight ? "text-emerald-700" : "text-slate-950"}`}>{value}</span>
     </div>
   );
 }
