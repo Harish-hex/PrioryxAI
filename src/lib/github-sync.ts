@@ -4,7 +4,7 @@ import { syncInternshalaJobsForUser } from "@/lib/job-sync";
 const GITHUB_GRAPHQL = `
 query($login: String!) {
   user(login: $login) {
-    repositories(first: 20, orderBy: {field: PUSHED_AT, direction: DESC}, ownerAffiliations: OWNER) {
+    repositories(first: 20, orderBy: {field: STARGAZERS, direction: DESC}, ownerAffiliations: OWNER) {
       nodes {
         name
         description

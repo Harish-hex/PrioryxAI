@@ -85,13 +85,16 @@ Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), desc
       subjects: null,
       github_health_score: github?.health_score ?? 0,
       github_streak_days: github?.streak_days ?? 0,
-      top_repos: repos.slice(0, 6).map((repo: any) => ({
-        name: repo.name,
-        description: repo.description,
-        language: repo.language,
-        stars: repo.stargazerCount ?? repo.stars ?? 0,
-        url: repo.url,
-      })),
+      top_repos: [...repos]
+        .sort((a, b) => (b.stargazerCount ?? b.stars ?? 0) - (a.stargazerCount ?? a.stars ?? 0))
+        .slice(0, 6)
+        .map((repo: any) => ({
+          name: repo.name,
+          description: repo.description,
+          language: repo.language,
+          stars: repo.stargazerCount ?? repo.stars ?? 0,
+          url: repo.url,
+        })),
       project_bullets: projectBullets,
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
