@@ -271,16 +271,14 @@ export async function POST(request: NextRequest) {
       .insert(rows)
       .select();
 
+    // If notes column doesn't exist yet, retry without it
     if (errorMentionsColumn(dbError, 'notes')) {
-      try {
-        await ensureSchemaMigrations();
-        ({ data: inserted, error: dbError } = await supabase
-          .from('tasks')
-          .insert(rows)
-          .select());
-      } catch (migrationError) {
-        console.warn('[ingest/vision] auto-migration failed', migrationError);
-      }
+      console.warn('[ingest/vision] notes column missing — retrying without it');
+      const rowsWithoutNotes = rows.map(({ notes: _notes, ...rest }) => rest);
+      ({ data: inserted, error: dbError } = await supabase
+        .from('tasks')
+        .insert(rowsWithoutNotes)
+        .select());
     }
 
     if (dbError) {
