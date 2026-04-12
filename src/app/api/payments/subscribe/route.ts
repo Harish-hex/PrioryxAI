@@ -38,7 +38,7 @@ export async function POST() {
       callback_url: `${appUrl}/feed?payment=success`,
     } as any);
 
-    // Store initial subscription record
+    // Store initial subscription record (non-fatal if subscriptions table doesn't exist yet)
     await supabase.from('subscriptions').upsert(
       {
         user_id: user.id,
@@ -46,7 +46,9 @@ export async function POST() {
         status: 'created',
       },
       { onConflict: 'user_id' }
-    );
+    ).then(({ error }) => {
+      if (error) console.warn('[payments/subscribe] subscriptions upsert failed (table may not exist):', error.message);
+    });
 
     return NextResponse.json({
       subscription_id: subscription.id,
