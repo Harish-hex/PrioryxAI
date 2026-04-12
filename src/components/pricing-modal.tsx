@@ -56,7 +56,8 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
         >
           <motion.div
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="glass-strong w-full max-w-3xl rounded-[36px] p-6 sm:p-7"
+            className="glass-strong w-full max-w-3xl overflow-y-auto rounded-[28px] p-5 sm:rounded-[36px] sm:p-7"
+            style={{ maxHeight: "calc(100dvh - 2rem)" }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             initial={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={{ duration: 0.2 }}

@@ -233,8 +233,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Left — profile form */}
       <section className="space-y-6">
-        <div className="glass-strong rounded-[32px] p-6 sm:p-8">
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">Workspace preferences</h2>
+        <div className="glass-strong rounded-[28px] p-5 sm:rounded-[32px] sm:p-8">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Workspace preferences</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-[15px]">
             Keep your profile accurate so the feed, job matching, and recruiter profile stay meaningful.
           </p>

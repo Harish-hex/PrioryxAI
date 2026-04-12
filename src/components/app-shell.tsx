@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, Bot, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
@@ -421,7 +421,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   };
 
   return (
-    <main className="app-background min-h-screen overflow-hidden text-slate-900">
+    <main className="app-background min-h-screen overflow-x-hidden text-slate-900">
       <Sidebar
         activeView={activeView}
         collapsed={collapsed}
@@ -432,27 +432,27 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       />
 
       <div
-        className={`min-h-screen px-4 pb-12 pt-4 transition-[padding] duration-300 sm:px-6 lg:pr-8 lg:pt-6 ${
+        className={`min-h-screen px-3 pb-24 pt-3 transition-[padding] duration-300 sm:px-5 sm:pt-4 lg:pb-12 lg:pr-8 lg:pt-6 ${
           collapsed ? "lg:pl-36" : "lg:pl-[21rem]"
         }`}
       >
         {/* Sticky header */}
-        <header className="glass sticky top-4 z-30 mx-auto mb-6 max-w-7xl rounded-[28px] px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Command size={15} />
+        <header className="glass sticky top-4 z-30 mx-auto mb-6 max-w-7xl rounded-[28px] px-4 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3 lg:gap-5">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-xs text-slate-500 sm:text-sm">
+                <Command size={13} className="sm:w-[15px] sm:h-[15px]" />
                 <span>PrioryxAI workspace</span>
               </div>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl lg:text-4xl">
                 {pageTitles[activeView]}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px]">
+              <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:mt-2 sm:block sm:text-[15px]">
                 {pageSubtitles[activeView]}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <div className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600 md:inline-flex">
                 <CalendarClock size={16} />
                 <span>This week</span>
@@ -555,7 +555,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-80 rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)] z-50 overflow-hidden"
+                      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)] z-50 overflow-hidden"
                     >
                       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -675,47 +675,23 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
               {/* Pro badge / Upgrade button */}
               {isPro ? (
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700">
-                  <Sparkles size={14} /> Pro ✓
+                <div className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 sm:gap-2 sm:px-4">
+                  <Sparkles size={14} />
+                  <span className="hidden sm:inline">Pro ✓</span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => setPricingOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:gap-2 sm:px-4"
                 >
                   <Sparkles size={16} />
-                  Pro
+                  <span className="hidden sm:inline">Pro</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Mobile nav tabs */}
-          <nav className="mt-5 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-            {[
-              { id: "dashboard", label: "Dashboard" },
-              { id: "assistant", label: "Assistant" },
-              { id: "profile", label: "Profile" },
-              { id: "settings", label: "Settings" },
-            ].map((item) => {
-              const active = activeView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => navigateToView(item.id)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition ${
-                    active
-                      ? "bg-slate-950 text-white"
-                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
         </header>
 
         {/* Post-payment activation banners */}
@@ -805,6 +781,35 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           </motion.section>
         </AnimatePresence>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/92 pb-safe backdrop-blur-xl lg:hidden" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}>
+        <div className="flex items-center justify-around px-2 pt-2">
+          {[
+            { id: "dashboard", label: "Home", icon: LayoutDashboard },
+            { id: "assistant", label: "AI", icon: Bot },
+            { id: "profile", label: "Profile", icon: UserRound },
+            { id: "settings", label: "Settings", icon: Settings },
+          ].map(({ id, label, icon: Icon }) => {
+            const active = activeView === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => navigateToView(id)}
+                className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition ${
+                  active ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                <div className={`flex h-8 w-8 items-center justify-center rounded-2xl transition ${active ? "bg-slate-950 text-white" : ""}`}>
+                  <Icon size={18} />
+                </div>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} isPro={isPro} />
     </main>

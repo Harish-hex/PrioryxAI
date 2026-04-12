@@ -200,7 +200,7 @@ function NextMoveCard({
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className="glass-strong rounded-[32px] p-6 sm:p-8"
+      className="glass-strong rounded-[28px] p-5 sm:rounded-[32px] sm:p-8"
       initial={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.3 }}
     >
@@ -229,7 +229,7 @@ function NextMoveCard({
 
           {task.type === "job" ? (
             <>
-              <div className="mt-7">
+              <div className="mt-5 sm:mt-7">
                 {(() => {
                   const [role, company] = task.title.includes(" @ ")
                     ? task.title.split(" @ ", 2)
@@ -240,7 +240,7 @@ function NextMoveCard({
                   return (
                     <>
                       <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Top internship match</p>
-                      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{role}</h2>
+                      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">{role}</h2>
                       {company && (
                         <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
                           <MapPin size={14} /> {company}
@@ -261,7 +261,7 @@ function NextMoveCard({
                 })()}
               </div>
 
-              <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:mt-7 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
                 <div className="flex flex-wrap items-center gap-3">
                   {task.stipend && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
@@ -295,10 +295,10 @@ function NextMoveCard({
             </>
           ) : (
             <>
-              <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_240px]">
+              <div className="mt-5 grid gap-5 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_240px]">
                 <div>
                   <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Do this next</p>
-                  <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                  <h2 className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
                     {task.title}
                   </h2>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">{task.reason}</p>
@@ -310,7 +310,7 @@ function NextMoveCard({
                 </div>
               </div>
 
-              <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:mt-7 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
                 <div className="flex flex-wrap gap-2">
                   <span className={`rounded-full px-3 py-1.5 text-sm ${typeStyles[task.type] ?? "border border-slate-200 bg-slate-50 text-slate-600"}`}>
                     {task.type}
@@ -344,7 +344,7 @@ function NextMoveCard({
             <Sparkles size={15} />
             All clear
           </span>
-          <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Nothing ranked yet.</h2>
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Nothing ranked yet.</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
             Type a task below — &quot;DBMS exam Friday&quot;, &quot;ML assignment due Sunday&quot;, &quot;apply to internship by Thursday&quot; — and PrioryxAI will rank it and tell you exactly what to do first.
           </p>

@@ -153,7 +153,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Chat panel */}
-      <section className="glass-strong flex min-h-[500px] flex-col rounded-[28px] sm:min-h-[680px] sm:rounded-[32px]">
+      <section className="glass-strong flex min-h-[420px] flex-col rounded-[28px] sm:min-h-[600px] sm:rounded-[32px]">
         <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -183,7 +183,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6" style={{ maxHeight: "clamp(300px, 55vh, 520px)" }}>
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6" style={{ maxHeight: "clamp(240px, 45vh, 520px)" }}>
           <AnimatePresence initial={false}>
             {messages.map((message) => (
               <motion.div
