@@ -21,24 +21,28 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
       const res = await fetch("/api/payments/subscribe", { method: "POST" });
       const data = await res.json();
 
-      if (!res.ok) {
-        setError(data.error ?? "Could not start payment. Please try again.");
-        setLoading(false);
+      if (res.ok && data.short_url) {
+        // Subscription created with user_id in notes — best path
+        window.location.href = data.short_url;
         return;
       }
 
-      // Prefer the Razorpay-hosted checkout page (short_url) so the subscription
-      // is created with user_id embedded in notes — webhook can find the user reliably.
-      const dest = data.short_url ?? process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
-      if (!dest) {
-        setError("Payment link not available. Please contact support.");
-        setLoading(false);
+      // Subscription API not configured or failed — fall back to static payment link
+      const staticLink = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
+      if (staticLink) {
+        window.location.href = staticLink;
         return;
       }
 
-      // Keep spinner — navigating away
-      window.location.href = dest;
+      setError("Payment not configured. Please contact support.");
+      setLoading(false);
     } catch {
+      // Network error — still try the static link
+      const staticLink = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
+      if (staticLink) {
+        window.location.href = staticLink;
+        return;
+      }
       setError("Network error. Please try again.");
       setLoading(false);
     }
