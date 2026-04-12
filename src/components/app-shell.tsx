@@ -237,7 +237,11 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           setPaymentPending(false);
           return true;
         }
-      } catch {}
+        const errData = await res.json().catch(() => ({}));
+        console.error('[payment] verify failed:', res.status, errData);
+      } catch (e) {
+        console.error('[payment] verify threw:', e);
+      }
       return false;
     }
 

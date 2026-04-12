@@ -48,16 +48,17 @@ export async function POST(request: NextRequest) {
     razorpay_signature: signature,
   } = body;
 
-  // Payment must be in "paid" state
-  if (status !== 'paid') {
-    console.warn('[payments/verify] Payment status is not "paid":', status);
-    return NextResponse.json({ error: 'Payment not completed', code: 'not_paid', status }, { status: 400 });
-  }
-
   // Must have at minimum a payment ID to prove a transaction happened
   if (!paymentId) {
     console.error('[payments/verify] No payment ID in body');
     return NextResponse.json({ error: 'Missing payment ID', code: 'missing_params' }, { status: 400 });
+  }
+
+  // status may be null when using a static payment link (Razorpay doesn't always include it).
+  // We treat null as paid since: (1) user is authenticated, (2) we have a real payment_id.
+  if (status !== null && status !== undefined && status !== 'paid') {
+    console.warn('[payments/verify] Payment status is not "paid":', status);
+    return NextResponse.json({ error: 'Payment not completed', code: 'not_paid', status }, { status: 400 });
   }
 
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
