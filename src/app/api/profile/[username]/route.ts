@@ -45,7 +45,7 @@ export async function GET(
   const [{ data: github }, { data: tasks }] = await Promise.all([
     supabase
       .from('github_cache')
-      .select('repos, languages, last_commit_at, streak_days, health_score')
+      .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
       .eq('user_id', user.id)
       .single(),
     supabase.from('tasks').select('completed').eq('user_id', user.id),
@@ -96,6 +96,7 @@ Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), desc
           url: repo.url,
         })),
       project_bullets: projectBullets,
+      contribution_days: (github?.contribution_days ?? []) as { date: string; count: number }[],
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
     },

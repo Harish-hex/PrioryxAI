@@ -142,8 +142,9 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                   )}
                 </div>
                 <div className="mt-6 flex items-end gap-1">
-                  <span className="text-4xl font-semibold tracking-tight text-white">₹99</span>
+                  <span className="text-4xl font-semibold tracking-tight text-white">₹59</span>
                   <span className="pb-1 text-sm text-slate-400">/month</span>
+                  <span className="ml-2 rounded-full bg-emerald-400 px-2 py-0.5 text-xs font-semibold text-black">40% off</span>
                 </div>
                 <ul className="mt-6 space-y-3">
                   {proFeatures.map((f) => (
@@ -172,7 +173,7 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                       {loading ? (
                         <><Loader2 size={16} className="animate-spin" /> Redirecting…</>
                       ) : (
-                        <><CreditCard size={16} /> Upgrade to Pro — ₹99/month</>
+                        <><CreditCard size={16} /> Upgrade to Pro — ₹59/month</>
                       )}
                     </button>
                     <p className="mt-3 text-center text-xs text-slate-400">

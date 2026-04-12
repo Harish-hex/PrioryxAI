@@ -527,8 +527,8 @@ function PriorityFeed({
                 >
                   <Sparkles size={14} />
                   {hiddenPreview?.count
-                    ? `Unlock all ${(totalCount ?? 0)} tasks · ₹99/month`
-                    : "Upgrade to Pro · ₹99/month"}
+                    ? `Unlock all ${(totalCount ?? 0)} tasks · ₹59/month`
+                    : "Upgrade to Pro · ₹59/month"}
                 </button>
               </div>
             </div>

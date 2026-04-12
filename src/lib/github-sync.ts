@@ -60,15 +60,21 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
     if (lang) langMap[lang] = (langMap[lang] ?? 0) + 1;
   }
 
-  const allDays = ghUser.contributionsCollection.contributionCalendar.weeks
-    .flatMap((week: any) => week.contributionDays)
-    .sort((a: any, b: any) => b.date.localeCompare(a.date));
+  const allDays: { date: string; contributionCount: number }[] =
+    ghUser.contributionsCollection.contributionCalendar.weeks
+      .flatMap((week: any) => week.contributionDays)
+      .sort((a: any, b: any) => b.date.localeCompare(a.date));
 
   let streak = 0;
   for (const day of allDays) {
     if (day.contributionCount > 0) streak++;
     else break;
   }
+
+  // Keep the most recent 182 days (26 weeks) for the contribution graph
+  const contributionDays = allDays
+    .slice(0, 182)
+    .map((d) => ({ date: d.date, count: d.contributionCount }));
 
   const totalCommits = ghUser.contributionsCollection.totalCommitContributions;
   const langCount = Object.keys(langMap).length;
@@ -104,6 +110,7 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
         last_commit_at: repos[0]?.pushedAt ?? null,
         streak_days: streak,
         health_score: healthScore,
+        contribution_days: contributionDays,
         synced_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
