@@ -218,7 +218,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       razorpay_payment_link_status: params.get("razorpay_payment_link_status"),
       razorpay_signature: params.get("razorpay_signature"),
     };
-    const hasRedirectParams = Boolean(razorpayParams.razorpay_payment_id && razorpayParams.razorpay_signature);
+    // Only need a payment_id — signature is optional (verified server-side when available)
+    const hasRedirectParams = Boolean(razorpayParams.razorpay_payment_id);
 
     // Strip all query params from the URL without a page reload
     window.history.replaceState(null, "", window.location.pathname);
