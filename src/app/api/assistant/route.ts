@@ -5,7 +5,8 @@ import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl
 
 export const runtime = 'nodejs';
 
-const FREE_MESSAGE_LIMIT = 3;
+const FREE_MESSAGE_LIMIT = 20;
+
 
 export async function POST(request: NextRequest) {
   const supabase = createClient();

@@ -28,7 +28,18 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
       form.append("file", file);
       
       const res = await fetch("/api/schedule/timetable", { method: "POST", body: form });
-      const data = await res.json();
+      
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Timetable Upload Non-JSON response:", text);
+        setErrorMsg(`Upload failed: ${res.status} ${res.statusText}. Please try a smaller file.`);
+        setStatus('error');
+        return;
+      }
 
       if (!res.ok) {
         setErrorMsg(data?.error || "Couldn't read class schedule. Try: a clearer photo, exporting as text PDF, or a Word document.");

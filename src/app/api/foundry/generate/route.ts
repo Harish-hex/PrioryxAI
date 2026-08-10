@@ -13,14 +13,43 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Get latest resume analysis
-  const { data: resume } = await supabase
+  // Try multiple ways to find the resume
+  let resume = null
+
+  // Method 1: by user_id
+  const { data: r1 } = await supabase
     .from('user_resumes')
     .select('skill_entities, swot')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .single()
+
+  if (r1) {
+    resume = r1
+    console.log('[Foundry] Found resume via user_id')
+  }
+
+  // Method 2: by id in users if linked
+  if (!resume) {
+    const { data: profile } = await supabase
+      .from('users') // We use 'users' table in this app mostly
+      .select('resume_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.resume_id) {
+      const { data: r2 } = await supabase
+        .from('user_resumes')
+        .select('skill_entities, swot')
+        .eq('id', profile.resume_id)
+        .single()
+      if (r2) resume = r2
+    }
+  }
+
+  console.log('[Foundry] Resume found:', !!resume)
+  console.log('[Foundry] Skills count:', (resume?.skill_entities as any)?.skills?.length ?? 0)
 
   if (!resume) {
     return NextResponse.json({ error: 'Upload a resume first' }, { status: 400 });
@@ -70,5 +99,24 @@ export async function GET() {
     .eq('user_id', user.id)
     .order('created_at');
 
-  return NextResponse.json({ projects: projects ?? [] });
+  const { data: profile } = await supabase
+    .from('users')
+    .select('resume_uploaded')
+    .eq('id', user.id)
+    .single();
+
+  const { data: resume } = await supabase
+    .from('user_resumes')
+    .select('skill_entities')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+    
+  const skillsCount = (resume?.skill_entities as any)?.skills?.length ?? 0;
+
+  return NextResponse.json({ 
+    projects: projects ?? [],
+    resumeUploaded: profile?.resume_uploaded ?? false,
+    resumeValid: skillsCount > 0
+  });
 }

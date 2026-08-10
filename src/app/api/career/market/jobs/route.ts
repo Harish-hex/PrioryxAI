@@ -20,7 +20,8 @@ interface RawJob {
 
 async function fetchFromRemotive(): Promise<RawJob[]> {
   try {
-    const categories = ['software-dev', 'data', 'devops-sysadmin', 'product'];
+    // ONLY tech categories — no product/marketing/design/sales
+    const categories = ['software-dev', 'data', 'devops-sysadmin', 'qa'];
     const results = await Promise.allSettled(
       categories.map((cat) =>
         fetch(`https://remotive.com/api/remote-jobs?category=${cat}&limit=25`, {
@@ -84,10 +85,47 @@ async function fetchFromArbeitnow(): Promise<RawJob[]> {
   }
 }
 
+// ── Tech-only job filter ─────────────────────────────────────────
+const TECH_TITLE_KEYWORDS = [
+  'software', 'engineer', 'developer', 'programmer', 'coding',
+  'frontend', 'backend', 'fullstack', 'full stack', 'full-stack',
+  'devops', 'sre', 'site reliability', 'platform engineer',
+  'data engineer', 'data scientist', 'data analyst', 'ml engineer',
+  'machine learning', 'ai engineer', 'artificial intelligence',
+  'python', 'javascript', 'typescript', 'java', 'golang', 'rust',
+  'react', 'node', 'django', 'flask', 'spring', 'kubernetes',
+  'cloud engineer', 'aws', 'gcp', 'azure', 'infrastructure',
+  'security engineer', 'cybersecurity', 'blockchain', 'web3',
+  'mobile developer', 'android', 'ios', 'flutter', 'react native',
+  'intern', 'internship', 'sde', 'swe', 'tech lead', 'architect',
+  'database', 'api', 'microservices', 'embedded', 'firmware',
+  'computer', 'systems', 'network engineer', 'qa engineer', 'test engineer'
+];
+
+const EXCLUDE_TITLE_KEYWORDS = [
+  'sales', 'marketing', 'copywriter', 'writer', 'editor', 'designer',
+  'graphic', 'creative', 'brand', 'social media', 'seo', 'content',
+  'recruiter', 'hr ', 'human resources', 'accountant', 'finance',
+  'lawyer', 'legal', 'nurse', 'doctor', 'medical', 'jedi', 'manager',
+  'account manager', 'business development', 'customer success',
+  'customer support', 'operations manager', 'product manager',
+  'scrum master', 'project manager', 'agile coach', 'data entry',
+  'virtual assistant', 'freelance writer', 'translator'
+];
+
+function isTechJob(job: { title: string; tags?: string[] }): boolean {
+  const titleLower = job.title.toLowerCase();
+  // Hard exclude non-tech keywords
+  if (EXCLUDE_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) return false;
+  // Must contain at least one tech keyword
+  return TECH_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw));
+}
+
 export async function GET() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 
   // Fetch user skills for match scoring
   const { data: resume } = await supabase
@@ -113,8 +151,12 @@ export async function GET() {
     ...(arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value : []),
   ];
 
+  // Filter to tech jobs only — remove Sales, Marketing, Design, etc.
+  const techJobs = allJobs.filter(isTechJob);
+  console.log(`[Jobs] Total: ${allJobs.length}, Tech only: ${techJobs.length}`);
+
   // Compute match scores
-  const jobsWithScores = allJobs.map((job) => {
+  const jobsWithScores = techJobs.map((job) => {
     if (userSkills.length === 0) return { ...job, matchScore: 0, matchedSkills: [] };
     const jdText = (
       job.title + ' ' + job.description + ' ' + job.tags.join(' ')
@@ -127,10 +169,11 @@ export async function GET() {
   // Sort by match score desc
   jobsWithScores.sort((a, b) => b.matchScore - a.matchScore);
 
-  console.log(`[Jobs] Returning ${jobsWithScores.length} jobs (${remotiveJobs.status === 'fulfilled' ? remotiveJobs.value.length : 0} Remotive + ${arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value.length : 0} Arbeitnow)`);
+  console.log(`[Jobs] Returning ${jobsWithScores.length} tech jobs`);
 
   return NextResponse.json({ jobs: jobsWithScores });
 }
+
 
 // POST: Save a job application
 export async function POST(request: NextRequest) {

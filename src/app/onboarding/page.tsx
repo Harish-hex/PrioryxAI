@@ -22,13 +22,13 @@ interface ProfilePayload {
   subjects: string[] | null;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 function OnboardingFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialStep: Step = searchParams.get("step") === "3" ? 3 : 1;
+  const initialStep: Step = searchParams.get("step") === "3" ? 3 : (searchParams.get("step") === "4" ? 4 : 1);
 
   const [step, setStep] = useState<Step>(initialStep);
   const [profile, setProfile] = useState<ProfilePayload | null>(null);
@@ -40,6 +40,12 @@ function OnboardingFlow() {
   const [subjects, setSubjects] = useState("");
   const [savingStep1, setSavingStep1] = useState(false);
   const [step1Error, setStep1Error] = useState<string | null>(null);
+
+  // Step 3 state (Coding Profiles)
+  const [leetcode, setLeetcode] = useState("");
+  const [hackerrank, setHackerrank] = useState("");
+  const [connectingCoding, setConnectingCoding] = useState(false);
+  const [codingError, setCodingError] = useState<string | null>(null);
 
   // Step 3 state
   const [timetableFile, setTimetableFile] = useState<File | null>(null);
@@ -102,8 +108,39 @@ function OnboardingFlow() {
     window.location.href = `/api/auth/login?provider=github&next=${next}`;
   }
 
+  async function handleCodingProfiles(e: React.FormEvent) {
+    e.preventDefault();
+    setConnectingCoding(true);
+    setCodingError(null);
+    try {
+      if (leetcode.trim()) {
+        await fetch("/api/leetcode/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: leetcode, stream: "SDE", targetCompanies: [] })
+        });
+      }
+      if (hackerrank.trim()) {
+        await fetch("/api/hackerrank/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hackerrank_username: hackerrank, stream: "SDE", targetCompanies: [] })
+        });
+      }
+      setStep(4);
+    } catch {
+      setCodingError("Failed to connect coding profiles. Try skipping for now.");
+    } finally {
+      setConnectingCoding(false);
+    }
+  }
+
   function skipGithub() {
     setStep(3);
+  }
+
+  function skipCodingProfiles() {
+    setStep(4);
   }
 
   async function handleTimetableUpload() {
@@ -334,7 +371,76 @@ function OnboardingFlow() {
               transition={{ duration: 0.2 }}
               className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 3 — Add your schedule</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 3 — Connect Coding Profiles</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Provide your LeetCode and HackerRank usernames so PrioryxAI can track your problem-solving skills, generate AI study plans, and score your placement readiness.
+              </p>
+
+              <form onSubmit={handleCodingProfiles} className="mt-5 space-y-4">
+                <Field label="LeetCode Username (Optional)">
+                  <input
+                    value={leetcode}
+                    onChange={(e) => setLeetcode(e.target.value)}
+                    className="input-base"
+                    placeholder="e.g. neetcode"
+                  />
+                </Field>
+
+                <Field label="HackerRank Username (Optional)">
+                  <input
+                    value={hackerrank}
+                    onChange={(e) => setHackerrank(e.target.value)}
+                    className="input-base"
+                    placeholder="e.g. hackerrankuser"
+                  />
+                </Field>
+
+                {codingError && (
+                  <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                    {codingError}
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={connectingCoding}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {connectingCoding ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    {connectingCoding ? "Connecting…" : "Connect & Continue"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={skipCodingProfiles}
+                    className="text-sm text-slate-500 underline-offset-4 hover:text-slate-800 hover:underline"
+                  >
+                    Skip for now
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="ml-auto text-sm text-slate-400 hover:text-slate-700"
+                  >
+                    Back
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
+            >
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 4 — Add your schedule</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Upload a photo of your printed timetable, whiteboard schedule, or any image with exam dates. PrioryxAI extracts every date and adds it to your feed.
               </p>
@@ -396,7 +502,7 @@ function OnboardingFlow() {
 
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="ml-auto text-sm text-slate-400 hover:text-slate-700"
                 >
                   Back
@@ -415,10 +521,10 @@ function OnboardingFlow() {
 }
 
 function StepIndicator({ current }: { current: Step }) {
-  const labels: Record<Step, string> = { 1: "Basics", 2: "GitHub", 3: "Schedule" };
+  const labels: Record<Step, string> = { 1: "Basics", 2: "GitHub", 3: "Coding", 4: "Schedule" };
   return (
     <div className="mt-7 flex items-center gap-2">
-      {([1, 2, 3] as Step[]).map((n, i) => {
+      {([1, 2, 3, 4] as Step[]).map((n, i) => {
         const active = current === n;
         const done = current > n;
         return (
@@ -437,7 +543,7 @@ function StepIndicator({ current }: { current: Step }) {
             <span className={`text-xs font-medium ${active ? "text-slate-950" : "text-slate-400"}`}>
               {labels[n]}
             </span>
-            {i < 2 && <div className="mx-1 h-px w-8 bg-slate-200" />}
+            {i < 3 && <div className="mx-1 h-px w-8 bg-slate-200" />}
           </div>
         );
       })}

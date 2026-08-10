@@ -236,37 +236,50 @@ export async function POST(req: NextRequest) {
 
   // 8. Store in Supabase
   console.log('[Resume API] Storing in Supabase...')
-  const { error: dbError } = await supabase
+  
+  const { data: saved, error: saveErr } = await supabase
     .from('user_resumes')
     .upsert({
       user_id: user.id,
-      raw_text: readResult.rawText.slice(0, 50000), // cap at 50k chars
+      raw_text: readResult.rawText.slice(0, 50000),
       skill_entities: {
         skills: resumeData.skills ?? [],
         certifications: resumeData.certifications ?? [],
-        languages: resumeData.languages ?? [],
         projects: resumeData.projects ?? [],
         education: resumeData.education ?? [],
         experience: resumeData.experience ?? []
       },
       swot: swotData,
-      parsed_data: resumeData,  // full parsed resume
-      ats_score: null,          // computed separately
+      parsed_data: resumeData,
       extraction_method: readResult.method,
-      created_at: new Date().toISOString()
+      updated_at: new Date().toISOString()
     }, {
-      onConflict: 'user_id'
+      onConflict: 'user_id',
+      ignoreDuplicates: false
     })
+    .select()
+    .single()
 
-  if (dbError) {
-    console.error('[Resume API] Supabase error:', dbError)
-    // Don't fail the whole request — return the data even if DB save fails
-    return NextResponse.json({
-      success: true,
-      warning: 'Data extracted but could not be saved. Please try again.',
-      data: resumeData,
-      swot: swotData
-    })
+  console.log('[Resume] Save result:', saved ? 'SUCCESS' : 'FAILED')
+  console.log('[Resume] Save error:', saveErr)
+
+  if (saveErr) {
+    console.error('[Resume] Full error:', JSON.stringify(saveErr))
+
+    // Fallback: try insert (in case upsert fails due to constraint missing)
+    const { error: insertErr } = await supabase
+      .from('user_resumes')
+      .insert({
+        user_id: user.id,
+        raw_text: readResult.rawText.slice(0, 50000),
+        skill_entities: { skills: resumeData.skills ?? [] },
+        swot: swotData,
+        parsed_data: resumeData
+      })
+
+    if (insertErr) {
+      console.error('[Resume] Insert also failed:', insertErr)
+    }
   }
   
   // Mark user as having uploaded resume

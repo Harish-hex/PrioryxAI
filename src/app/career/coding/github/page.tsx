@@ -101,23 +101,15 @@ export default function GitHubIntelligencePage() {
   const [showCommands, setShowCommands] = useState<string | null>(null);
 
   const loadActions = useCallback(async () => {
-    const res = await fetch('/api/github/actions');
+    const res = await fetch('/api/github/analyse');
     if (res.ok) {
       const d = await res.json();
-      setActions(d.actions ?? []);
-      if (d.analysis?.length > 0) {
-        // Build a lightweight report from saved data
-        setReport(prev => prev ?? {
-          totalRepos: d.analysis.length,
-          portfolioScore: Math.round(d.analysis.reduce((s: number, a: any) => s + a.total_score, 0) / d.analysis.length),
-          profileStrengths: [],
-          profileWeaknesses: [],
-          topProjects: d.analysis.slice(0, 5).map((a: any) => ({ ...a, repoName: a.repo_name, repoUrl: '', grade: a.grade, dimensions: a.dimensions ?? {}, weaknesses: a.weaknesses ?? [], strengths: a.strengths ?? [], careerRelevance: a.career_relevance ?? {} })),
-          weakestProjects: [],
-          priorityActions: d.actions ?? [],
-          careerReadiness: { resumeReadyProjects: [], languageDiversity: [], estimatedProfileStrength: 'developing' },
-          commitPatterns: { totalCommitsLast90Days: 0, averageCommitsPerWeek: 0, longestStreak: 0, currentStreak: 0, consistencyScore: 0 },
-        });
+      if (!d.notAnalysed) {
+        setReport(d);
+        setActions(d.priorityActions ?? []);
+      } else {
+        setReport(null);
+        setActions([]);
       }
     }
   }, []);

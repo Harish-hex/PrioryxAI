@@ -28,7 +28,18 @@ export function ExamUploader({ isPro, visionRemaining }: { isPro: boolean, visio
       form.append("file", file);
       
       const res = await fetch("/api/schedule/exam", { method: "POST", body: form });
-      const data = await res.json();
+      
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Exam Upload Non-JSON response:", text);
+        setErrorMsg(`Upload failed: ${res.status} ${res.statusText}. Please try a smaller file.`);
+        setStatus('error');
+        return;
+      }
 
       if (!res.ok) {
         setErrorMsg(data?.error || "No dates found. Make sure the image shows exam dates clearly, or try a Word/PDF version of your exam schedule.");

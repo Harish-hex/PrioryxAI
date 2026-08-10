@@ -35,11 +35,17 @@ export default function FoundryDashboard() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [resumeUploaded, setResumeUploaded] = useState(true);
+  const [resumeValid, setResumeValid] = useState(true);
 
   useEffect(() => {
     fetch("/api/foundry/generate")
       .then((res) => res.json())
-      .then((data) => setProjects(data.projects ?? []))
+      .then((data) => {
+        setProjects(data.projects ?? []);
+        if (data.resumeUploaded !== undefined) setResumeUploaded(data.resumeUploaded);
+        if (data.resumeValid !== undefined) setResumeValid(data.resumeValid);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -80,6 +86,36 @@ export default function FoundryDashboard() {
     return (
       <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  if (!resumeUploaded) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-4xl mb-4">📋</div>
+        <h2 className="text-xl font-semibold mb-2">Upload your resume first</h2>
+        <p className="text-neutral-500 mb-6 max-w-sm">
+          Project Foundry reads your skills from your resume to suggest personalised projects.
+        </p>
+        <a href="/career/resume/upload" className="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400">
+          Upload Resume →
+        </a>
+      </div>
+    );
+  }
+
+  if (!resumeValid) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h2 className="text-xl font-semibold mb-2">Resume data incomplete</h2>
+        <p className="text-neutral-500 mb-6 max-w-sm">
+          We couldn't extract skills from your resume. Please re-upload it.
+        </p>
+        <a href="/career/resume/upload" className="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400">
+          Re-upload Resume
+        </a>
       </div>
     );
   }

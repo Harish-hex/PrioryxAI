@@ -157,6 +157,8 @@ async function matchPeerCollaborators(
   userId: string
 ): Promise<ToolResult> {
   const supabase = createClient();
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const supabaseAdmin = createServiceClient();
 
   // Get current user's profile
   const { data: userProfile } = await supabase
@@ -181,25 +183,52 @@ async function matchPeerCollaborators(
 
   const userScore = userCoding?.placement_readiness_score ?? 0;
 
-  // Find active users with intersecting roles
-  const { data: activeUsers } = await supabase
+  // Find active users with intersecting roles (bypassing RLS so we can see other users)
+  const { data: activeUsers } = await supabaseAdmin
     .from('users')
     .select('id, name, avatar_url, target_roles, college, last_active_at')
     .neq('id', userId)
     .order('created_at', { ascending: false })
     .limit(50);
 
-  // Filter peers that have overlapping target roles or similar readiness scores
-  let peerCandidates = (activeUsers || []).filter(u => {
+  // Fetch explicit peer connections
+  const { data: connections } = await supabaseAdmin
+    .from('peer_connections')
+    .select('user_a, user_b')
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+  
+  const connectedPeerIds = new Set(
+    (connections || []).map((c) => (c.user_a === userId ? c.user_b : c.user_a))
+  );
+
+  // Fetch connected peer profiles if they are not in activeUsers
+  const missingConnectedIds = Array.from(connectedPeerIds).filter(
+    (id) => !activeUsers?.some((u) => u.id === id)
+  );
+  
+  let connectedUsers: any[] = [];
+  if (missingConnectedIds.length > 0) {
+    const { data: extraUsers } = await supabaseAdmin
+      .from('users')
+      .select('id, name, avatar_url, target_roles, college, last_active_at')
+      .in('id', missingConnectedIds);
+    if (extraUsers) connectedUsers = extraUsers;
+  }
+
+  const allAvailableUsers = [...(activeUsers || []), ...connectedUsers];
+
+  // Filter peers that have overlapping target roles or similar readiness scores, OR are explicitly connected
+  let peerCandidates = allAvailableUsers.filter((u: any) => {
+    if (connectedPeerIds.has(u.id)) return true;
     const roles = u.target_roles as string[] || [];
     const myRoles = userProfile?.target_roles as string[] || [];
     const hasOverlap = roles.some(r => myRoles.includes(r));
     return hasOverlap;
   });
 
-  if (peerCandidates.length === 0 && activeUsers && activeUsers.length > 0) {
+  if (peerCandidates.length === 0 && allAvailableUsers.length > 0) {
     // If no strict role overlap, fallback to latest active users
-    peerCandidates = activeUsers.slice(0, 5);
+    peerCandidates = allAvailableUsers.slice(0, 5);
   }
 
   if (peerCandidates.length === 0) {
@@ -214,7 +243,7 @@ async function matchPeerCollaborators(
     };
   }
 
-  const peerIds = peerCandidates.map(p => p.id);
+  const peerIds = peerCandidates.map((p: any) => p.id);
   const { data: peerCoding } = await supabase
     .from('coding_profiles')
     .select('user_id, placement_readiness_score')
@@ -237,7 +266,9 @@ async function matchPeerCollaborators(
       matchScore: Math.round(100 - Math.abs(userScore - peerScore)),
       commonSkills: [],
       complementarySkills: [],
-      whyMatch: commonRoles.length > 0
+      whyMatch: connectedPeerIds.has(peer.id as string) 
+        ? 'Directly connected via invite code.'
+        : commonRoles.length > 0
         ? `Same target role: ${commonRoles.join(', ')}. Similar placement score.`
         : `Similar placement readiness (${peerScore}/100).`,
       placementScore: peerScore,
@@ -292,3 +323,4 @@ export const aiAgent: AgentModule = {
     { name: 'facilitateRealTimeSession', description: 'Create a real-time collaboration session', inputSchema: { type: 'object', properties: { peerId: { type: 'string' }, sessionType: { type: 'string' }, projectId: { type: 'string' } } }, handler: facilitateRealTimeSession },
   ],
 };
+
