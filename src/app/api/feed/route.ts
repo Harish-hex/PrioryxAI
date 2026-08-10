@@ -4,6 +4,7 @@ import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
 import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl } from '@/lib/job-sync';
 import { generateRepoNextStep } from '@/lib/repo-next-step';
+import { generatePriorityPlan } from '@/lib/priority/engine';
 
 export const runtime = 'nodejs';
 
@@ -338,23 +339,46 @@ export async function GET() {
     );
   }
 
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('completed', false)
-    .limit(200);
+  const [
+    { data: tasks, error: tasksError },
+    { data: exams, error: examsError }
+  ] = await Promise.all([
+    supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('completed', false)
+      .limit(200),
+    supabase
+      .from('schedule_exams')
+      .select('*')
+      .eq('user_id', user.id)
+      .limit(50)
+  ]);
 
-  if (error) {
-    console.error('[feed] DB error:', error);
+  if (tasksError) {
+    console.error('[feed] DB error:', tasksError);
     return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 });
   }
 
   const userSubjects: string[] = userProfile?.subjects ?? [];
 
+  const combinedTasks = [
+    ...(tasks || []),
+    ...(exams || []).map((exam: any) => ({
+      id: exam.id,
+      title: exam.title,
+      type: exam.type || 'exam',
+      due_at: exam.date ? (exam.start_time ? `${exam.date}T${exam.start_time}:00.000Z` : `${exam.date}T00:00:00.000Z`) : null,
+      completed: false,
+      subject: exam.subject,
+      weightage: exam.priority === 'high' ? 80 : exam.priority === 'medium' ? 50 : 20
+    }))
+  ];
+
   // Enrich job tasks with a specific match reason (skills + stipend + urgency)
   // so the Next Move Card and feed cards show concrete context, not a generic label.
-  const scored = (tasks ?? [])
+  const scored = combinedTasks
     .map(t => {
       const enriched = { ...t, score: computePriorityScore(t) };
       if (t.type === 'job' && !t.reason) {
@@ -404,7 +428,9 @@ export async function GET() {
     ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount };
+  const priorityPlan = await generatePriorityPlan(user.id);
+
+  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount, priorityPlan };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);

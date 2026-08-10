@@ -108,9 +108,7 @@ function LoginForm() {
         <div className="glass-strong flex flex-col rounded-[32px] p-6 sm:p-8">
           {/* Brand */}
           <a href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <Sparkles size={16} />
-            </div>
+            <img src="/logo.png" alt="PrioryxAI Logo" className="h-9 w-9 rounded-2xl" />
             <span className="text-sm font-semibold text-slate-950">PrioryxAI</span>
           </a>
 

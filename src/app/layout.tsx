@@ -16,6 +16,18 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "PrioryxAI",
   description: "Your academic and career command center",
+  openGraph: {
+    type: "website",
+    url: "https://www.prioryxai.in/",
+    title: "PrioryxAI | Academic & Career Command Center",
+    description: "Connect GitHub, upload your timetable, and let PrioryxAI rank your next high-leverage move.",
+    siteName: "PrioryxAI",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PrioryxAI",
+    description: "Connect GitHub, upload your timetable, and let PrioryxAI rank your next high-leverage move.",
+  },
 };
 
 export default function RootLayout({

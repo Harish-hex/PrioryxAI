@@ -5,28 +5,35 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p $PORT",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@react-pdf/renderer": "^4.4.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.0",
+    "@types/uuid": "^10.0.0",
     "@upstash/qstash": "^2.10.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "apify-client": "^2.22.3",
+    "cheerio": "^1.2.0",
     "framer-motion": "^12.38.0",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.8.0",
     "mammoth": "^1.12.0",
     "next": "14.2.35",
     "openai": "^6.34.0",
     "pdf-parse": "^2.4.5",
-    "pg": "^8.20.0",
+    "pg": "^8.23.0",
     "razorpay": "^2.9.6",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "recharts": "^3.10.1",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",
