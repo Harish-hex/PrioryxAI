@@ -154,9 +154,7 @@ function OnboardingFlow() {
       <div className="mx-auto w-full max-w-2xl">
         {/* Brand mark */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white">
-            <Sparkles size={16} />
-          </div>
+          <img src="/logo.png" alt="PrioryxAI Logo" className="h-9 w-9 rounded-2xl" />
           <span className="text-sm font-semibold text-slate-950">PrioryxAI</span>
         </div>
 

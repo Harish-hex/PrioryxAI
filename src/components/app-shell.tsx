@@ -34,9 +34,10 @@ const viewToPath: Record<string, string> = {
 interface AppShellProps {
   username: string;
   initialView?: string;
+  children?: React.ReactNode;
 }
 
-export default function AppShell({ username, initialView = "dashboard" }: AppShellProps) {
+export default function AppShell({ username, initialView = "dashboard", children }: AppShellProps) {
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -445,10 +446,10 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                 <span>PrioryxAI workspace</span>
               </div>
               <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl lg:text-4xl">
-                {pageTitles[activeView]}
+                {pageTitles[activeView] || activeView.charAt(0).toUpperCase() + activeView.slice(1)}
               </h1>
-              <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:mt-2 sm:block sm:text-[15px]">
-                {pageSubtitles[activeView]}
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500 sm:mt-2 sm:text-base">
+                {pageSubtitles[activeView] || ""}
               </p>
             </div>
 
@@ -777,7 +778,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
             initial={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            {view[activeView]}
+            {view[activeView] || children}
           </motion.section>
         </AnimatePresence>
       </div>

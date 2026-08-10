@@ -196,10 +196,12 @@ export async function POST(request: NextRequest) {
       // PDF → extract text with pdf-parse (dynamic import avoids webpack crash)
       let extractedText = '';
       try {
+        // @ts-ignore
         const pdfParseModule = await import('pdf-parse');
-        const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
-        const parsed = await pdfParse(buffer);
-        extractedText = parsed.text ?? '';
+        const pdfModuleAny = pdfParseModule as any;
+        const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : (pdfModuleAny.default || pdfModuleAny.PDFParse || pdfModuleAny);
+        const data = await pdfParse(buffer);
+        extractedText = data.text ?? '';
       } catch (pdfErr) {
         console.error('[vision] pdf-parse failed:', pdfErr);
       }

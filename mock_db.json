@@ -1,0 +1,353 @@
+{
+  "740c73e3-27c5-40db-b2d2-db0945401e86": {
+    "hackerrank": {
+      "hackerrank_username": "code_with_yug_06",
+      "hackerrank_data": {
+        "username": "code_with_yug_06",
+        "platform": "hackerrank",
+        "totalSolved": 124,
+        "badges": [
+          "Problem Solving",
+          "Python",
+          "SQL",
+          "10 Days of JavaScript"
+        ],
+        "certifications": 2
+      },
+      "hackerrank_analysis": {
+        "raw": {
+          "username": "code_with_yug_06",
+          "platform": "hackerrank",
+          "totalSolved": 124,
+          "badges": [
+            "Problem Solving",
+            "Python",
+            "SQL",
+            "10 Days of JavaScript"
+          ],
+          "certifications": 2
+        },
+        "badgeDomains": [
+          {
+            "domain": "Algorithms & Data Structures",
+            "stream_relevance": [
+              "SDE",
+              "COMPETITIVE",
+              "CS_GENERAL"
+            ],
+            "skill_level": "core",
+            "leetcode_topics": [
+              "arrays",
+              "dynamic-programming",
+              "graphs",
+              "trees",
+              "sorting"
+            ],
+            "hr_practice_url": "https://hackerrank.com/domains/algorithms",
+            "badgeName": "Problem Solving"
+          },
+          {
+            "domain": "Python Programming",
+            "stream_relevance": [
+              "ML_AI",
+              "DATA_SCIENCE",
+              "BACKEND",
+              "CS_GENERAL"
+            ],
+            "skill_level": "language",
+            "leetcode_topics": [
+              "arrays",
+              "hash-table",
+              "strings"
+            ],
+            "hr_practice_url": "https://hackerrank.com/domains/python",
+            "badgeName": "Python"
+          },
+          {
+            "domain": "SQL & Databases",
+            "stream_relevance": [
+              "DATA_SCIENCE",
+              "BACKEND",
+              "FULLSTACK",
+              "CS_GENERAL"
+            ],
+            "skill_level": "specialization",
+            "leetcode_topics": [
+              "database"
+            ],
+            "hr_practice_url": "https://hackerrank.com/domains/sql",
+            "badgeName": "SQL"
+          }
+        ],
+        "missingBadges": [
+          "Mathematics",
+          "CPP"
+        ],
+        "certificationScore": 17,
+        "badgeScore": 20,
+        "solvedScore": 15,
+        "totalScore": 52,
+        "streamAlignment": "FAIR",
+        "priorityBadgesToEarn": [
+          "Mathematics",
+          "CPP"
+        ]
+      },
+      "hackerrank_score": 52,
+      "stream": "ML_AI",
+      "target_companies": [
+        "Apple",
+        "Adobe",
+        "Microsoft"
+      ]
+    },
+    "leetcode": {
+      "profile": {
+        "username": "code_with_yug_06",
+        "name": "Yugendhar S",
+        "birthday": null,
+        "avatar": "https://assets.leetcode.com/users/PABPKHgDU2/avatar_1747680257.png",
+        "ranking": 2802736,
+        "reputation": 0,
+        "gitHub": "https://github.com/codewithyug06",
+        "twitter": null,
+        "linkedIN": "https://linkedin.com/in/yugendhar-s",
+        "website": [],
+        "country": null,
+        "company": null,
+        "school": null,
+        "skillTags": [],
+        "about": ""
+      },
+      "solved": {
+        "solvedProblem": 46,
+        "easySolved": 21,
+        "mediumSolved": 22,
+        "hardSolved": 3,
+        "totalSubmissionNum": [
+          {
+            "difficulty": "All",
+            "count": 46,
+            "submissions": 87
+          },
+          {
+            "difficulty": "Easy",
+            "count": 21,
+            "submissions": 33
+          },
+          {
+            "difficulty": "Medium",
+            "count": 22,
+            "submissions": 49
+          },
+          {
+            "difficulty": "Hard",
+            "count": 3,
+            "submissions": 5
+          }
+        ],
+        "acSubmissionNum": [
+          {
+            "difficulty": "All",
+            "count": 46,
+            "submissions": 69
+          },
+          {
+            "difficulty": "Easy",
+            "count": 21,
+            "submissions": 29
+          },
+          {
+            "difficulty": "Medium",
+            "count": 22,
+            "submissions": 37
+          },
+          {
+            "difficulty": "Hard",
+            "count": 3,
+            "submissions": 3
+          }
+        ]
+      },
+      "skillStats": {
+        "fundamental": [
+          {
+            "tagName": "Array",
+            "tagSlug": "array",
+            "problemsSolved": 17
+          },
+          {
+            "tagName": "String",
+            "tagSlug": "string",
+            "problemsSolved": 15
+          },
+          {
+            "tagName": "Simulation",
+            "tagSlug": "simulation",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Enumeration",
+            "tagSlug": "enumeration",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Sorting",
+            "tagSlug": "sorting",
+            "problemsSolved": 5
+          },
+          {
+            "tagName": "Stack",
+            "tagSlug": "stack",
+            "problemsSolved": 4
+          },
+          {
+            "tagName": "Linked List",
+            "tagSlug": "linked-list",
+            "problemsSolved": 9
+          },
+          {
+            "tagName": "Two Pointers",
+            "tagSlug": "two-pointers",
+            "problemsSolved": 11
+          }
+        ],
+        "intermediate": [
+          {
+            "tagName": "Hash Table",
+            "tagSlug": "hash-table",
+            "problemsSolved": 7
+          },
+          {
+            "tagName": "Greedy",
+            "tagSlug": "greedy",
+            "problemsSolved": 2
+          },
+          {
+            "tagName": "Binary Search",
+            "tagSlug": "binary-search",
+            "problemsSolved": 4
+          },
+          {
+            "tagName": "Recursion",
+            "tagSlug": "recursion",
+            "problemsSolved": 5
+          },
+          {
+            "tagName": "Sliding Window",
+            "tagSlug": "sliding-window",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Bit Manipulation",
+            "tagSlug": "bit-manipulation",
+            "problemsSolved": 4
+          },
+          {
+            "tagName": "Math",
+            "tagSlug": "math",
+            "problemsSolved": 10
+          },
+          {
+            "tagName": "Design",
+            "tagSlug": "design",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Brainteaser",
+            "tagSlug": "brainteaser",
+            "problemsSolved": 1
+          }
+        ],
+        "advanced": [
+          {
+            "tagName": "Data Stream",
+            "tagSlug": "data-stream",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Backtracking",
+            "tagSlug": "backtracking",
+            "problemsSolved": 2
+          },
+          {
+            "tagName": "Dynamic Programming",
+            "tagSlug": "dynamic-programming",
+            "problemsSolved": 3
+          },
+          {
+            "tagName": "Divide and Conquer",
+            "tagSlug": "divide-and-conquer",
+            "problemsSolved": 3
+          },
+          {
+            "tagName": "Trie",
+            "tagSlug": "trie",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Monotonic Stack",
+            "tagSlug": "monotonic-stack",
+            "problemsSolved": 3
+          }
+        ]
+      },
+      "contestInfo": {
+        "contestParticipation": []
+      },
+      "contestHistory": [],
+      "calendar": {
+        "activeYears": [
+          2025,
+          2026
+        ],
+        "streak": 13,
+        "totalActiveDays": 35,
+        "submissionCalendar": "{\"1782345600\": 3, \"1782777600\": 1, \"1782864000\": 2, \"1783641600\": 10, \"1783728000\": 3, \"1783814400\": 6, \"1783900800\": 2, \"1783987200\": 2, \"1784073600\": 2, \"1784160000\": 1, \"1784246400\": 2, \"1784332800\": 1, \"1784419200\": 2, \"1784505600\": 1, \"1784592000\": 1, \"1784678400\": 2, \"1784851200\": 1, \"1784937600\": 3, \"1785024000\": 4, \"1785110400\": 2, \"1785283200\": 1, \"1785456000\": 2, \"1785542400\": 2, \"1785888000\": 2, \"1785974400\": 1, \"1786060800\": 3, \"1786147200\": 8, \"1755129600\": 2, \"1757808000\": 1, \"1761955200\": 2, \"1762128000\": 2, \"1762214400\": 4, \"1762473600\": 1, \"1762560000\": 1, \"1762646400\": 3}"
+      },
+      "languageStats": {
+        "languageProblemCount": [
+          {
+            "languageName": "C++",
+            "problemsSolved": 1
+          },
+          {
+            "languageName": "Java",
+            "problemsSolved": 16
+          },
+          {
+            "languageName": "Go",
+            "problemsSolved": 1
+          },
+          {
+            "languageName": "Python3",
+            "problemsSolved": 28
+          },
+          {
+            "languageName": "Scala",
+            "problemsSolved": 4
+          }
+        ]
+      },
+      "badges": {
+        "badgesCount": 0,
+        "badges": [],
+        "upcomingBadges": [
+          {
+            "name": "Aug LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-8.png"
+          },
+          {
+            "name": "Sep LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-9.png"
+          },
+          {
+            "name": "Oct LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-10.png"
+          }
+        ],
+        "activeBadge": null
+      }
+    }
+  }
+}

@@ -2,6 +2,11 @@
 
 import { ArrowDownToLine, CalendarCheck, CheckCircle2, FileText, GitBranch, Loader2, Lock, LogOut, Save, Shield, Sparkles, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { TimetableUploader } from "@/components/schedule/TimetableUploader";
+import { ExamUploader } from "@/components/schedule/ExamUploader";
+import { TimetablePreview } from "@/components/schedule/TimetablePreview";
+import { ExamPreview } from "@/components/schedule/ExamPreview";
+import { TimetableEntry, ExamEntry } from "@/lib/schedule/extractor";
 
 interface UserProfile {
   name: string | null;
@@ -15,15 +20,7 @@ interface UserProfile {
   pro_expires_at: string | null;
 }
 
-interface ExtractedTask {
-  id: string;
-  type: string;
-  title: string;
-  subject: string | null;
-  due_at: string | null;
-  weightage: number | null;
-  notes: string | null;
-}
+
 
 interface SettingsPanelProps {
   onOpenPricing: () => void;
@@ -46,12 +43,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [subjects, setSubjects] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
 
-  const [timetableFile, setTimetableFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[] | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [examEntries, setExamEntries] = useState<ExamEntry[]>([]);
 
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -77,6 +70,39 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
         }
       })
       .catch(() => {});
+
+    fetch("/api/schedule/timetable")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.entries) setTimetableEntries(data.entries);
+      })
+      .catch(() => {});
+
+    fetch("/api/schedule/exam/saved")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.entries) setExamEntries(data.entries);
+      })
+      .catch(() => {});
+
+    // Listen to custom events from uploaders
+    const handleTimetableExtracted = ((e: CustomEvent<TimetableEntry[]>) => {
+      setTimetableEntries(e.detail);
+      onVisionUploaded();
+    }) as EventListener;
+    
+    const handleExamExtracted = ((e: CustomEvent<ExamEntry[]>) => {
+      setExamEntries(e.detail);
+      onVisionUploaded();
+    }) as EventListener;
+
+    window.addEventListener('timetable_extracted', handleTimetableExtracted);
+    window.addEventListener('exam_extracted', handleExamExtracted);
+
+    return () => {
+      window.removeEventListener('timetable_extracted', handleTimetableExtracted);
+      window.removeEventListener('exam_extracted', handleExamExtracted);
+    };
   }, []);
 
   async function readJsonSafely(response: Response) {
@@ -145,53 +171,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     }
   }
 
-  async function handleTimetableUpload() {
-    if (!timetableFile) return;
-    setUploading(true);
-    setUploadError(null);
-    setUploadResult(null);
-    setExtractedTasks(null);
 
-    if (timetableFile.size > 10 * 1024 * 1024) {
-      setUploadError("File too large. Max 10 MB.");
-      setUploading(false);
-      return;
-    }
-
-    try {
-      const form = new FormData();
-      form.append("file", timetableFile);
-      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
-      const res = await fetch("/api/ingest/vision", { method: "POST", body: form });
-      const data = await readJsonSafely(res);
-
-      if (!res.ok) {
-        setUploadError(data?.error ?? "Failed to parse document. Try a clearer image or different file.");
-        return;
-      }
-
-      const tasks: ExtractedTask[] = data?.tasks ?? [];
-      onVisionUploaded();
-
-      if (tasks.length === 0) {
-        setUploadResult("No exam or assignment dates found. Try a clearer image or a different format.");
-      } else {
-        const sorted = [...tasks].sort((a, b) => {
-          if (!a.due_at) return 1;
-          if (!b.due_at) return -1;
-          return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
-        });
-        setExtractedTasks(sorted);
-        setUploadResult(`${tasks.length} item${tasks.length === 1 ? "" : "s"} extracted and added to your feed.`);
-        setTimetableFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    } catch {
-      setUploadError("Network error uploading document.");
-    } finally {
-      setUploading(false);
-    }
-  }
 
   async function handleSignOut() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -323,122 +303,36 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </form>
         </div>
 
-        {/* Timetable upload */}
-        <div className="glass rounded-[28px] p-5 sm:p-6">
-          <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload timetable or exam schedule</h3>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            Upload a photo, PDF, or Word doc of your timetable — weekly, semester, or full-year.
-            PrioryxAI extracts every exam, assignment deadline, and lab date automatically.
-          </p>
-
-          <div className="mt-5 space-y-3">
-            <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
-              {timetableFile ? (
-                <FileText size={18} className="shrink-0 text-slate-500" />
-              ) : (
-                <Upload size={18} className="shrink-0 text-slate-400" />
-              )}
-              <span className="min-w-0 flex-1 truncate">
-                {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                className="hidden"
-                onChange={(e) => {
-                  setTimetableFile(e.target.files?.[0] ?? null);
-                  setUploadResult(null);
-                  setUploadError(null);
-                  setExtractedTasks(null);
-                }}
-              />
-            </label>
-
-            {uploadError && (
-              <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {uploadError}
-              </p>
-            )}
-            {uploadResult && (
-              <p className="flex items-center gap-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                <CheckCircle2 size={15} />
-                {uploadResult}
-              </p>
-            )}
-
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={handleTimetableUpload}
-                disabled={!timetableFile || uploading}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
-              >
-                {uploading ? (
-                  <><Loader2 size={15} className="animate-spin" /> Extracting schedule…</>
-                ) : (
-                  <><CalendarCheck size={15} /> Extract schedule</>
-                )}
-              </button>
-              {isPro && visionRemaining !== null && (
-                <span className="text-xs font-medium text-emerald-600">
-                  {visionRemaining} of {PRO_VISION_LIMIT} uploads remaining today
-                </span>
-              )}
-            </div>
-
-            {extractedTasks && extractedTasks.length > 0 && (
-              <div className="mt-2 overflow-hidden rounded-[22px] border border-slate-200 bg-white">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-                    <CalendarCheck size={15} className="text-emerald-500" />
-                    {extractedTasks.length} item{extractedTasks.length === 1 ? "" : "s"} extracted
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onNavigateToDashboard}
-                    className="text-xs font-medium text-slate-600 underline-offset-2 hover:underline"
-                  >
-                    View in feed →
-                  </button>
-                </div>
-                <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
-                  {extractedTasks.map((task, i) => {
-                    const typeIcon = task.type === "exam" ? "📝" : task.type === "assignment" ? "📋" : "📌";
-                    const dateStr = task.due_at
-                      ? new Date(task.due_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
-                      : null;
-                    return (
-                      <li key={task.id ?? i} className="flex items-start gap-3 px-4 py-3">
-                        <span className="mt-0.5 shrink-0 text-base">{typeIcon}</span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium leading-snug text-slate-950">{task.title}</p>
-                            {dateStr && (
-                              <span className="shrink-0 tabular-nums text-xs text-slate-500">{dateStr}</span>
-                            )}
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            {task.subject && (
-                              <span className="text-xs text-slate-500">{task.subject}</span>
-                            )}
-                            {task.weightage != null && (
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs text-slate-600">
-                                {task.weightage}%
-                              </span>
-                            )}
-                          </div>
-                          {task.notes && (
-                            <p className="mt-1 text-xs leading-5 text-slate-500">{task.notes}</p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+        {/* ── SECTION 1: TIMETABLE ── */}
+        <div className="glass rounded-[28px] p-5 sm:p-6 space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload Weekly Timetable</h3>
+            <p className="text-sm text-slate-500 mt-1 leading-6">
+              Upload your weekly class schedule. PrioryxAI will extract every subject, day, and time slot automatically.
+            </p>
           </div>
+
+          <TimetableUploader isPro={isPro} visionRemaining={visionRemaining} />
+          
+          {timetableEntries.length > 0 && (
+            <TimetablePreview entries={timetableEntries} onClear={() => setTimetableEntries([])} />
+          )}
+        </div>
+
+        {/* ── SECTION 2: EXAM SCHEDULE ── */}
+        <div className="glass rounded-[28px] p-5 sm:p-6 space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload Exam & Assignment Schedule</h3>
+            <p className="text-sm text-slate-500 mt-1 leading-6">
+              Upload your exam timetable, assignment deadlines, or lab schedule. All dates are extracted and added to your dashboard calendar.
+            </p>
+          </div>
+
+          <ExamUploader isPro={isPro} visionRemaining={visionRemaining} />
+          
+          {examEntries.length > 0 && (
+            <ExamPreview entries={examEntries} onClear={() => setExamEntries([])} />
+          )}
         </div>
       </section>
 
