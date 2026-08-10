@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     title: "PrioryxAI",
     description: "Connect GitHub, upload your timetable, and let PrioryxAI rank your next high-leverage move.",
   },
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  }
 };
 
 export default function RootLayout({
