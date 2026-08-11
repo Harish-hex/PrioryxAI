@@ -144,7 +144,23 @@ export async function POST(req: NextRequest) {
 
   console.log('[Collab Connect] Connection created:', connection.id)
 
-  // 9. Return peer info for UI
+  // 9. Notify the receiver about the new connection request
+  const { data: senderProfile } = await db
+    .from('peer_profiles')
+    .select('display_name')
+    .eq('user_id', user.id)
+    .single()
+
+  await db.from('peer_notifications').insert({
+    user_id: peerProfile.user_id,
+    type: 'connection_request',
+    title: `${senderProfile?.display_name ?? 'Someone'} wants to connect with you!`,
+    body: 'Open the Requests tab to accept or decline.',
+    action_url: '/career/collab/match',
+    related_id: connection.id,
+  }).catch(() => {}) // silently ignore if peer_notifications doesn't exist yet
+
+  // 10. Return peer info for UI
   return NextResponse.json({
     success: true,
     message: `Connection request sent to ${peerProfile.display_name}!`,
