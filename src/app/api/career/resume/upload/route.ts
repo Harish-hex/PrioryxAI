@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
-import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
+import { extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
+import OpenAI from 'openai'
 
+export const config = { api: { bodyParser: false } };
+export const maxDuration = 60;
 // ── Environment check ─────────────────────────────────────────
 const OPENAI_KEY = process.env.OPENAI_API_KEY
 if (!OPENAI_KEY) {
@@ -119,38 +122,28 @@ export async function POST(req: NextRequest) {
   }
   console.log('[Resume API] File:', filename, '|', mimeType, '|', buffer.length, 'bytes')
 
-  // ── 3. Read file content ────────────────────────────────────
-  console.log('[Resume API] Reading file...')
-  const readResult = await readFile(buffer, mimeType, filename)
-  console.log('[Resume API] Read method:', readResult.method)
-  console.log('[Resume API] Text length:', readResult.rawText.length)
-  console.log('[Resume API] Read success:', readResult.success)
+  // ── 3 & 4. Extract resume data directly with GPT-4o Vision ───
+  console.log('[Resume API] Calling GPT-4o Vision...')
+  const base64File = buffer.toString('base64')
+  const openai = new OpenAI({ apiKey: OPENAI_KEY })
 
-  if (!readResult.success) {
-    return NextResponse.json({ error: readResult.error }, { status: 400 })
-  }
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [{
+      role: "user",
+      content: [
+        { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64File}` } },
+        { type: "text", text: "Extract all skills, projects, experience, education from this resume as JSON with keys: skills[], projects[], experience[], education[], name, email, phone, location, linkedin, github, summary, certifications[], achievements[], languages[]" }
+      ]
+    }],
+    max_tokens: 2000
+  });
 
-  // ── 4. Extract resume data with AI ─────────────────────────
-  console.log('[Resume API] Calling AI extraction...')
-  const aiResult = await extractWithAI(
-    readResult,
-    RESUME_SYSTEM,
-    RESUME_PROMPT,
-    2500
-  )
-  console.log('[Resume API] AI call success:', aiResult.success)
-  if (!aiResult.success) {
-    console.error('[Resume API] AI error:', aiResult.error)
-  }
-  console.log('[Resume API] AI response preview:',
-    aiResult.content.slice(0, 150))
-
-  if (!aiResult.success) {
-    return NextResponse.json(
-      { error: aiResult.error ?? 'AI extraction failed. Please try again.' },
-      { status: 500 }
-    )
-  }
+  const aiContent = response.choices[0]?.message?.content || ""
+  console.log('[Resume API] AI response preview:', aiContent.slice(0, 150))
+  
+  const aiResult = { success: true, content: aiContent }
+  const readResult = { method: 'gpt-4o-vision', rawText: 'Extracted via vision directly' }
 
   // ── 5. Parse JSON from AI response ─────────────────────────
   interface ResumeData {
