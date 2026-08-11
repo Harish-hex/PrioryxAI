@@ -319,8 +319,15 @@ export default function AppShell({ username, initialView = "dashboard", children
 
   async function handleCompleteTask(id: string) {
     try {
-      await fetch(`/api/tasks/${id}/complete`, { method: "PATCH" });
+      // Optimistic UI updates
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      setStats((prev: any) => prev ? {
+        ...prev,
+        pending_tasks: Math.max(0, prev.pending_tasks - 1),
+        completed_this_week: prev.completed_this_week + 1,
+      } : prev);
+
+      await fetch(`/api/tasks/${id}/complete`, { method: "PATCH" });
       fetchStats();
     } catch {}
   }

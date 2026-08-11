@@ -12,8 +12,9 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const cacheKey = `stats:${user.id}`;
-  const cached = await withFallback(() => redis.get(cacheKey), null);
-  if (cached) return NextResponse.json(cached);
+  // Temporarily bypass cache so F5 works immediately
+  // const cached = await withFallback(() => redis.get(cacheKey), null);
+  // if (cached) return NextResponse.json(cached);
 
   // Start of current week (Monday IST)
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
@@ -26,6 +27,7 @@ export async function GET() {
   const [
     { data: allTasks },
     { data: completedThisWeek },
+    { data: allPriorityTasks },
     { data: github },
   ] = await Promise.all([
     supabase
@@ -41,6 +43,12 @@ export async function GET() {
       .gte('due_at', weekStart.toISOString()),
 
     supabase
+      .from('priority_tasks')
+      .select('source_type, completed, expires_at, completed_at')
+      .eq('user_id', user.id)
+      .eq('dismissed', false),
+
+    supabase
       .from('github_cache')
       .select('streak_days, health_score, last_commit_at')
       .eq('user_id', user.id)
@@ -48,28 +56,42 @@ export async function GET() {
   ]);
 
   const tasks = allTasks ?? [];
+  const priorityTasks = allPriorityTasks ?? [];
 
   // Tasks by type breakdown
   const byType: Record<string, { total: number; pending: number; completed: number }> = {};
-  for (const t of tasks) {
-    const type = t.type as string;
+  
+  const processTask = (type: string, isCompleted: boolean) => {
     if (!byType[type]) byType[type] = { total: 0, pending: 0, completed: 0 };
     byType[type].total++;
-    if (t.completed) byType[type].completed++;
+    if (isCompleted) byType[type].completed++;
     else byType[type].pending++;
+  };
+
+  for (const t of tasks) {
+    processTask(t.type as string, t.completed);
+  }
+  for (const t of priorityTasks) {
+    processTask(t.source_type as string, t.completed);
   }
 
   // Overdue count
   const now2 = new Date();
   const overdue = tasks.filter(
     t => !t.completed && t.due_at && new Date(t.due_at) < now2
+  ).length + priorityTasks.filter(
+    t => !t.completed && t.expires_at && new Date(t.expires_at) < now2
+  ).length;
+
+  const priorityCompletedThisWeek = priorityTasks.filter(
+    t => t.completed && t.completed_at && new Date(t.completed_at) >= weekStart
   ).length;
 
   const result = {
-    total_tasks: tasks.length,
-    pending_tasks: tasks.filter(t => !t.completed).length,
-    completed_tasks: tasks.filter(t => t.completed).length,
-    completed_this_week: completedThisWeek?.length ?? 0,
+    total_tasks: tasks.length + priorityTasks.length,
+    pending_tasks: tasks.filter(t => !t.completed).length + priorityTasks.filter(t => !t.completed).length,
+    completed_tasks: tasks.filter(t => t.completed).length + priorityTasks.filter(t => t.completed).length,
+    completed_this_week: (completedThisWeek?.length ?? 0) + priorityCompletedThisWeek,
     overdue,
     by_type: byType,
     github: {

@@ -1,40 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'  // Fixed path based on earlier checks
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
 
-// Debug: log environment status on module load
-console.log('[Resume Module] OPENAI_API_KEY set:', !!process.env.OPENAI_API_KEY)
-console.log('[Resume Module] SUPABASE_URL set:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-console.log('[Resume Module] SERVICE_KEY set:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+// ── Environment check ─────────────────────────────────────────
+const OPENAI_KEY = process.env.OPENAI_API_KEY
+if (!OPENAI_KEY) {
+  console.error('[Resume API] OPENAI_API_KEY is not set!')
+}
 
+// ── AI Prompts ────────────────────────────────────────────────
 
-// ── PROMPTS ────────────────────────────────────────────────────
+const RESUME_SYSTEM = `You are an expert resume parser.
+Extract ALL information from the resume.
+Return ONLY raw JSON. No markdown. No backticks. No explanation.`
 
-const RESUME_SYSTEM_PROMPT = `You are an expert resume parser and career analyst.
-Extract all information from the resume and return ONLY valid JSON.
-No markdown, no backticks, no explanation — raw JSON only.`
-
-const RESUME_USER_PROMPT = `Parse this resume completely and return JSON with EXACTLY
-this structure (all fields required, use null or [] if not found):
+const RESUME_PROMPT = `Parse this resume completely.
+Return JSON with EXACTLY this structure:
 
 {
-  "name": "Full Name",
-  "email": "email@example.com",
-  "phone": "+91-9999999999",
-  "location": "City, Country",
-  "linkedin": "linkedin.com/in/username",
-  "github": "github.com/username",
-  "portfolio": "portfolio-url.com",
-  "summary": "Professional summary if present",
-  "skills": ["Python", "React", "Node.js", "Machine Learning"],
+  "name": "Full Name or null",
+  "email": "email or null",
+  "phone": "phone or null",
+  "location": "city or null",
+  "linkedin": "url or null",
+  "github": "url or null",
+  "summary": "summary text or null",
+  "skills": ["Python", "React", "Node.js", "etc"],
   "experience": [
     {
       "company": "Company Name",
       "role": "Job Title",
       "duration": "Jun 2024 - Present",
-      "location": "City",
-      "description": "What they did there",
-      "achievements": ["Achievement 1", "Achievement 2"]
+      "description": "What they did"
     }
   ],
   "education": [
@@ -42,103 +39,110 @@ this structure (all fields required, use null or [] if not found):
       "institution": "University Name",
       "degree": "B.Tech Computer Science",
       "year": "2022-2026",
-      "cgpa": "8.5",
-      "location": "City"
+      "cgpa": "8.5 or null"
     }
   ],
   "projects": [
     {
       "name": "Project Name",
       "description": "What it does",
-      "tech_stack": ["React", "Node.js", "MongoDB"],
-      "github_url": "github.com/user/repo",
-      "live_url": "deployed-url.com",
-      "duration": "Jan 2024 - Mar 2024"
+      "tech_stack": ["React", "Node.js"]
     }
   ],
-  "certifications": ["AWS Certified", "Google ML Certificate"],
-  "achievements": ["Hackathon winner", "Open source contributor"],
-  "languages": ["English", "Tamil", "Hindi"],
-  "volunteer": [],
-  "publications": []
+  "certifications": ["cert1", "cert2"],
+  "achievements": ["achievement1"],
+  "languages": ["English", "Tamil"]
 }
 
-CRITICAL: The "skills" array MUST include ALL of:
-- Programming languages (Python, Java, C++, JavaScript, TypeScript, etc.)
-- Frameworks (React, Node.js, Django, Spring Boot, Express, FastAPI, etc.)
-- Tools (Git, Docker, AWS, Linux, Kubernetes, etc.)
-- Databases (MySQL, MongoDB, PostgreSQL, Redis, etc.)
-- Libraries (TensorFlow, PyTorch, Pandas, NumPy, scikit-learn, etc.)
-- Concepts (Machine Learning, Data Structures, System Design, REST API, etc.)
-Extract from skills section AND from project descriptions AND from experience.
-NEVER return an empty skills array if any technical terms appear in the resume.
+CRITICAL RULES:
+- "skills" MUST include ALL technical terms found anywhere in the resume:
+  programming languages, frameworks, libraries, tools, databases, platforms
+- Extract from EVERY section: skills section, project tech stacks,
+  experience descriptions, certifications
+- Never return empty skills array if ANY technical term exists
+- Return raw JSON only — no markdown, no code fences`
 
-Resume content:`
+const SWOT_SYSTEM = `You are a career coach. Return ONLY raw JSON. No markdown.`
 
-const SWOT_SYSTEM_PROMPT = `You are a career coach doing SWOT analysis.
-Return ONLY valid JSON. No markdown, no backticks.`
+function buildSwotPrompt(
+  name: string,
+  skills: string[],
+  stream: string,
+  companies: string[]
+): string {
+  return `Analyse this student profile and return a SWOT analysis as JSON:
 
-function buildSwotPrompt(name: string, skills: string[], stream: string): string {
-  return `Do a SWOT analysis for a ${stream} engineering student named ${name}
-  with these skills: ${skills.join(', ')}.
-  
-  Return JSON:
-  {
-    "strengths": ["strength 1", "strength 2", "strength 3"],
-    "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
-    "opportunities": ["opportunity 1", "opportunity 2"],
-    "threats": ["threat 1", "threat 2"],
-    "critical_gaps": ["gap 1", "gap 2", "gap 3"],
-    "recommended_skills": ["skill 1", "skill 2", "skill 3"]
-  }`
+Name: ${name}
+Stream: ${stream}
+Target companies: ${companies.join(', ') || 'top tech companies'}
+Skills: ${skills.join(', ')}
+
+Return JSON:
+{
+  "strengths": ["3-5 specific strengths based on their skills"],
+  "weaknesses": ["3-5 specific gaps compared to ${stream} job requirements"],
+  "opportunities": ["2-3 career opportunities they can pursue"],
+  "threats": ["2-3 risks in current job market"],
+  "critical_gaps": ["top 3 skills they MUST learn for ${companies[0] ?? 'top companies'}"],
+  "recommended_skills": ["5 skills to learn next, prioritised"]
 }
 
-// ── API HANDLER ────────────────────────────────────────────────
+Return raw JSON only.`
+}
+
+// ── API Handler ───────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  console.log('[Resume API] === Request received ===')
+  const startTime = Date.now()
+  console.log('\n[Resume API] ════════════════════════════════')
+  console.log('[Resume API] Request received at', new Date().toISOString())
 
-  // 1. Auth check
-  const supabase = createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    console.error('[Resume API] Auth failed:', authError)
+  // ── 1. Auth ────────────────────────────────────────────────
+  const user = await getAuthUser()
+  if (!user) {
+    console.error('[Resume API] No authenticated user')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  console.log('[Resume API] User authenticated:', user.id)
+  console.log('[Resume API] User:', user.id, user.email)
 
-  // 2. Parse uploaded file
+  // ── 2. Parse uploaded file ─────────────────────────────────
   const fileResult = await parseUploadedFile(req)
   if ('error' in fileResult && !('buffer' in fileResult)) {
     console.error('[Resume API] File parse error:', fileResult.error)
     return NextResponse.json({ error: fileResult.error }, { status: 400 })
   }
   const { buffer, mimeType, filename } = fileResult as {
-    buffer: Buffer; mimeType: string; filename: string
+    buffer: Buffer
+    mimeType: string
+    filename: string
   }
+  console.log('[Resume API] File:', filename, '|', mimeType, '|', buffer.length, 'bytes')
 
-  // 3. Read/extract file content
+  // ── 3. Read file content ────────────────────────────────────
   console.log('[Resume API] Reading file...')
   const readResult = await readFile(buffer, mimeType, filename)
-  console.log('[Resume API] Read result:', {
-    method: readResult.method,
-    textLength: readResult.rawText.length,
-    success: readResult.success
-  })
+  console.log('[Resume API] Read method:', readResult.method)
+  console.log('[Resume API] Text length:', readResult.rawText.length)
+  console.log('[Resume API] Read success:', readResult.success)
 
   if (!readResult.success) {
     return NextResponse.json({ error: readResult.error }, { status: 400 })
   }
 
-  // 4. Extract resume data with AI
+  // ── 4. Extract resume data with AI ─────────────────────────
   console.log('[Resume API] Calling AI extraction...')
   const aiResult = await extractWithAI(
     readResult,
-    RESUME_SYSTEM_PROMPT,
-    RESUME_USER_PROMPT,
+    RESUME_SYSTEM,
+    RESUME_PROMPT,
     2500
   )
-  console.log('[Resume API] AI result success:', aiResult.success)
+  console.log('[Resume API] AI call success:', aiResult.success)
+  if (!aiResult.success) {
+    console.error('[Resume API] AI error:', aiResult.error)
+  }
+  console.log('[Resume API] AI response preview:',
+    aiResult.content.slice(0, 150))
 
   if (!aiResult.success) {
     return NextResponse.json(
@@ -147,83 +151,116 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 5. Parse JSON from AI response
+  // ── 5. Parse JSON from AI response ─────────────────────────
   interface ResumeData {
-    name?: string
-    email?: string
+    name?: string | null
+    email?: string | null
+    phone?: string | null
+    location?: string | null
+    linkedin?: string | null
+    github?: string | null
+    summary?: string | null
     skills?: string[]
-    experience?: unknown[]
-    education?: unknown[]
-    projects?: unknown[]
+    experience?: Array<{
+      company: string
+      role: string
+      duration: string
+      description: string
+    }>
+    education?: Array<{
+      institution: string
+      degree: string
+      year: string
+      cgpa?: string | null
+    }>
+    projects?: Array<{
+      name: string
+      description: string
+      tech_stack: string[]
+    }>
     certifications?: string[]
+    achievements?: string[]
     languages?: string[]
-    [key: string]: unknown
   }
+
   const parseResult = parseAIJson<ResumeData>(aiResult.content)
   if (!parseResult.success || !parseResult.data) {
-    console.error('[Resume API] JSON parse failed:', aiResult.content.slice(0, 300))
+    console.error('[Resume API] JSON parse failed')
+    console.error('[Resume API] Raw AI response:', aiResult.content.slice(0, 500))
     return NextResponse.json(
-      { error: 'Could not parse AI response. Please try uploading again.' },
+      { error: 'Could not parse resume data. Please try again.' },
       { status: 500 }
     )
   }
 
-  const resumeData = parseResult.data
-  console.log('[Resume API] Parsed resume for:', resumeData.name)
-  console.log('[Resume API] Raw skills found:', resumeData.skills?.length ?? 0)
+  let resumeData = parseResult.data
+  console.log('[Resume API] Parsed name:', resumeData.name)
+  console.log('[Resume API] Raw skills:', resumeData.skills?.length ?? 0)
 
-  // ── Skill normalisation (Bug 2A fix) ──
+  // ── 6. Normalise and enhance skills ────────────────────────
   let skills: string[] = []
+
+  // From skills array
   if (Array.isArray(resumeData.skills)) {
-    skills = (resumeData.skills as unknown[])
+    skills = resumeData.skills
       .flat()
-      .map((s: unknown) => String(s).trim())
-      .filter((s: string) => s.length > 1 && s !== 'null' && s !== 'undefined')
-  } else if (typeof resumeData.skills === 'string') {
-    skills = (resumeData.skills as string).split(',').map((s: string) => s.trim()).filter(Boolean)
+      .map(s => String(s).trim())
+      .filter(s => s.length > 1 && s !== 'null')
   }
 
-  // Also extract from tech_stack in projects
-  const projectSkills = ((resumeData.projects ?? []) as Array<{ tech_stack?: string[] }>)
-    .flatMap((p) => p.tech_stack ?? [])
-    .map((s: string) => s.trim())
-    .filter(Boolean)
+  // From project tech_stacks
+  const projectSkills = (resumeData.projects ?? [])
+    .flatMap(p => p.tech_stack ?? [])
+    .map(s => String(s).trim())
+    .filter(s => s.length > 1)
 
-  // Merge + deduplicate
-  resumeData.skills = Array.from(new Set([...skills, ...projectSkills]))
-  console.log('[Resume API] Final skills count:', resumeData.skills.length)
-  console.log('[Resume API] Skills sample:', resumeData.skills.slice(0, 10))
+  // From certifications
+  const certSkills = (resumeData.certifications ?? [])
+    .flatMap(cert => {
+      const techMap: Record<string, string[]> = {
+        'aws': ['AWS', 'Cloud'], 'google': ['GCP'], 'azure': ['Azure'],
+        'tensorflow': ['TensorFlow', 'ML'], 'pytorch': ['PyTorch'],
+        'react': ['React'], 'node': ['Node.js']
+      }
+      const lower = cert.toLowerCase()
+      return Object.entries(techMap)
+        .filter(([key]) => lower.includes(key))
+        .flatMap(([, vals]) => vals)
+    })
 
-  // 6. Get user's stream for SWOT analysis
-  const { data: profile } = await supabase
-    .from('users') // Note: In this project, it's typically the 'users' table, not 'profiles'
-    .select('stream, target_roles')
+  // Merge all, deduplicate, sort
+  const allSkills = Array.from(new Set([
+    ...skills, ...projectSkills, ...certSkills
+  ])).sort()
+
+  resumeData.skills = allSkills
+  console.log('[Resume API] Final skills count:', allSkills.length)
+  console.log('[Resume API] Skills:', allSkills.slice(0, 10))
+
+  // ── 7. Get user profile for context ────────────────────────
+  const db = createServiceRoleClient()
+
+  const { data: profile } = await db
+    .from('users') // changed from profiles as per original instruction
+    .select('stream, target_companies, display_name')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const stream = profile?.stream ?? 'Software Engineering'
+  const targetCompanies = profile?.target_companies ?? []
+  console.log('[Resume API] User stream:', stream)
 
-  // 7. Generate SWOT analysis (separate AI call)
-  console.log('[Resume API] Generating SWOT analysis...')
-  const swotResult = await extractWithAI(
-    { ...readResult, method: 'text_extraction', rawText: '' }, // force text path
-    SWOT_SYSTEM_PROMPT,
-    buildSwotPrompt(
-      resumeData.name ?? 'Student',
-      resumeData.skills ?? [],
-      stream
-    ),
-    800
-  )
-
+  // ── 8. Generate SWOT analysis ──────────────────────────────
+  console.log('[Resume API] Generating SWOT...')
   interface SwotData {
-    strengths?: string[]
-    weaknesses?: string[]
-    opportunities?: string[]
-    threats?: string[]
-    critical_gaps?: string[]
-    recommended_skills?: string[]
+    strengths: string[]
+    weaknesses: string[]
+    opportunities: string[]
+    threats: string[]
+    critical_gaps: string[]
+    recommended_skills: string[]
   }
+
   let swotData: SwotData = {
     strengths: [],
     weaknesses: [],
@@ -233,99 +270,145 @@ export async function POST(req: NextRequest) {
     recommended_skills: []
   }
 
-  if (swotResult.success) {
-    const swotParsed = parseAIJson<SwotData>(swotResult.content)
+  // Use text path for SWOT (faster, cheaper)
+  const swotReadResult = {
+    method: 'text_extraction' as const,
+    rawText: buildSwotPrompt(
+      resumeData.name ?? 'Student',
+      allSkills,
+      stream,
+      targetCompanies
+    ),
+    success: true
+  }
+
+  const swotAI = await extractWithAI(
+    swotReadResult,
+    SWOT_SYSTEM,
+    '',  // prompt is in rawText
+    800
+  )
+
+  if (swotAI.success) {
+    const swotParsed = parseAIJson<SwotData>(swotAI.content)
     if (swotParsed.success && swotParsed.data) {
       swotData = swotParsed.data
+      console.log('[Resume API] SWOT generated:',
+        swotData.critical_gaps?.length ?? 0, 'gaps')
     }
   }
 
-  // 8. Store in Supabase
-  console.log('[Resume API] Storing in Supabase...')
-  console.log('[Resume] About to save to Supabase...')
-  console.log('[Resume] user_id:', user.id)
-  console.log('[Resume] skills count:', (resumeData.skills ?? []).length)
-  console.log('[Resume] has parsed_data:', !!resumeData)
+  // ── 9. SAVE TO SUPABASE (the critical step) ─────────────────
 
-  const db = createServiceClient()
+  console.log('[Resume API] === SAVING TO SUPABASE ===')
+  console.log('[Resume API] user_id:', user.id)
+  console.log('[Resume API] skills to save:', allSkills.length)
 
-  // First check if row exists:
-  const { data: existing, error: checkErr } = await db
+  // Step 9a: Check if row exists
+  const { data: existingRow, error: checkErr } = await db
     .from('user_resumes')
-    .select('id')
+    .select('id, created_at')
     .eq('user_id', user.id)
     .maybeSingle()
 
-  console.log('[Resume] Existing row:', existing?.id ?? 'NONE')
-  console.log('[Resume] Check error:', checkErr?.message ?? 'none')
+  console.log('[Resume API] Existing row:', existingRow?.id ?? 'NONE')
+  if (checkErr) console.error('[Resume API] Check error:', checkErr)
 
-  let saveError: unknown = null
-
-  if (existing) {
-    // UPDATE existing row
-    const { error } = await db
-      .from('user_resumes')
-      .update({
-        raw_text: readResult.rawText.slice(0, 50000),
-        skill_entities: {
-          skills: resumeData.skills ?? [],
-          certifications: resumeData.certifications ?? [],
-          projects: resumeData.projects ?? [],
-          education: resumeData.education ?? [],
-          experience: resumeData.experience ?? []
-        },
-        swot: swotData,
-        parsed_data: resumeData,
-        extraction_method: readResult.method,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-
-    saveError = error
-    console.log('[Resume] UPDATE result:', error ? `ERROR: ${error.message}` : 'SUCCESS')
-  } else {
-    // INSERT new row
-    const { error } = await db
-      .from('user_resumes')
-      .insert({
-        user_id: user.id,
-        raw_text: readResult.rawText.slice(0, 50000),
-        skill_entities: {
-          skills: resumeData.skills ?? [],
-          certifications: resumeData.certifications ?? [],
-          projects: resumeData.projects ?? [],
-          education: resumeData.education ?? [],
-          experience: resumeData.experience ?? []
-        },
-        swot: swotData,
-        parsed_data: resumeData,
-        extraction_method: readResult.method,
-        created_at: new Date().toISOString()
-      })
-
-    saveError = error
-    console.log('[Resume] INSERT result:', error ? `ERROR: ${error.message}` : 'SUCCESS')
+  const resumePayload = {
+    user_id: user.id,
+    raw_text: readResult.rawText.slice(0, 50000),
+    skill_entities: {
+      skills: allSkills,
+      certifications: resumeData.certifications ?? [],
+      projects: resumeData.projects ?? [],
+      education: resumeData.education ?? [],
+      experience: resumeData.experience ?? []
+    },
+    swot: swotData,
+    parsed_data: resumeData,
+    extraction_method: readResult.method,
+    updated_at: new Date().toISOString()
   }
 
-  // Update profiles table to mark resume as uploaded
-  if (!saveError) {
+  let savedId: string | null = null
+
+  if (existingRow) {
+    // UPDATE
+    console.log('[Resume API] Updating existing row:', existingRow.id)
+    const { data: updated, error: updateErr } = await db
+      .from('user_resumes')
+      .update(resumePayload)
+      .eq('user_id', user.id)
+      .select('id')
+      .single()
+
+    if (updateErr) {
+      console.error('[Resume API] UPDATE FAILED:', updateErr.message)
+      console.error('[Resume API] UPDATE error code:', updateErr.code)
+      console.error('[Resume API] UPDATE details:', updateErr.details)
+    } else {
+      savedId = updated.id
+      console.log('[Resume API] UPDATE SUCCESS. id:', savedId)
+    }
+  } else {
+    // INSERT
+    console.log('[Resume API] Inserting new row...')
+    const { data: inserted, error: insertErr } = await db
+      .from('user_resumes')
+      .insert({ ...resumePayload, created_at: new Date().toISOString() })
+      .select('id')
+      .single()
+
+    if (insertErr) {
+      console.error('[Resume API] INSERT FAILED:', insertErr.message)
+      console.error('[Resume API] INSERT error code:', insertErr.code)
+      console.error('[Resume API] INSERT details:', insertErr.details)
+    } else {
+      savedId = inserted.id
+      console.log('[Resume API] INSERT SUCCESS. id:', savedId)
+    }
+  }
+
+  // Step 9b: Update users.resume_uploaded flag
+  if (savedId) {
     const { error: profileErr } = await db
-      .from('users')
+      .from('users') // changed from profiles
       .update({
         resume_uploaded: true,
         resume_uploaded_at: new Date().toISOString()
       })
       .eq('id', user.id)
 
-    console.log('[Resume] Profile update:', profileErr?.message ?? 'SUCCESS')
+    if (profileErr) {
+      console.error('[Resume API] Profile flag update failed:', profileErr.message)
+    } else {
+      console.log('[Resume API] Profile flag set to resume_uploaded=true')
+    }
+  } else {
+    console.error('[Resume API] savedId is null — RESUME NOT SAVED TO DB')
   }
 
-  console.log('[Resume API] === Success ===')
+  // ── 10. Verify the save worked ──────────────────────────────
+  const { data: verification } = await db
+    .from('user_resumes')
+    .select('id, user_id, skill_entities, updated_at')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  console.log('[Resume API] VERIFICATION:',
+    verification ? `FOUND (${(verification.skill_entities as { skills?: string[] })?.skills?.length ?? 0} skills)` : 'NOT FOUND IN DB')
+  console.log('[Resume API] Total time:', Date.now() - startTime, 'ms')
+  console.log('[Resume API] ════════════════════════════════\n')
+
   return NextResponse.json({
     success: true,
+    saved: !!savedId,
     data: resumeData,
     swot: swotData,
     extractionMethod: readResult.method,
-    skillsFound: resumeData.skills?.length ?? 0
+    skillsFound: allSkills.length,
+    resumeId: savedId
   })
 }
+
+export const config = { api: { bodyParser: false } }

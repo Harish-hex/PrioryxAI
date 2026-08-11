@@ -37,6 +37,7 @@ export default function FoundryDashboard() {
   const [generating, setGenerating] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(true);
   const [resumeValid, setResumeValid] = useState(true);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/foundry/generate")
@@ -46,13 +47,23 @@ export default function FoundryDashboard() {
         if (data.resumeUploaded !== undefined) setResumeUploaded(data.resumeUploaded);
         if (data.resumeValid !== undefined) setResumeValid(data.resumeValid);
       })
+      .catch((err) => console.error("[Foundry UI] Error fetching projects:", err))
       .finally(() => setLoading(false));
   }, []);
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const response = await fetch("/api/foundry/generate", { method: "POST" });
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown server error' }));
+        setGenerateError(err.error ?? `Error ${response.status}`);
+        setGenerating(false);
+        return;
+      }
+      
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -67,16 +78,26 @@ export default function FoundryDashboard() {
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
-            if (data.projects) {
-              // Refresh from server after generation
-              const res = await fetch("/api/foundry/generate");
-              const fresh = await res.json();
-              setProjects(fresh.projects ?? []);
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.projects) {
+                // Refresh from server after generation
+                const res = await fetch("/api/foundry/generate");
+                const fresh = await res.json();
+                setProjects(fresh.projects ?? []);
+              }
+              if (data.error) {
+                setGenerateError(data.error);
+              }
+            } catch (e) {
+              console.error("[Foundry UI] SSE JSON parse error", e);
             }
           }
         }
       }
+    } catch (e) {
+      console.error("[Foundry UI] Generate request failed", e);
+      setGenerateError("Network error. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -90,6 +111,7 @@ export default function FoundryDashboard() {
     );
   }
 
+  // BUG 3 FIX: Reliable check if they uploaded a resume
   if (!resumeUploaded) {
     return (
       <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 text-center">
@@ -128,6 +150,12 @@ export default function FoundryDashboard() {
         <p className="text-slate-500 max-w-md mb-8">
           We've analysed your resume. Click below to generate 9 personalised project ideas that will bridge your skill gaps.
         </p>
+        
+        {generateError && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg max-w-md">
+            <strong>Error:</strong> {generateError}
+          </div>
+        )}
         
         {generating ? (
           <div className="flex flex-col items-center">
@@ -168,7 +196,6 @@ export default function FoundryDashboard() {
                 : "Generate projects from your resume analysis"}
             </p>
           </div>
-          {/* Empty state handled above */}
         </div>
 
         {/* Difficulty sections */}
@@ -191,7 +218,7 @@ export default function FoundryDashboard() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="group rounded-xl border border-slate-200 bg-white/[0.02] p-5 transition hover:border-white/20 hover:bg-white/[0.04]"
+                    className="group rounded-xl border border-slate-200 bg-white/[0.02] p-5 transition hover:border-indigo-100 hover:bg-slate-50"
                   >
                     <div className="flex items-start justify-between">
                       <h3 className="font-semibold text-sm pr-2">{project.title}</h3>
@@ -207,7 +234,7 @@ export default function FoundryDashboard() {
                     {/* Tech stack */}
                     <div className="mt-3 flex flex-wrap gap-1">
                       {project.tech_stack.slice(0, 4).map((t) => (
-                        <span key={t} className="rounded px-1.5 py-0.5 text-[10px] border border-slate-200 bg-slate-50 text-neutral-500">
+                        <span key={t} className="rounded px-1.5 py-0.5 text-[10px] border border-slate-200 bg-white text-neutral-500">
                           {t}
                         </span>
                       ))}
@@ -219,7 +246,7 @@ export default function FoundryDashboard() {
                         <span>Phase {project.current_phase}/6 · {PHASE_LABELS[project.current_phase - 1]}</span>
                         <span>{project.completion_pct}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-slate-50">
+                      <div className="h-1.5 rounded-full bg-slate-100">
                         <div
                           className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500"
                           style={{ width: `${project.completion_pct}%` }}
@@ -233,7 +260,7 @@ export default function FoundryDashboard() {
                             ) : idx === project.current_phase - 1 ? (
                               <Clock size={12} className="text-indigo-400" />
                             ) : (
-                              <Lock size={10} className="text-neutral-600" />
+                              <Lock size={10} className="text-neutral-400" />
                             )}
                           </div>
                         ))}
@@ -241,7 +268,7 @@ export default function FoundryDashboard() {
                     </div>
 
                     {project.verified && (
-                      <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-medium">
+                      <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] text-emerald-600 font-medium">
                         <CheckCircle2 size={10} /> Verified
                       </div>
                     )}
@@ -251,16 +278,6 @@ export default function FoundryDashboard() {
             </div>
           );
         })}
-
-        {projects.length === 0 && !generating && (
-          <div className="text-center py-20">
-            <Hammer size={48} className="mx-auto text-neutral-700 mb-4" />
-            <p className="text-neutral-500">No projects yet. Upload your resume first, then generate projects.</p>
-            <a href="/career/resume/upload" className="inline-flex items-center gap-2 mt-4 text-indigo-400 text-sm hover:text-indigo-300">
-              Upload Resume <ArrowRight size={14} />
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
