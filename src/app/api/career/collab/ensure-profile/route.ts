@@ -73,17 +73,12 @@ export async function POST() {
     })
   }
 
-  // Get display name from profiles table
-  const { data: profile } = await db
-    .from('profiles')
-    .select('display_name, stream, subjects')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const displayName = profile?.display_name
-    ?? user.user_metadata?.full_name
-    ?? user.email?.split('@')[0]
-    ?? 'User'
+  // Get display name from auth.users metadata (profiles table does not exist)
+  const displayName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split('@')[0] ||
+    'User'
 
   const avatarInitial = displayName.charAt(0).toUpperCase()
 
@@ -94,8 +89,8 @@ export async function POST() {
   console.log('[EnsureProfile] Display name:', displayName)
   console.log('[EnsureProfile] Connect code:', connectCode)
 
-  // Parse skills from subjects if available
-  const rawSubjects = profile?.subjects ?? ''
+  // Parse skills from user metadata if available
+  const rawSubjects = user.user_metadata?.subjects ?? ''
   const skills = typeof rawSubjects === 'string'
     ? rawSubjects.split(',').map((s: string) => s.trim()).filter(Boolean)
     : Array.isArray(rawSubjects) ? rawSubjects : []
@@ -108,7 +103,7 @@ export async function POST() {
       display_name: displayName,
       avatar_initial: avatarInitial,
       connect_code: connectCode,
-      stream: profile?.stream ?? 'Software Engineering',
+      stream: user.user_metadata?.stream ?? 'Software Engineering',
       skills: skills,
       is_discoverable: true,
       placement_score: 0,

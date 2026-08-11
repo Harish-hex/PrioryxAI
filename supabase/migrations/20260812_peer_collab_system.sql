@@ -3,21 +3,23 @@
 -- Run this in Supabase SQL Editor
 -- ════════════════════════════════════════════════════════════════
 
--- ── Fix peer_profiles: ensure display_name comes from profiles ──
+-- ── Fix peer_profiles: ensure display_name comes from auth.users ──
 UPDATE peer_profiles pp
 SET display_name = COALESCE(
-  (SELECT p.display_name FROM profiles p WHERE p.id = pp.user_id),
+  NULLIF(pp.display_name, 'Anonymous'),
+  NULLIF(pp.display_name, 'User'),
   (SELECT split_part(au.email, '@', 1)
    FROM auth.users au WHERE au.id = pp.user_id),
   'User'
 ),
 avatar_initial = UPPER(LEFT(COALESCE(
-  (SELECT p.display_name FROM profiles p WHERE p.id = pp.user_id),
+  NULLIF(pp.display_name, 'Anonymous'),
+  NULLIF(pp.display_name, 'User'),
   (SELECT split_part(au.email, '@', 1)
    FROM auth.users au WHERE au.id = pp.user_id),
   'U'
 ), 1))
-WHERE display_name = 'Anonymous' OR display_name = 'User' OR display_name IS NULL;
+WHERE display_name IN ('Anonymous', 'User') OR display_name IS NULL;
 
 -- ── peer_connections: add missing columns ────────────────────────
 ALTER TABLE peer_connections
