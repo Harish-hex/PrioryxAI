@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fetchDailyProblem } from '@/lib/leetcode/alfa-api';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const daily = await fetchDailyProblem();
