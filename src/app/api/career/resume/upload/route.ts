@@ -93,21 +93,22 @@ Return raw JSON only.`
 // ── API Handler ───────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const startTime = Date.now()
-  console.log('\n[Resume API] ════════════════════════════════')
-  console.log('[Resume API] Request received at', new Date().toISOString())
+  try {
+    const startTime = Date.now()
+    console.log('\n[Resume API] ════════════════════════════════')
+    console.log('[Resume API] Request received at', new Date().toISOString())
 
-  // ── 1. Auth ────────────────────────────────────────────────
-  const user = await getAuthUser()
-  if (!user) {
-    console.error('[Resume API] No authenticated user')
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  console.log('[Resume API] User:', user.id, user.email)
+    // ── 1. Auth ────────────────────────────────────────────────
+    const user = await getAuthUser()
+    if (!user) {
+      console.error('[Resume API] No authenticated user')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    console.log('[Resume API] User:', user.id, user.email)
 
-  // ── 2. Parse uploaded file ─────────────────────────────────
-  const fileResult = await parseUploadedFile(req)
-  if ('error' in fileResult && !('buffer' in fileResult)) {
+    // ── 2. Parse uploaded file ─────────────────────────────────
+    const fileResult = await parseUploadedFile(req)
+    if ('error' in fileResult && !('buffer' in fileResult)) {
     console.error('[Resume API] File parse error:', fileResult.error)
     return NextResponse.json({ error: fileResult.error }, { status: 400 })
   }
@@ -400,14 +401,21 @@ export async function POST(req: NextRequest) {
   console.log('[Resume API] Total time:', Date.now() - startTime, 'ms')
   console.log('[Resume API] ════════════════════════════════\n')
 
-  return NextResponse.json({
-    success: true,
-    saved: !!savedId,
-    data: resumeData,
-    swot: swotData,
-    extractionMethod: readResult.method,
-    skillsFound: allSkills.length,
-    resumeId: savedId
-  })
+    return NextResponse.json({
+      success: true,
+      saved: !!savedId,
+      data: resumeData,
+      swot: swotData,
+      extractionMethod: readResult.method,
+      skillsFound: allSkills.length,
+      resumeId: savedId
+    })
+  } catch (error: any) {
+    console.error('[Resume API] UNHANDLED EXCEPTION:', error);
+    return NextResponse.json(
+      { error: `Internal server error: ${error.message || String(error)}` },
+      { status: 500 }
+    );
+  }
 }
 

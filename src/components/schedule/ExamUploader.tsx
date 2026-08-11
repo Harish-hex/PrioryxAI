@@ -17,8 +17,8 @@ export function ExamUploader({ isPro, visionRemaining }: { isPro: boolean, visio
     setErrorMsg(null);
     setResult(null);
 
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg("File too large. Max 10 MB.");
+    if (file.size > 4.5 * 1024 * 1024) {
+      setErrorMsg("File too large. Vercel allows a maximum of 4.5 MB. Please compress the file and try again.");
       setStatus('error');
       return;
     }
