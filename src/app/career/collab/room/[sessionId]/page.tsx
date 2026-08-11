@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send, ArrowLeft, Code, MessageSquare, StickyNote } from "lucide-react";
-import Editor from "@monaco-editor/react";
+import dynamic from "next/dynamic";
+const Editor = dynamic(() => import("@monaco-editor/react"), { 
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse flex items-center justify-center"><p className="text-slate-400">Loading Editor...</p></div>
+});
 
 export default function CollabRoomPage({ params }: { params: { sessionId: string } }) {
   const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([]);

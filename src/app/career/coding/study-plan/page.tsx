@@ -39,6 +39,7 @@ export default function StudyPlan() {
   const handleGenerate = async () => {
     try {
       setGenerating(true);
+      setError("");
       const res = await fetch('/api/leetcode/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,10 +49,10 @@ export default function StudyPlan() {
         await fetchRecommendations();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to generate');
+        setError(data.error || 'Failed to generate. Please connect your LeetCode profile or wait for the AI analysis to finish.');
       }
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setGenerating(false);
     }

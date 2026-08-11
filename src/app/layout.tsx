@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     icon: '/icon.png',
     shortcut: '/icon.png',
     apple: '/icon.png',
-  }
+  },
 };
 
 export default function RootLayout({

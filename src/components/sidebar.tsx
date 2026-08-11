@@ -16,8 +16,6 @@ const navItems = [
 const careerItems = [
   { id: "career_resume", label: "Resume Intelligence", icon: FileText, path: "/career/resume/upload" },
   { id: "career_foundry", label: "Project Foundry", icon: Hammer, path: "/career/foundry/dashboard" },
-  { id: "career_coding", label: "LeetCode Profile", icon: Code2, path: "/career/coding" },
-  { id: "career_hackerrank", label: "HackerRank Profile", icon: Code2, path: "/career/hackerrank" },
   { id: "career_unified", label: "Unified Profile", icon: Code2, path: "/career/coding/unified" },
   { id: "career_github", label: "GitHub Intelligence", icon: GitBranch, path: "/career/coding/github" },
   { id: "career_market", label: "Job Market", icon: Briefcase, path: "/career/market/jobs" },

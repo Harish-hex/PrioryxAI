@@ -96,7 +96,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabase
       .from('schedule_timetable')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user!.id);
 
     if (error) {
       console.error('[Schedule Extract] DB Fetch Error:', error);
@@ -119,3 +119,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
+

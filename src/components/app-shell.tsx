@@ -9,9 +9,11 @@ import { PricingModal } from "@/components/pricing-modal";
 import { ProfilePage } from "@/components/profile-page";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { FeedPageContent } from "@/components/youtube/FeedPageContent";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
+  learning: "Learning Feed",
   assistant: "Assistant",
   profile: "Profile",
   settings: "Settings",
@@ -19,6 +21,7 @@ const pageTitles: Record<string, string> = {
 
 const pageSubtitles: Record<string, string> = {
   dashboard: "Keep the next important step visible and let everything else stay quiet.",
+  learning: "Curated tech resources to boost your career.",
   assistant: "Use context from your tasks to turn a busy day into a simple plan.",
   profile: "Present projects and proof points in a sharper, calmer format.",
   settings: "Tune how the workspace behaves without adding extra noise.",
@@ -26,6 +29,7 @@ const pageSubtitles: Record<string, string> = {
 
 const viewToPath: Record<string, string> = {
   dashboard: "/feed",
+  learning: "/learning",
   assistant: "/assistant",
   profile: "/profile",
   settings: "/settings",
@@ -407,6 +411,7 @@ export default function AppShell({ username, initialView = "dashboard", children
         onOpenPricing={() => setPricingOpen(true)}
       />
     ),
+    learning: <FeedPageContent />,
     profile: <ProfilePage username={username} />,
     settings: (
       <SettingsPanel

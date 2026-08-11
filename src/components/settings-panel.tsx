@@ -42,6 +42,10 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [cgpa, setCgpa] = useState("");
   const [subjects, setSubjects] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
+  const [leetcodeUsername, setLeetcodeUsername] = useState("");
+  const [hackerrankUsername, setHackerrankUsername] = useState("");
+  const [connectingCoding, setConnectingCoding] = useState(false);
+  const [codingMessage, setCodingMessage] = useState<{type: "error" | "success", text: string} | null>(null);
 
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [examEntries, setExamEntries] = useState<ExamEntry[]>([]);
@@ -180,6 +184,39 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
 
   function handleGithubOAuth() {
     window.location.href = "/api/auth/login?provider=github&next=/settings";
+  }
+
+  async function handleCodingProfilesConnect() {
+    setConnectingCoding(true);
+    setCodingMessage(null);
+    let successCount = 0;
+    try {
+      if (leetcodeUsername.trim()) {
+        const resL = await fetch("/api/leetcode/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: leetcodeUsername, stream: "SDE", targetCompanies: [] })
+        });
+        if (resL.ok) successCount++;
+      }
+      if (hackerrankUsername.trim()) {
+        const resH = await fetch("/api/hackerrank/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hackerrank_username: hackerrankUsername, stream: "SDE", targetCompanies: [] })
+        });
+        if (resH.ok) successCount++;
+      }
+      if (successCount > 0) {
+        setCodingMessage({ type: "success", text: "Successfully connected coding profiles. AI Analysis is running." });
+      } else {
+        setCodingMessage({ type: "error", text: "Please enter at least one valid username." });
+      }
+    } catch {
+      setCodingMessage({ type: "error", text: "Failed to connect coding profiles." });
+    } finally {
+      setConnectingCoding(false);
+    }
   }
 
   async function handleGenerateResume() {
@@ -371,6 +408,53 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </div>
           </div>
         )}
+
+        <div className="glass rounded-[28px] p-5">
+          <h3 className="text-xl font-semibold tracking-tight text-slate-950">Coding Profiles</h3>
+          <p className="mt-2 text-xs leading-5 text-slate-500 mb-4">
+            Connect your competitive programming accounts to track problems and unlock AI study plans.
+          </p>
+          
+          <div className="space-y-4">
+            <Field label="LeetCode Username" icon={User}>
+              <input
+                value={leetcodeUsername}
+                onChange={(e) => setLeetcodeUsername(e.target.value)}
+                placeholder="e.g. neetcode"
+                className="input-base"
+              />
+            </Field>
+            
+            <Field label="HackerRank Username" icon={User}>
+              <input
+                value={hackerrankUsername}
+                onChange={(e) => setHackerrankUsername(e.target.value)}
+                placeholder="e.g. hruser"
+                className="input-base"
+              />
+            </Field>
+
+            {codingMessage && (
+              <p className={`rounded-[18px] border px-4 py-2.5 text-sm ${
+                codingMessage.type === "success" 
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700" 
+                  : "border-red-200 bg-red-50 text-red-600"
+              }`}>
+                {codingMessage.text}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCodingProfilesConnect}
+              disabled={connectingCoding}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {connectingCoding ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {connectingCoding ? "Connecting..." : "Connect Profiles"}
+            </button>
+          </div>
+        </div>
 
         {isPro ? (
           <div className="glass rounded-[28px] p-5">

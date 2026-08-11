@@ -2,10 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
-import { TopicRadarChart } from "@/components/leetcode/TopicRadarChart";
+import dynamic from "next/dynamic";
+
+const TopicRadarChart = dynamic(() => import("@/components/leetcode/TopicRadarChart").then(mod => mod.TopicRadarChart), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>
+});
+
+const ContestRatingChart = dynamic(() => import("@/components/leetcode/ContestRatingChart").then(mod => mod.ContestRatingChart), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>
+});
+
+const ContributionHeatmap = dynamic(() => import("@/components/leetcode/ContributionHeatmap").then(mod => mod.ContributionHeatmap), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>
+});
 import { PriorityTopicTable } from "@/components/leetcode/PriorityTopicTable";
-import { ContestRatingChart } from "@/components/leetcode/ContestRatingChart";
-import { ContributionHeatmap } from "@/components/leetcode/ContributionHeatmap";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AnalysisDashboard() {

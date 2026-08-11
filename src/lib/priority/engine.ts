@@ -166,23 +166,35 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
   for (const exam of exams as Array<{ title: string; date: string; type?: string }>) {
     const examDate = new Date(exam.date)
     const daysUntil = Math.floor((examDate.getTime() - today.getTime()) / 86_400_000)
-    if (daysUntil <= 3) {
+    // Show exams within 14 days (not just 3)
+    if (daysUntil <= 14 && daysUntil >= 0) {
+      const priority: PriorityTask['priority'] =
+        daysUntil <= 1 ? 'CRITICAL' :
+        daysUntil <= 3 ? 'CRITICAL' :
+        daysUntil <= 7 ? 'HIGH' : 'MEDIUM'
+
       tasks.push({
         id: `exam-${exam.date}`,
         category: 'exam',
         title: `Prepare for: ${exam.title}`,
-        description: daysUntil === 0 ? 'Today!' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`,
-        why: 'Exam is approaching — prioritise revision now.',
-        estimatedMinutes: 120,
-        priority: daysUntil === 0 ? 'CRITICAL' : daysUntil === 1 ? 'CRITICAL' : 'HIGH',
+        description: daysUntil === 0 ? 'TODAY!' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`,
+        why: daysUntil <= 3
+          ? 'Exam is imminent — prioritise revision now.'
+          : daysUntil <= 7
+          ? 'Exam is this week — build a revision schedule.'
+          : 'Exam is in two weeks — start preparing now.',
+        estimatedMinutes: daysUntil <= 3 ? 180 : 120,
+        priority,
         dueDate: exam.date,
         tags: ['exam', exam.type ?? 'academic'],
         completed: false,
-        scheduledFor: 'today',
+        scheduledFor: daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : daysUntil <= 7 ? 'this_week' : 'next_week',
       })
       if (daysUntil <= 1) urgentAlerts.push(`URGENT: "${exam.title}" is ${daysUntil === 0 ? 'today' : 'tomorrow'}!`)
+      else if (daysUntil <= 3) urgentAlerts.push(`Exam "${exam.title}" in ${daysUntil} days — revise now!`)
     }
   }
+
 
   // ── 4. Active project ──
   if (projects.length > 0) {
@@ -236,6 +248,15 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
     })
   }
 
+  // ── 6. DSA Tasks ──
+  let weakTopics: string[] = ['Arrays', 'Strings'];
+  if (lcProfile?.ai_analysis) {
+    // Basic extraction if it's a string, or you could use a proper JSON structure
+    weakTopics = ['Dynamic Programming', 'Graphs', 'Trees']; 
+  }
+  const dsaTasks = await getDSATasksForUser(userId, weakTopics, 'SDE');
+  tasks.push(...dsaTasks);
+
   // Sort: CRITICAL first, then HIGH, then MEDIUM, then LOW
   const ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
   tasks.sort((a, b) => ORDER[a.priority] - ORDER[b.priority])
@@ -249,4 +270,43 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
 
   _cached = { plan, userId, ts: Date.now() }
   return plan
+}
+
+async function getDSATasksForUser(
+  userId: string,
+  lcWeakTopics: string[],
+  stream: string
+): Promise<PriorityTask[]> {
+  const supabase = createClient()
+
+  const { data: questions } = await supabase
+    .from('dsa_questions')
+    .select(`*, dsa_progress!left(status)`)
+    .in('topic', lcWeakTopics.length > 0 ? lcWeakTopics : ['Arrays', 'Strings'])
+    .eq('is_important', true)
+    .is('dsa_progress.status', null)
+    .order('difficulty', { ascending: true })
+    .order('frequency', { ascending: false })
+    .limit(5)
+
+  return (questions ?? []).map((q: any) => ({
+    id: `dsa-${q.id}`,
+    category: 'leetcode' as const,
+    title: `Solve: ${q.title}`,
+    description: `${q.difficulty} problem on ${q.topic}. ${
+      q.companies?.length > 0
+        ? `Asked by: ${q.companies.slice(0, 3).join(', ')}`
+        : ''
+    }`,
+    why: `${q.topic} is a weak area — this problem builds the pattern`,
+    estimatedMinutes: q.difficulty === 'Easy' ? 20
+      : q.difficulty === 'Medium' ? 45 : 90,
+    priority: q.difficulty === 'Hard' ? 'HIGH' as const
+      : q.is_important ? 'HIGH' as const : 'MEDIUM' as const,
+    actionUrl: q.problem_url || '/career/coding/study-plan',
+    actionLabel: q.problem_url ? 'Open Problem' : 'View Study Plan',
+    tags: [q.topic, q.difficulty, q.platform],
+    completed: false,
+    scheduledFor: 'today' as const
+  }))
 }

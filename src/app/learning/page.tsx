@@ -1,6 +1,5 @@
 import AppShell from "@/components/app-shell";
 import { requireAppUser } from "@/lib/app-user";
-import { FeedPageContent } from "@/components/youtube/FeedPageContent";
 
 export const metadata = {
   title: "Learning Feed — PrioryxAI",
@@ -9,9 +8,5 @@ export const metadata = {
 
 export default async function LearningFeedPage() {
   const { username } = await requireAppUser();
-  return (
-    <AppShell initialView="learning" username={username}>
-      <FeedPageContent />
-    </AppShell>
-  );
+  return <AppShell initialView="learning" username={username} />;
 }

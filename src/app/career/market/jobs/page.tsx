@@ -270,14 +270,25 @@ export default function JobMarketPage() {
         </div>
 
         {filteredJobs.length === 0 && (
-          <div className="text-center py-16">
+          <div className="text-center py-12">
             <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
             <p className="text-slate-500 font-medium">
               {jobs.length === 0
-                ? "No jobs found. Upload your resume and set target roles first."
+                ? "No tech jobs found right now. Refresh to fetch latest listings."
                 : "No jobs match these filters. Try clearing some filters."}
             </p>
-            {hasActiveFilters && (
+            {jobs.length === 0 ? (
+              <button onClick={() => {
+                setLoading(true);
+                fetch("/api/career/market/jobs")
+                  .then((res) => res.json())
+                  .then((data) => setJobs(data.jobs ?? []))
+                  .finally(() => setLoading(false));
+              }}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition">
+                Refresh Jobs
+              </button>
+            ) : hasActiveFilters && (
               <button onClick={clearFilters} className="mt-3 text-sm text-indigo-500 hover:underline">
                 Clear filters
               </button>
