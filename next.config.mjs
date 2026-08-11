@@ -16,7 +16,10 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ["apify-client", "proxy-agent", "pdf-parse", "mammoth", "canvas", "pdfjs-dist"],
-    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion']
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
+    outputFileTracingIncludes: {
+      '/api/**/*': ['./node_modules/pdf-parse/test/data/05-versions-space.pdf']
+    }
   },
   swcMinify: true,
   webpack: (config, { isServer }) => {
