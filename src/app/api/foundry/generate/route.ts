@@ -1,6 +1,6 @@
 // Foundry Generate API Route
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { executeTool } from '@/lib/mcp/registry';
 import { createSSEStream, sseResponse } from '@/lib/mcp/stream';
 import type { SkillEntity, SWOTAnalysis } from '@/lib/mcp/types';
@@ -15,15 +15,16 @@ export async function POST() {
 
   // Try multiple ways to find the resume
   let resume = null
+  const db = createServiceClient()
 
   // Method 1: by user_id
-  const { data: r1 } = await supabase
+  const { data: r1 } = await db
     .from('user_resumes')
-    .select('skill_entities, swot')
+    .select('skill_entities, swot, parsed_data')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (r1) {
     resume = r1
@@ -39,17 +40,21 @@ export async function POST() {
       .single()
 
     if (profile?.resume_id) {
-      const { data: r2 } = await supabase
+      const { data: r2 } = await db
         .from('user_resumes')
-        .select('skill_entities, swot')
+        .select('skill_entities, swot, parsed_data')
         .eq('id', profile.resume_id)
-        .single()
+        .maybeSingle()
       if (r2) resume = r2
     }
   }
 
   console.log('[Foundry] Resume found:', !!resume)
-  console.log('[Foundry] Skills count:', (resume?.skill_entities as any)?.skills?.length ?? 0)
+  let skills = (resume?.skill_entities as any)?.skills ?? []
+  if (skills.length === 0 && resume?.parsed_data) {
+    skills = (resume.parsed_data as any).skills ?? []
+  }
+  console.log('[Foundry] Skills count:', skills.length)
 
   if (!resume) {
     return NextResponse.json({ error: 'Upload a resume first' }, { status: 400 });
@@ -68,7 +73,7 @@ export async function POST() {
       emit({ event: 'progress', data: { message: 'Generating 9 personalized projects...' } });
 
       const result = await executeTool('foundry.generate9TailoredProjects', {
-        skills: resume.skill_entities as SkillEntity[],
+        skills: skills.map((s: string) => ({ name: s })) as SkillEntity[],
         swot: resume.swot as SWOTAnalysis,
         targetRoles: profile?.target_roles ?? ['Software Engineer'],
       }, user.id);
@@ -105,14 +110,19 @@ export async function GET() {
     .eq('id', user.id)
     .single();
 
-  const { data: resume } = await supabase
+  const db = createServiceClient();
+  const { data: resume } = await db
     .from('user_resumes')
-    .select('skill_entities')
+    .select('skill_entities, parsed_data')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
     
-  const skillsCount = (resume?.skill_entities as any)?.skills?.length ?? 0;
+  let skillsCount = (resume?.skill_entities as any)?.skills?.length ?? 0;
+  if (skillsCount === 0 && resume?.parsed_data) {
+    skillsCount = (resume.parsed_data as any).skills?.length ?? 0;
+  }
 
   return NextResponse.json({ 
     projects: projects ?? [],

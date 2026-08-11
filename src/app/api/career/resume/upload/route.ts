@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'  // Fixed path based on earlier checks
+import { createClient, createServiceClient } from '@/lib/supabase/server'  // Fixed path based on earlier checks
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
+
+// Debug: log environment status on module load
+console.log('[Resume Module] OPENAI_API_KEY set:', !!process.env.OPENAI_API_KEY)
+console.log('[Resume Module] SUPABASE_URL set:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+console.log('[Resume Module] SERVICE_KEY set:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+
 
 // ── PROMPTS ────────────────────────────────────────────────────
 
@@ -236,54 +242,83 @@ export async function POST(req: NextRequest) {
 
   // 8. Store in Supabase
   console.log('[Resume API] Storing in Supabase...')
-  
-  const { data: saved, error: saveErr } = await supabase
+  console.log('[Resume] About to save to Supabase...')
+  console.log('[Resume] user_id:', user.id)
+  console.log('[Resume] skills count:', (resumeData.skills ?? []).length)
+  console.log('[Resume] has parsed_data:', !!resumeData)
+
+  const db = createServiceClient()
+
+  // First check if row exists:
+  const { data: existing, error: checkErr } = await db
     .from('user_resumes')
-    .upsert({
-      user_id: user.id,
-      raw_text: readResult.rawText.slice(0, 50000),
-      skill_entities: {
-        skills: resumeData.skills ?? [],
-        certifications: resumeData.certifications ?? [],
-        projects: resumeData.projects ?? [],
-        education: resumeData.education ?? [],
-        experience: resumeData.experience ?? []
-      },
-      swot: swotData,
-      parsed_data: resumeData,
-      extraction_method: readResult.method,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'user_id',
-      ignoreDuplicates: false
-    })
-    .select()
-    .single()
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
 
-  console.log('[Resume] Save result:', saved ? 'SUCCESS' : 'FAILED')
-  console.log('[Resume] Save error:', saveErr)
+  console.log('[Resume] Existing row:', existing?.id ?? 'NONE')
+  console.log('[Resume] Check error:', checkErr?.message ?? 'none')
 
-  if (saveErr) {
-    console.error('[Resume] Full error:', JSON.stringify(saveErr))
+  let saveError: unknown = null
 
-    // Fallback: try insert (in case upsert fails due to constraint missing)
-    const { error: insertErr } = await supabase
+  if (existing) {
+    // UPDATE existing row
+    const { error } = await db
+      .from('user_resumes')
+      .update({
+        raw_text: readResult.rawText.slice(0, 50000),
+        skill_entities: {
+          skills: resumeData.skills ?? [],
+          certifications: resumeData.certifications ?? [],
+          projects: resumeData.projects ?? [],
+          education: resumeData.education ?? [],
+          experience: resumeData.experience ?? []
+        },
+        swot: swotData,
+        parsed_data: resumeData,
+        extraction_method: readResult.method,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+
+    saveError = error
+    console.log('[Resume] UPDATE result:', error ? `ERROR: ${error.message}` : 'SUCCESS')
+  } else {
+    // INSERT new row
+    const { error } = await db
       .from('user_resumes')
       .insert({
         user_id: user.id,
         raw_text: readResult.rawText.slice(0, 50000),
-        skill_entities: { skills: resumeData.skills ?? [] },
+        skill_entities: {
+          skills: resumeData.skills ?? [],
+          certifications: resumeData.certifications ?? [],
+          projects: resumeData.projects ?? [],
+          education: resumeData.education ?? [],
+          experience: resumeData.experience ?? []
+        },
         swot: swotData,
-        parsed_data: resumeData
+        parsed_data: resumeData,
+        extraction_method: readResult.method,
+        created_at: new Date().toISOString()
       })
 
-    if (insertErr) {
-      console.error('[Resume] Insert also failed:', insertErr)
-    }
+    saveError = error
+    console.log('[Resume] INSERT result:', error ? `ERROR: ${error.message}` : 'SUCCESS')
   }
-  
-  // Mark user as having uploaded resume
-  await supabase.from('users').update({ resume_uploaded: true }).eq('id', user.id);
+
+  // Update profiles table to mark resume as uploaded
+  if (!saveError) {
+    const { error: profileErr } = await db
+      .from('users')
+      .update({
+        resume_uploaded: true,
+        resume_uploaded_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+
+    console.log('[Resume] Profile update:', profileErr?.message ?? 'SUCCESS')
+  }
 
   console.log('[Resume API] === Success ===')
   return NextResponse.json({

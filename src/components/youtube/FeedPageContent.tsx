@@ -95,6 +95,8 @@ export function FeedPageContent() {
   const [activeTab, setActiveTab] = useState('All');
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<VideoItem[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Persist watched state in localStorage
   useEffect(() => {
@@ -114,20 +116,43 @@ export function FeedPageContent() {
     window.open(`https://youtube.com/watch?v=${videoId}`, '_blank');
   };
 
-  // Filter videos by search + tab
+  // Debounced Search API call
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.videos || []);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 600); // 600ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filter videos by tab for CURATED view
   const displaySections: Record<string, VideoItem[]> = activeTab === 'All'
     ? CURATED_VIDEOS
     : { [activeTab]: CURATED_VIDEOS[activeTab] ?? [] };
 
   const filteredSections: Record<string, VideoItem[]> = Object.fromEntries(
     Object.entries(displaySections).map(([cat, vids]) => [
-      cat,
-      searchQuery
-        ? vids.filter(v =>
-            v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            v.channel.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : vids,
+      cat, vids
     ]).filter(([, vids]) => (vids as VideoItem[]).length > 0)
   );
 
@@ -179,14 +204,55 @@ export function FeedPageContent() {
         </div>
 
         {/* Video Sections */}
-        {Object.keys(filteredSections).length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-slate-500">No videos match your search.</p>
-            <button onClick={() => setSearchQuery('')} className="mt-2 text-sm text-indigo-500 hover:underline">
-              Clear search
-            </button>
-          </div>
+        {searchQuery.trim() ? (
+          // SEARCH RESULTS VIEW
+          <section>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              Search Results
+              {!isSearching && searchResults && (
+                <span className="text-sm font-normal text-slate-400 ml-2">({searchResults.length})</span>
+              )}
+            </h2>
+
+            {isSearching ? (
+              // SKELETON LOADERS
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                  <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <div className="aspect-video bg-slate-200 animate-pulse"></div>
+                    <div className="p-3">
+                      <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4 mb-2"></div>
+                      <div className="h-3 bg-slate-200 rounded animate-pulse w-1/2 mb-1"></div>
+                      <div className="h-3 bg-slate-200 rounded animate-pulse w-1/3 mt-3"></div>
+                      <div className="mt-3 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchResults && searchResults.length === 0 ? (
+              // EMPTY STATE
+              <div className="text-center py-16">
+                <p className="text-slate-500">No videos match your search.</p>
+                <button onClick={() => setSearchQuery('')} className="mt-2 text-sm text-indigo-500 hover:underline">
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              // RESULTS
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {searchResults?.map(video => (
+                  <VideoCard
+                    key={video.videoId}
+                    video={video}
+                    watched={watchedIds.has(video.videoId)}
+                    onWatch={() => markWatched(video.videoId)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
+          // CURATED VIEW
           <div className="space-y-10">
             {Object.entries(filteredSections).map(([category, videos]) => (
               <section key={category}>

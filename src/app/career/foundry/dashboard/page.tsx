@@ -98,8 +98,8 @@ export default function FoundryDashboard() {
         <p className="text-neutral-500 mb-6 max-w-sm">
           Project Foundry reads your skills from your resume to suggest personalised projects.
         </p>
-        <a href="/career/resume/upload" className="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400">
-          Upload Resume →
+        <a href="/career/resume/upload" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+          Upload Resume
         </a>
       </div>
     );
@@ -109,13 +109,46 @@ export default function FoundryDashboard() {
     return (
       <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-4xl mb-4">⚠️</div>
-        <h2 className="text-xl font-semibold mb-2">Resume data incomplete</h2>
+        <h2 className="text-xl font-semibold mb-2">No skills found in resume</h2>
         <p className="text-neutral-500 mb-6 max-w-sm">
-          We couldn't extract skills from your resume. Please re-upload it.
+          We couldn't detect any technical skills in your resume. Please ensure your resume lists your programming languages and tools, and upload it again.
         </p>
-        <a href="/career/resume/upload" className="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400">
-          Re-upload Resume
+        <a href="/career/resume/upload" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+          Upload Updated Resume
         </a>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-4xl mb-4">✨</div>
+        <h2 className="text-2xl font-bold mb-3">Ready to generate your projects</h2>
+        <p className="text-slate-500 max-w-md mb-8">
+          We've analysed your resume. Click below to generate 9 personalised project ideas that will bridge your skill gaps.
+        </p>
+        
+        {generating ? (
+          <div className="flex flex-col items-center">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-4" />
+            <p className="text-indigo-600 font-medium animate-pulse">Generating your custom projects...</p>
+            <p className="text-slate-400 text-sm mt-2">This usually takes 15-30 seconds using GPT-4</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 w-full max-w-xs">
+            <button
+              onClick={handleGenerate}
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium flex items-center justify-center gap-2 transition shadow-sm hover:shadow-md"
+            >
+              <Sparkles className="w-5 h-5" />
+              Generate Projects
+            </button>
+            <a href="/career/resume/upload" className="text-sm text-slate-500 hover:text-indigo-600 transition">
+              Or re-sync from a new resume
+            </a>
+          </div>
+        )}
       </div>
     );
   }
@@ -135,19 +168,7 @@ export default function FoundryDashboard() {
                 : "Generate projects from your resume analysis"}
             </p>
           </div>
-          {projects.length === 0 && (
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold transition hover:bg-indigo-400 disabled:opacity-50"
-            >
-              {generating ? (
-                <><Loader2 size={16} className="animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles size={16} /> Generate 9 Projects</>
-              )}
-            </button>
-          )}
+          {/* Empty state handled above */}
         </div>
 
         {/* Difficulty sections */}
