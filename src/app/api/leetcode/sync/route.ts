@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   try {
     const { data: profileRow } = await supabase
       .from('leetcode_profiles')
-      .select('leetcode_username, last_synced_at')
+      .select('leetcode_username, last_synced_at, placement_readiness_score')
       .eq('user_id', user.id)
       .single();
 
@@ -27,7 +27,8 @@ export async function POST(req: Request) {
     const now = new Date();
     const diffMins = (now.getTime() - lastSynced.getTime()) / 60000;
 
-    if (diffMins < 30) {
+    // Allow immediate sync if previous sync resulted in 0 score (likely API failure)
+    if (diffMins < 30 && profileRow.placement_readiness_score > 0) {
       return NextResponse.json({
         rateLimited: true,
         nextSyncIn: Math.round((30 - diffMins) * 60)

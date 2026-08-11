@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     // Fetch LeetCode
     let { data: lcData } = await supabase
       .from('leetcode_profiles')
-      .select('ai_analysis, quick_score, leetcode_username')
+      .select('ai_analysis, placement_readiness_score, leetcode_username, solved_data, contest_info')
       .eq('user_id', user.id)
       .single();
 
@@ -34,9 +34,11 @@ export async function GET(req: NextRequest) {
       const mockLc = getMockProfile('leetcode', user.id);
       if (mockLc) {
         lcData = {
-          ai_analysis: mockLc.ai_analysis,
-          quick_score: mockLc.placement_readiness_score || mockLc.quickScore,
-          leetcode_username: mockLc.username
+          ai_analysis: mockLc.ai_analysis ?? null,
+          placement_readiness_score: mockLc.placement_readiness_score ?? mockLc.quickScore ?? 45, // Provide a fallback score so hasLC becomes true
+          leetcode_username: mockLc.profile?.username ?? mockLc.username,
+          solved_data: mockLc.solved ?? null,
+          contest_info: mockLc.contestInfo ?? mockLc.contest_info ?? null
         } as any;
       }
     }
@@ -57,8 +59,8 @@ export async function GET(req: NextRequest) {
     let maxScore = 0;
 
     let lcScore = 0;
-    if (lcData?.quick_score) {
-      lcScore = lcData.quick_score;
+    if (lcData?.placement_readiness_score) {
+      lcScore = lcData.placement_readiness_score;
       maxScore += 100;
       combinedScore += lcScore;
     }

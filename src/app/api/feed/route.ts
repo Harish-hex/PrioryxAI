@@ -4,7 +4,7 @@ import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
 import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl } from '@/lib/job-sync';
 import { generateRepoNextStep } from '@/lib/repo-next-step';
-import { generatePriorityPlan } from '@/lib/priority/engine';
+import { runPriorityOrchestrator } from '@/lib/priority/orchestrator';
 
 export const runtime = 'nodejs';
 
@@ -291,19 +291,23 @@ function buildJobReason(task: any, userSubjects: string[]): string {
   return `${skillText}${stipendText}${urgencyText}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  const url = new URL(request.url);
+  const forceAi = url.searchParams.get('force_ai') === '1';
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Try cache first
   const cacheKey = `feed:${user.id}`;
-  const cached = await withFallback(() => redis.get(cacheKey), null);
-  if (cached) {
-    return NextResponse.json(cached);
+  if (!forceAi) {
+    const cached = await withFallback(() => redis.get(cacheKey), null);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
   }
 
   const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
@@ -399,16 +403,69 @@ export async function GET() {
 
   // Setup items: what the user still needs to configure (shown as a strip, not the hero card)
   const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
-
   const FREE_LIMIT = 5;
-  const totalCount = realFeed.length;
+
+  const { tasks: aiTasks } = await runPriorityOrchestrator(supabase, user.id, forceAi);
+
+  // Group AI tasks by source_type
+  const dsaTasks = aiTasks.filter((t: any) => t.source_type === 'dsa_excel' || t.source_type === 'dsa');
+  const resumeTasks = aiTasks.filter((t: any) => t.source_type === 'resume_gap');
+  const subjectTasks = aiTasks.filter((t: any) => t.source_type === 'subject');
+  const githubTasks = aiTasks.filter((t: any) => t.source_type === 'github_repo');
+  const otherTasks = aiTasks.filter((t: any) => !['dsa_excel', 'dsa', 'resume_gap', 'subject', 'github_repo'].includes(t.source_type));
+
+  // The requested order:
+  // 1. Coding Question -> 1 (Urgent, score 115)
+  // 2. Upskilling or ai_plan_resume_gap task (score 99)
+  // 3. Academic Subject to study (score 98)
+  // 4. AI-Driven GitHub Analysis (score 97)
+  // 5. Coding Question -> 2 (score 96)
+  // 6. Coding Question -> 3 (score 95)
+  const orderedTasks: any[] = [];
+  
+  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 115, priority: 'amber' }); // 1. Urgent
+  if (resumeTasks.length > 0) orderedTasks.push({ task: resumeTasks.shift(), score: 99, priority: 'green' }); // 2. Resume
+  if (subjectTasks.length > 0) orderedTasks.push({ task: subjectTasks.shift(), score: 98, priority: 'green' }); // 3. Subject
+  if (githubTasks.length > 0) orderedTasks.push({ task: githubTasks.shift(), score: 97, priority: 'green' }); // 4. Github
+  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 96, priority: 'green' }); // 5. DSA 2
+  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 95, priority: 'green' }); // 6. DSA 3
+
+  // Add remaining tasks
+  let fallbackScore = 94;
+  [...dsaTasks, ...resumeTasks, ...subjectTasks, ...githubTasks, ...otherTasks].forEach(t => {
+    orderedTasks.push({ task: t, score: fallbackScore--, priority: 'green' });
+  });
+
+  const mappedAiTasks = orderedTasks.map(({ task: t, score, priority }) => {
+    return {
+      id: t.id,
+      title: t.title,
+      type: `ai_plan_${t.source_type}`,
+      due_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      completed: t.completed,
+      score,
+      priority,
+      estimate: `${t.estimated_minutes} min`,
+      reason: t.why,
+      action_label: t.action_label,
+      action_view: t.action_url?.startsWith('http') ? 'external' : 'internal',
+      external_url: t.action_url,
+      ai_source_type: t.source_type,
+      ai_description: t.description,
+      ai_urgency_score: t.urgency_score
+    };
+  });
+
+  const resultFeed = [...realFeed, ...mappedAiTasks].sort((a, b) => b.score - a.score);
+
+  const totalCount = resultFeed.length;
   const hasMore = !isPro && totalCount > FREE_LIMIT;
-  const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
+  const feed = isPro ? resultFeed : resultFeed.slice(0, FREE_LIMIT);
 
   // Build hiddenPreview so the blur wall can show a specific tease (job title, breakdown)
   let hiddenPreview: { count: number; topJobTitle: string | null; breakdown: string | null } | null = null;
   if (!isPro && totalCount > FREE_LIMIT) {
-    const hiddenTasks = realFeed.slice(FREE_LIMIT);
+    const hiddenTasks = resultFeed.slice(FREE_LIMIT);
     const topJob = hiddenTasks.find((t) => t.type === 'job');
     const examCount = hiddenTasks.filter((t) => t.type === 'exam').length;
     const assignmentCount = hiddenTasks.filter((t) => t.type === 'assignment').length;
@@ -428,9 +485,7 @@ export async function GET() {
     ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const priorityPlan = await generatePriorityPlan(user.id);
-
-  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount, priorityPlan };
+  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);

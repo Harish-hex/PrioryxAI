@@ -279,17 +279,27 @@ async function getDSATasksForUser(
 ): Promise<PriorityTask[]> {
   const supabase = createClient()
 
-  const { data: questions } = await supabase
+  let query = supabase
     .from('dsa_questions')
     .select(`*, dsa_progress!left(status)`)
-    .in('topic', lcWeakTopics.length > 0 ? lcWeakTopics : ['Arrays', 'Strings'])
     .eq('is_important', true)
     .is('dsa_progress.status', null)
-    .order('difficulty', { ascending: true })
-    .order('frequency', { ascending: false })
-    .limit(5)
+    .limit(50)
 
-  return (questions ?? []).map((q: any) => ({
+  // Removed strict topic filtering because the Excel sheet topics 
+  // don't exactly match LeetCode's standard tags, which caused 0 questions to appear.
+  // We now fetch completely random questions every time as requested.
+  // if (lcWeakTopics && lcWeakTopics.length > 0) {
+  //   query = query.in('topic', lcWeakTopics)
+  // }
+
+  const { data: questions } = await query
+
+  // Shuffle and pick top 5 for randomness
+  const shuffled = (questions ?? []).sort(() => 0.5 - Math.random())
+  const selected = shuffled.slice(0, 5)
+
+  return selected.map((q: any) => ({
     id: `dsa-${q.id}`,
     category: 'leetcode' as const,
     title: `Solve: ${q.title}`,
@@ -298,7 +308,9 @@ async function getDSATasksForUser(
         ? `Asked by: ${q.companies.slice(0, 3).join(', ')}`
         : ''
     }`,
-    why: `${q.topic} is a weak area — this problem builds the pattern`,
+    why: lcWeakTopics.length > 0
+      ? `${q.topic} is a weak area — this problem builds the pattern`
+      : `Daily random challenge on ${q.topic} to keep your problem-solving sharp`,
     estimatedMinutes: q.difficulty === 'Easy' ? 20
       : q.difficulty === 'Medium' ? 45 : 90,
     priority: q.difficulty === 'Hard' ? 'HIGH' as const

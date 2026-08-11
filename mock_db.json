@@ -349,5 +349,317 @@
         "activeBadge": null
       }
     }
+  },
+  "e59507ea-cd54-46e6-a31e-121cbe56887d": {
+    "leetcode": {
+      "profile": {
+        "username": "NeetCode",
+        "name": "NeetCode",
+        "birthday": null,
+        "avatar": "https://assets.leetcode.com/users/default_avatar.jpg",
+        "ranking": 802497,
+        "reputation": 2,
+        "gitHub": null,
+        "twitter": null,
+        "linkedIN": null,
+        "website": [],
+        "country": null,
+        "company": null,
+        "school": null,
+        "skillTags": [],
+        "about": ""
+      },
+      "solved": {
+        "solvedProblem": 205,
+        "easySolved": 103,
+        "mediumSolved": 98,
+        "hardSolved": 4,
+        "totalSubmissionNum": [
+          {
+            "difficulty": "All",
+            "count": 216,
+            "submissions": 970
+          },
+          {
+            "difficulty": "Easy",
+            "count": 105,
+            "submissions": 425
+          },
+          {
+            "difficulty": "Medium",
+            "count": 105,
+            "submissions": 485
+          },
+          {
+            "difficulty": "Hard",
+            "count": 6,
+            "submissions": 60
+          }
+        ],
+        "acSubmissionNum": [
+          {
+            "difficulty": "All",
+            "count": 205,
+            "submissions": 349
+          },
+          {
+            "difficulty": "Easy",
+            "count": 103,
+            "submissions": 171
+          },
+          {
+            "difficulty": "Medium",
+            "count": 98,
+            "submissions": 162
+          },
+          {
+            "difficulty": "Hard",
+            "count": 4,
+            "submissions": 16
+          }
+        ]
+      },
+      "skillStats": {
+        "fundamental": [
+          {
+            "tagName": "Array",
+            "tagSlug": "array",
+            "problemsSolved": 80
+          },
+          {
+            "tagName": "Matrix",
+            "tagSlug": "matrix",
+            "problemsSolved": 7
+          },
+          {
+            "tagName": "String",
+            "tagSlug": "string",
+            "problemsSolved": 46
+          },
+          {
+            "tagName": "Simulation",
+            "tagSlug": "simulation",
+            "problemsSolved": 9
+          },
+          {
+            "tagName": "Sorting",
+            "tagSlug": "sorting",
+            "problemsSolved": 23
+          },
+          {
+            "tagName": "Stack",
+            "tagSlug": "stack",
+            "problemsSolved": 15
+          },
+          {
+            "tagName": "Queue",
+            "tagSlug": "queue",
+            "problemsSolved": 2
+          },
+          {
+            "tagName": "Linked List",
+            "tagSlug": "linked-list",
+            "problemsSolved": 23
+          },
+          {
+            "tagName": "Two Pointers",
+            "tagSlug": "two-pointers",
+            "problemsSolved": 29
+          }
+        ],
+        "intermediate": [
+          {
+            "tagName": "Tree",
+            "tagSlug": "tree",
+            "problemsSolved": 37
+          },
+          {
+            "tagName": "Binary Tree",
+            "tagSlug": "binary-tree",
+            "problemsSolved": 37
+          },
+          {
+            "tagName": "Hash Table",
+            "tagSlug": "hash-table",
+            "problemsSolved": 32
+          },
+          {
+            "tagName": "Graph Theory",
+            "tagSlug": "graph",
+            "problemsSolved": 3
+          },
+          {
+            "tagName": "Greedy",
+            "tagSlug": "greedy",
+            "problemsSolved": 11
+          },
+          {
+            "tagName": "Binary Search",
+            "tagSlug": "binary-search",
+            "problemsSolved": 12
+          },
+          {
+            "tagName": "Depth-First Search",
+            "tagSlug": "depth-first-search",
+            "problemsSolved": 35
+          },
+          {
+            "tagName": "Breadth-First Search",
+            "tagSlug": "breadth-first-search",
+            "problemsSolved": 20
+          },
+          {
+            "tagName": "Recursion",
+            "tagSlug": "recursion",
+            "problemsSolved": 9
+          },
+          {
+            "tagName": "Sliding Window",
+            "tagSlug": "sliding-window",
+            "problemsSolved": 2
+          },
+          {
+            "tagName": "Bit Manipulation",
+            "tagSlug": "bit-manipulation",
+            "problemsSolved": 20
+          },
+          {
+            "tagName": "Math",
+            "tagSlug": "math",
+            "problemsSolved": 39
+          },
+          {
+            "tagName": "Randomized",
+            "tagSlug": "randomized",
+            "problemsSolved": 3
+          },
+          {
+            "tagName": "Design",
+            "tagSlug": "design",
+            "problemsSolved": 7
+          },
+          {
+            "tagName": "Iterator",
+            "tagSlug": "iterator",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Brainteaser",
+            "tagSlug": "brainteaser",
+            "problemsSolved": 2
+          }
+        ],
+        "advanced": [
+          {
+            "tagName": "Data Stream",
+            "tagSlug": "data-stream",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Game Theory",
+            "tagSlug": "game-theory",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Backtracking",
+            "tagSlug": "backtracking",
+            "problemsSolved": 13
+          },
+          {
+            "tagName": "Bitmask",
+            "tagSlug": "bitmask",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Quickselect",
+            "tagSlug": "quickselect",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Dynamic Programming",
+            "tagSlug": "dynamic-programming",
+            "problemsSolved": 25
+          },
+          {
+            "tagName": "Divide and Conquer",
+            "tagSlug": "divide-and-conquer",
+            "problemsSolved": 6
+          },
+          {
+            "tagName": "Trie",
+            "tagSlug": "trie",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Union-Find",
+            "tagSlug": "union-find",
+            "problemsSolved": 1
+          },
+          {
+            "tagName": "Monotonic Stack",
+            "tagSlug": "monotonic-stack",
+            "problemsSolved": 4
+          }
+        ]
+      },
+      "contestInfo": null,
+      "contestHistory": [],
+      "calendar": null,
+      "languageStats": {
+        "languageProblemCount": [
+          {
+            "languageName": "C++",
+            "problemsSolved": 244
+          },
+          {
+            "languageName": "Java",
+            "problemsSolved": 3
+          },
+          {
+            "languageName": "Python",
+            "problemsSolved": 100
+          },
+          {
+            "languageName": "MySQL",
+            "problemsSolved": 1
+          },
+          {
+            "languageName": "Swift",
+            "problemsSolved": 8
+          }
+        ]
+      },
+      "badges": {
+        "badgesCount": 1,
+        "badges": [
+          {
+            "id": "1496847",
+            "displayName": "50 Days Badge 2022",
+            "icon": "https://leetcode.com/static/images/badges/2022/lg/2022-annual-50.png",
+            "creationDate": "2023-01-01"
+          }
+        ],
+        "upcomingBadges": [
+          {
+            "name": "Aug LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-8.png"
+          },
+          {
+            "name": "Sep LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-9.png"
+          },
+          {
+            "name": "Oct LeetCoding Challenge",
+            "icon": "/static/images/badges/dcc-2026-10.png"
+          }
+        ],
+        "activeBadge": {
+          "id": "1496847",
+          "displayName": "50 Days Badge 2022",
+          "icon": "https://leetcode.com/static/images/badges/2022/lg/2022-annual-50.png",
+          "creationDate": "2023-01-01"
+        }
+      }
+    }
   }
 }
