@@ -271,9 +271,9 @@ export async function parseUploadedFile(req: Request): Promise<{
 
   console.log(`[FileProcessor] Received file: ${file.name}, size: ${file.size}, type: ${file.type}`)
 
-  // File size check (10MB max)
-  if (file.size > 10 * 1024 * 1024) {
-    return { error: 'File too large. Maximum size is 10MB.' }
+  // File size check (4.5MB max for Vercel Serverless Functions)
+  if (file.size > 4.5 * 1024 * 1024) {
+    return { error: 'File too large. Maximum size is 4.5MB.' }
   }
 
   // Validate file type

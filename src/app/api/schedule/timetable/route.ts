@@ -18,8 +18,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large. Max 10MB.' }, { status: 413 });
+    if (file.size > 4.5 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large. Max 4.5MB.' }, { status: 413 });
     }
 
     const mimeType = file.type;
