@@ -53,8 +53,8 @@ export default function UnifiedCodingDashboardPage() {
   const hr = data?.multiPlatform ?? null;
   const lcScore = lc?.placement_readiness_score ?? lc?.quick_score ?? 0;
   const hrScore = hr?.hackerrank_score ?? 0;
-  const hasLC = lcScore > 0;
-  const hasHR = hrScore > 0;
+  const hasLC = !!lc?.leetcode_username;
+  const hasHR = !!hr?.hackerrank_username;
   const overallScore = data?.overallScore ?? 0;
 
   const lcSolved = lc?.solved_data?.solvedProblem ?? 0;
