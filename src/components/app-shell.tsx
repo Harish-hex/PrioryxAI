@@ -3,15 +3,29 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bell, Bot, Menu, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AssistantPanel } from "@/components/assistant-panel";
-import { DashboardView, type Task } from "@/components/dashboard-view";
-import { PricingModal } from "@/components/pricing-modal";
-import { ProfilePage } from "@/components/profile-page";
-import { SettingsPanel } from "@/components/settings-panel";
+import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/sidebar";
 import { CareerSheet } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { FeedPageContent } from "@/components/youtube/FeedPageContent";
+
+const DashboardView = dynamic(() => import("@/components/dashboard-view").then(mod => mod.DashboardView), {
+  loading: () => <div className="flex h-[50vh] items-center justify-center text-slate-400"><Loader2 className="animate-spin h-6 w-6" /></div>
+});
+const AssistantPanel = dynamic(() => import("@/components/assistant-panel").then(mod => mod.AssistantPanel), {
+  loading: () => <div className="flex h-[50vh] items-center justify-center text-slate-400"><Loader2 className="animate-spin h-6 w-6" /></div>
+});
+const PricingModal = dynamic(() => import("@/components/pricing-modal").then(mod => mod.PricingModal));
+const ProfilePage = dynamic(() => import("@/components/profile-page").then(mod => mod.ProfilePage), {
+  loading: () => <div className="flex h-[50vh] items-center justify-center text-slate-400"><Loader2 className="animate-spin h-6 w-6" /></div>
+});
+const SettingsPanel = dynamic(() => import("@/components/settings-panel").then(mod => mod.SettingsPanel), {
+  loading: () => <div className="flex h-[50vh] items-center justify-center text-slate-400"><Loader2 className="animate-spin h-6 w-6" /></div>
+});
+const FeedPageContent = dynamic(() => import("@/components/youtube/FeedPageContent").then(mod => mod.FeedPageContent), {
+  loading: () => <div className="flex h-[50vh] items-center justify-center text-slate-400"><Loader2 className="animate-spin h-6 w-6" /></div>
+});
+// Need to re-import type Task for DashboardView props if needed, but since it's dynamically imported, the type can be imported normally:
+import type { Task } from "@/components/dashboard-view";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -438,7 +452,7 @@ export default function AppShell({ username, initialView = "dashboard", children
   };
 
   return (
-    <main className="app-background min-h-screen overflow-x-hidden text-slate-900">
+    <main className="app-background min-h-screen overflow-x-hidden">
       <Sidebar
         activeView={activeView}
         collapsed={collapsed}
@@ -457,14 +471,14 @@ export default function AppShell({ username, initialView = "dashboard", children
         <header className="glass sticky top-4 z-30 mx-auto mb-6 max-w-7xl rounded-[28px] px-4 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3 lg:gap-5">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-xs text-slate-500 sm:text-sm">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                 <Command size={13} className="sm:w-[15px] sm:h-[15px]" />
                 <span>PrioryxAI workspace</span>
               </div>
-              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl lg:text-4xl">
+              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white sm:mt-2 sm:text-3xl lg:text-4xl">
                 {pageTitles[activeView] || activeView.charAt(0).toUpperCase() + activeView.slice(1)}
               </h1>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500 sm:mt-2 sm:text-base">
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:mt-2 sm:text-base">
                 {pageSubtitles[activeView] || ""}
               </p>
             </div>
@@ -475,7 +489,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                 className={`hidden items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm transition md:inline-flex ${
                   feedFilter === 'this_week' 
                     ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    : 'border-slate-200 dark:border-white/10 bg-white dark:bg-[#18181a] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424]'
                 }`}
               >
                 <CalendarClock size={16} />
@@ -493,8 +507,8 @@ export default function AppShell({ username, initialView = "dashboard", children
                   onClick={() => { setProfileMenuOpen((o) => !o); setNotifOpen(false); }}
                   className={`inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm transition ${
                     profileMenuOpen
-                      ? "border-slate-300 bg-slate-100 text-slate-950"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                      ? "border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-[#2a2a2a] text-slate-950 dark:text-white"
+                      : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#18181a] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 dark:border-white/20 hover:text-slate-900 dark:text-[#F5F5F7]"
                   }`}
                 >
                   <UserRound size={16} />
@@ -508,17 +522,17 @@ export default function AppShell({ username, initialView = "dashboard", children
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
+                      className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-[24px] border border-slate-200 dark:border-white/10 bg-white dark:bg-[#18181a] shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
                     >
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="text-sm font-semibold text-slate-950">@{username}</p>
-                        <p className="mt-1 text-xs text-slate-500">Open, share, or edit your recruiter-facing profile.</p>
+                      <div className="border-b border-slate-100 dark:border-white/5 px-4 py-3">
+                        <p className="text-sm font-semibold text-slate-950 dark:text-white">@{username}</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Open, share, or edit your recruiter-facing profile.</p>
                       </div>
                       <div className="p-2">
                         <button
                           type="button"
                           onClick={() => { navigateToView("profile"); setProfileMenuOpen(false); }}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424] hover:text-slate-900 dark:text-[#F5F5F7]"
                         >
                           <UserRound size={15} className="text-slate-400" />
                           <span>Open in-app profile</span>
@@ -526,7 +540,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                         <button
                           type="button"
                           onClick={handleOpenPublicProfile}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424] hover:text-slate-900 dark:text-[#F5F5F7]"
                         >
                           <ExternalLink size={15} className="text-slate-400" />
                           <span>Open public profile</span>
@@ -534,7 +548,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                         <button
                           type="button"
                           onClick={handleCopyProfileLink}
-                          className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                          className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424] hover:text-slate-900 dark:text-[#F5F5F7]"
                         >
                           <span className="inline-flex items-center gap-3">
                             <Copy size={15} className="text-slate-400" />
@@ -545,7 +559,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                         <button
                           type="button"
                           onClick={() => { navigateToView("settings"); setProfileMenuOpen(false); }}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424] hover:text-slate-900 dark:text-[#F5F5F7]"
                         >
                           <Settings size={15} className="text-slate-400" />
                           <span>Edit profile settings</span>
@@ -563,8 +577,8 @@ export default function AppShell({ username, initialView = "dashboard", children
                   onClick={() => { setNotifOpen((o) => !o); setProfileMenuOpen(false); }}
                   className={`relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
                     notifOpen
-                      ? "border-slate-300 bg-slate-100 text-slate-900"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                      ? "border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-[#2a2a2a] text-slate-900 dark:text-[#F5F5F7]"
+                      : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#18181a] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 dark:border-white/20 hover:text-slate-900 dark:text-[#F5F5F7]"
                   }`}
                   aria-label="Notifications"
                 >
@@ -583,16 +597,16 @@ export default function AppShell({ username, initialView = "dashboard", children
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)] z-50 overflow-hidden"
+                      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-[24px] border border-slate-200 dark:border-white/10 bg-white dark:bg-[#18181a] shadow-[0_24px_60px_rgba(15,23,42,0.12)] z-50 overflow-hidden"
                     >
-                      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 px-4 py-3">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
                           <Bell size={14} className="text-slate-400" /> Notifications
                         </div>
                         <button
                           type="button"
                           onClick={() => setNotifOpen(false)}
-                          className="rounded-lg p-1 text-slate-400 hover:text-slate-700 transition"
+                          className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:text-slate-200 transition"
                         >
                           <X size={14} />
                         </button>
@@ -600,7 +614,7 @@ export default function AppShell({ username, initialView = "dashboard", children
 
                       <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
                         {deadlineNotifications.length > 0 && (
-                          <div className="border-b border-slate-100 px-4 py-2.5">
+                          <div className="border-b border-slate-100 dark:border-white/5 px-4 py-2.5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Upcoming deadlines</p>
                           </div>
                         )}
@@ -622,15 +636,15 @@ export default function AppShell({ username, initialView = "dashboard", children
                           return (
                             <div
                               key={task.id}
-                              className="flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
+                              className="flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424]"
                               onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
                             >
                               <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-slate-900">{task.title}</p>
+                                <p className="truncate text-sm font-medium text-slate-900 dark:text-[#F5F5F7]">{task.title}</p>
                                 <div className="mt-0.5 flex items-center gap-2">
                                   <Clock3 size={11} className="shrink-0 text-slate-400" />
-                                  <span className={`text-xs ${isOverdue ? "text-red-500" : isUrgent ? "text-red-400" : isWarning ? "text-amber-500" : "text-slate-500"}`}>
+                                  <span className={`text-xs ${isOverdue ? "text-red-500" : isUrgent ? "text-red-400" : isWarning ? "text-amber-500" : "text-slate-500 dark:text-slate-400"}`}>
                                     {timeLabel}
                                   </span>
                                   {task.type && <span className="text-xs text-slate-400">· {task.type}</span>}
@@ -641,7 +655,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                         })}
 
                         {reminderNotifications.length > 0 && (
-                          <div className="border-b border-t border-slate-100 px-4 py-2.5">
+                          <div className="border-b border-t border-slate-100 dark:border-white/5 px-4 py-2.5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reminders</p>
                           </div>
                         )}
@@ -650,11 +664,11 @@ export default function AppShell({ username, initialView = "dashboard", children
                             type="button"
                             key={item.id}
                             onClick={() => handleNotificationAction(item)}
-                            className="block w-full px-4 py-3 text-left transition hover:bg-slate-50"
+                            className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white dark:hover:bg-[#242424]/5 dark:bg-[#242424]"
                           >
-                            <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">{item.reason}</p>
-                            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                            <p className="text-sm font-medium text-slate-900 dark:text-[#F5F5F7]">{item.title}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{item.reason}</p>
+                            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
                               {item.action_label ?? "Open"}
                               <ExternalLink size={12} />
                             </span>
@@ -664,8 +678,8 @@ export default function AppShell({ username, initialView = "dashboard", children
                         {deadlineNotifications.length === 0 && reminderNotifications.length === 0 && (
                           <div className="px-4 py-8 text-center">
                             <CheckCircle2 size={24} className="mx-auto mb-2 text-emerald-500" />
-                            <p className="text-sm font-medium text-slate-900">All clear!</p>
-                            <p className="mt-1 text-xs text-slate-500">No urgent deadlines or setup reminders right now.</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-[#F5F5F7]">All clear!</p>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">No urgent deadlines or setup reminders right now.</p>
                           </div>
                         )}
 
@@ -678,19 +692,19 @@ export default function AppShell({ username, initialView = "dashboard", children
                         )}
                       </div>
 
-                      <div className="border-t border-slate-100 px-4 py-2.5">
+                      <div className="border-t border-slate-100 dark:border-white/5 px-4 py-2.5">
                         <div className="flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
-                            className="text-xs font-medium text-slate-700 transition hover:underline underline-offset-2"
+                            className="text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:underline underline-offset-2"
                           >
                             View all in feed →
                           </button>
                           <button
                             type="button"
                             onClick={() => handleNotificationAction({ action_view: "settings" })}
-                            className="text-xs text-slate-400 transition hover:text-slate-700"
+                            className="text-xs text-slate-400 transition hover:text-slate-700 dark:text-slate-200"
                           >
                             Open settings
                           </button>
@@ -787,7 +801,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                       setPaymentFailed(true);
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-50"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-amber-300 bg-white dark:bg-[#18181a] px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-50"
                 >
                   <RefreshCw size={11} /> Refresh
                 </button>
@@ -811,7 +825,7 @@ export default function AppShell({ username, initialView = "dashboard", children
       </div>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/92 pb-safe backdrop-blur-xl lg:hidden" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/ dark:border-white/10 bg-white/92 pb-safe backdrop-blur-xl lg:hidden" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}>
         <div className="flex items-center justify-around px-2 pt-2">
           {[
             { id: "dashboard", label: "Home", icon: LayoutDashboard },
@@ -826,7 +840,7 @@ export default function AppShell({ username, initialView = "dashboard", children
                 type="button"
                 onClick={() => navigateToView(id)}
                 className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition ${
-                  active ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
+                  active ? "text-slate-950 dark:text-white" : "text-slate-400 hover:text-slate-700 dark:text-slate-200"
                 }`}
               >
                 <div className={`flex h-8 w-8 items-center justify-center rounded-2xl transition ${active ? "bg-slate-950 text-white" : ""}`}>
@@ -847,7 +861,7 @@ export default function AppShell({ username, initialView = "dashboard", children
             aria-expanded={careerSheetOpen}
             aria-label="More navigation"
             className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition active:scale-95 ${
-              careerSheetOpen ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
+              careerSheetOpen ? "text-slate-950 dark:text-white" : "text-slate-400 hover:text-slate-700 dark:text-slate-200"
             }`}
           >
             <div className={`flex h-8 w-8 items-center justify-center rounded-2xl transition ${careerSheetOpen ? "bg-slate-950 text-white" : ""}`}>

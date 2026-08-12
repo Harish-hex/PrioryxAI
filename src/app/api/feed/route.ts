@@ -334,7 +334,8 @@ export async function GET(request: Request) {
     ((userProfile?.subjects?.length ?? 0) > 0 || Object.keys(githubCache?.languages ?? {}).length > 0);
 
   if (shouldSyncJobs) {
-    await withFallback(
+    // Fire and forget without await so it doesn't block the API response
+    withFallback(
       () =>
         syncInternshalaJobsForUser({
           userId: user.id,
@@ -343,7 +344,7 @@ export async function GET(request: Request) {
           languages: githubCache?.languages ?? null,
         }),
       null
-    );
+    ).catch(err => console.error('[feed] Job sync error:', err));
   }
 
   const [
