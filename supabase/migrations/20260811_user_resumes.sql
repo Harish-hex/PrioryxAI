@@ -41,6 +41,7 @@ END $$;
 -- ── 3. Fix RLS policies ──────────────────────────────────────
 ALTER TABLE user_resumes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own resume" ON user_resumes;
 DROP POLICY IF EXISTS "Users can manage own resume" ON user_resumes;
 DROP POLICY IF EXISTS "Users can view own resume" ON user_resumes;
 DROP POLICY IF EXISTS "Users can insert own resume" ON user_resumes;

@@ -287,24 +287,6 @@ export default function UnifiedCodingDashboardPage() {
         </div>
       )}
 
-      {/* Action Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a href="/career/coding/study-plan"
-          className="rounded-xl border border-slate-200 p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-colors group">
-          <p className="font-semibold text-sm text-slate-800 group-hover:text-indigo-700">📚 Study Plan</p>
-          <p className="text-xs text-slate-500 mt-1">Personalised problem recommendations</p>
-        </a>
-        <a href="/career/hackerrank"
-          className="rounded-xl border border-slate-200 p-4 hover:border-green-300 hover:bg-green-50 transition-colors group">
-          <p className="font-semibold text-sm text-slate-800 group-hover:text-green-700">🏅 HackerRank Practice</p>
-          <p className="text-xs text-slate-500 mt-1">Badge and certification roadmap</p>
-        </a>
-        <a href="/feed"
-          className="rounded-xl border border-slate-200 p-4 hover:border-purple-300 hover:bg-purple-50 transition-colors group">
-          <p className="font-semibold text-sm text-slate-800 group-hover:text-purple-700">🎯 Priority Schedule</p>
-          <p className="text-xs text-slate-500 mt-1">Today&apos;s coding tasks</p>
-        </a>
-      </div>
     </div>
   );
 }

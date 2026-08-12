@@ -167,7 +167,6 @@ export function DashboardView({
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
         <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
-        <InsightPanel nextTask={nextTask} />
       </aside>
 
       <FocusSessionModal
