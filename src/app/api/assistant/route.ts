@@ -4,6 +4,7 @@ import { openai, sanitize } from '@/lib/openai';
 import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const FREE_MESSAGE_LIMIT = 20;
 
@@ -16,13 +17,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Per-minute rate limit (all users) — fail closed: block if Redis is unreachable
-  const rl = await checkRateLimit(assistantRatelimit, user.id);
-  if (rl.blocked) {
-    const msg = rl.reason === 'redis_error'
-      ? 'Service temporarily unavailable. Try again shortly.'
-      : 'Too many requests. Wait a moment.';
-    return NextResponse.json({ error: msg }, { status: rl.reason === 'redis_error' ? 503 : 429 });
+  // Check rate limit using assistant_usage table
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
+  const { count: usageCount, error: usageError } = await supabase
+    .from('assistant_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', todayStart.toISOString());
+
+  if (usageError) {
+    console.error('Usage check failed', usageError);
   }
 
   // Check pro status
@@ -36,11 +42,9 @@ export async function POST(request: NextRequest) {
     userData?.pro_status &&
     (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  // Free user daily message limit (resets at midnight IST)
-  const msgCountKey = `msg_count:${user.id}`;
+  // Free user daily message limit
   if (!isPro) {
-    const count = await withFallback(() => redis.get<number>(msgCountKey), 0);
-    if ((count ?? 0) >= FREE_MESSAGE_LIMIT) {
+    if ((usageCount ?? 0) >= FREE_MESSAGE_LIMIT) {
       return NextResponse.json(
         { error: 'Free message limit reached', upgrade: true },
         { status: 403 }
@@ -56,16 +60,21 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch context: top 5 feed items + github health + repos
-  const [{ data: tasks }, { data: github }] = await Promise.all([
+  const [tasksRes, githubRes] = await Promise.all([
     supabase
       .from('tasks')
       .select('type, title, due_at')
       .eq('user_id', user.id)
       .eq('completed', false)
       .order('due_at', { ascending: true })
-      .limit(5),
-    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single(),
+      .limit(5)
+      .then(res => res, () => ({ data: [] as any[] })),
+    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single()
+      .then(res => res, () => ({ data: null })),
   ]);
+  
+  const tasks = tasksRes.data;
+  const github = githubRes.data;
 
   // Classify student profile for richer AI context
   const subjects: string[] = userData?.subjects ?? [];
@@ -152,50 +161,58 @@ ${context}`,
     user_id: user.id,
     role: 'user',
     content: userMessage,
-  });
+  }).then(res => res, () => {});
 
-  // Stream response
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages,
-    max_tokens: 800,
-    stream: true,
-  });
+  try {
+    // Stream response
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages,
+      max_tokens: 800,
+      stream: true,
+    });
 
-  const encoder = new TextEncoder();
-  let fullResponse = '';
+    const encoder = new TextEncoder();
+    let fullResponse = '';
 
-  const readable = new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content ?? '';
-        if (text) {
-          fullResponse += text;
-          controller.enqueue(encoder.encode(text));
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? '';
+          if (text) {
+            fullResponse += text;
+            controller.enqueue(encoder.encode(text));
+          }
         }
-      }
 
-      // Save assistant reply and increment message count after stream completes
-      await Promise.all([
-        supabase.from('assistant_messages').insert({
-          user_id: user.id,
-          role: 'assistant',
-          content: fullResponse,
-        }),
-        withFallback(async () => {
-          const current = (await redis.get<number>(msgCountKey)) ?? 0;
-          await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
-        }, undefined),
-      ]);
+        // Save assistant reply and increment message count after stream completes
+        await Promise.all([
+          supabase.from('assistant_messages').insert({
+            user_id: user.id,
+            role: 'assistant',
+            content: fullResponse,
+          }).then(res => res, () => {}),
+          supabase.from('assistant_usage').insert({
+            user_id: user.id,
+          }).then(res => res, () => {})
+        ]);
 
-      controller.close();
-    },
-  });
+        controller.close();
+      },
+    });
 
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-    },
-  });
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
+  } catch (err: any) {
+    console.error('[Assistant] OpenAI Error:', err);
+    const status = err.status || 500;
+    let msg = 'AI temporarily unavailable, try again';
+    if (status === 429) msg = 'Rate limited by AI provider — try in 30 seconds';
+    else if (status === 401) msg = 'API key invalid — contact support';
+    return NextResponse.json({ error: msg }, { status });
+  }
 }

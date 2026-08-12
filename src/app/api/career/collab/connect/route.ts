@@ -136,6 +136,12 @@ export async function POST(req: NextRequest) {
 
   if (connErr) {
     console.error('[Collab Connect] Insert error:', connErr)
+    if (connErr.code === '23505') {
+      return NextResponse.json(
+        { error: 'A connection with this peer already exists.' },
+        { status: 409 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to send connection request. Please try again.' },
       { status: 500 }
@@ -158,7 +164,7 @@ export async function POST(req: NextRequest) {
     body: 'Open the Requests tab to accept or decline.',
     action_url: '/career/collab/match',
     related_id: connection.id,
-  }).catch(() => {}) // silently ignore if peer_notifications doesn't exist yet
+  }).then(res => res, () => {}) // silently ignore if peer_notifications doesn't exist yet
 
   // 10. Return peer info for UI
   return NextResponse.json({

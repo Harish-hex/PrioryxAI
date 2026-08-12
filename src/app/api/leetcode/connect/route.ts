@@ -5,6 +5,8 @@ import { computePlacementReadinessScore, analyzeProfile } from '@/lib/leetcode/a
 import { saveMockProfile } from '@/lib/mock-db';
 import { UserStream } from '@/lib/leetcode/types';
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
   const supabase = createClient();
   const { data: { user } } = await (await supabase).auth.getUser();
@@ -26,6 +28,8 @@ export async function POST(req: Request) {
     } else {
       // Fallback: Direct GraphQL query
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
         const gqlRes = await fetch('https://leetcode.com/graphql', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -36,8 +40,10 @@ export async function POST(req: Request) {
               }
             }`,
             variables: { username }
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeout);
         const gqlData = await gqlRes.json();
         if (gqlData?.data?.matchedUser?.username === username) {
           isValid = true;
@@ -81,6 +87,16 @@ export async function POST(req: Request) {
         throw dbError;
       }
     }
+
+    // 4.5. Also upsert to unified user_coding_profiles table
+    await (await supabase).from('user_coding_profiles').upsert({
+      user_id: user.id,
+      platform: 'leetcode',
+      username: username,
+      data: fullData,
+      connected: true,
+      last_synced: new Date().toISOString()
+    }, { onConflict: 'user_id,platform' }).then(res => res, e => console.warn('user_coding_profiles upsert warn:', e.message));
 
     // 5. Trigger background analysis (Fire and forget)
     // We don't await this so the UI can proceed immediately

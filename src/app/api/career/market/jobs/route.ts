@@ -1,6 +1,7 @@
 // Job Market API Routes — Bug 4B: Real job fetching with Remotive + Arbeitnow
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -122,23 +123,50 @@ function isTechJob(job: { title: string; tags?: string[] }): boolean {
 }
 
 export async function GET() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const db = createServiceRoleClient();
 
-  // Fetch user skills for match scoring
-  const { data: resume } = await supabase
-    .from('user_resumes')
-    .select('skill_entities')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Fetch user skills from multiple sources
+  const [resumeRes, codingRes, profileRes] = await Promise.all([
+    db.from('user_resumes')
+      .select('skill_entities, parsed_data')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db.from('user_coding_profiles')
+      .select('data')
+      .eq('user_id', user.id),
+    db.from('users')
+      .select('subjects')
+      .eq('id', user.id)
+      .single()
+  ]);
 
-  const userSkills: string[] = (
-    (resume?.skill_entities as { skills?: string[] } | null)?.skills ?? []
-  ).map((s: string) => s.toLowerCase());
+  const resume = resumeRes.data;
+  const codingProfiles = codingRes.data ?? [];
+  const profile = profileRes.data;
+
+  // Extract skills from resume
+  let resumeSkills: string[] = [];
+  if (resume) {
+    resumeSkills = (resume.skill_entities as { skills?: string[] })?.skills ?? [];
+    if (resumeSkills.length === 0 && resume.parsed_data) {
+      resumeSkills = (resume.parsed_data as { skills?: string[] }).skills ?? [];
+    }
+  }
+
+  // Combine all skills
+  const userSkillsSet = new Set([
+    ...resumeSkills,
+    ...codingProfiles.flatMap((p: any) => p.data?.strongTopics ?? p.data?.skills ?? []),
+    ...(profile?.subjects ?? [])
+  ].filter(Boolean).map((s: string) => s.toLowerCase().trim()));
+  
+  const userSkillsArray = Array.from(userSkillsSet);
+  console.log(`[Jobs] userSkills count: ${userSkillsArray.length}`);
 
   // Fetch from both sources in parallel
   const [remotiveJobs, arbeitnowJobs] = await Promise.allSettled([
@@ -156,13 +184,31 @@ export async function GET() {
   console.log(`[Jobs] Total: ${allJobs.length}, Tech only: ${techJobs.length}`);
 
   // Compute match scores
+  const scoreJob = (job: RawJob, skills: string[]): { score: number, matched: string[] } => {
+    if (skills.length === 0) return { score: 0, matched: [] };
+    const jobText = (job.title + ' ' + job.description + ' ' + job.tags.join(' ')).toLowerCase();
+    
+    let matchCount = 0;
+    let totalWeight = 0;
+    const matched: string[] = [];
+    
+    skills.forEach(skill => {
+      const weight = skill.length > 4 ? 2 : 1; // longer/specific skills worth more
+      totalWeight += weight;
+      if (jobText.includes(skill)) {
+        matchCount += weight;
+        matched.push(skill);
+      }
+    });
+    
+    const rawScore = Math.round((matchCount / (totalWeight || 1)) * 100);
+    // Boost for title match
+    const titleBoost = skills.some(s => job.title.toLowerCase().includes(s)) ? 10 : 0;
+    return { score: Math.min(100, rawScore + titleBoost), matched };
+  };
+
   const jobsWithScores = techJobs.map((job) => {
-    if (userSkills.length === 0) return { ...job, matchScore: 0, matchedSkills: [] };
-    const jdText = (
-      job.title + ' ' + job.description + ' ' + job.tags.join(' ')
-    ).toLowerCase();
-    const matched = userSkills.filter((s) => jdText.includes(s));
-    const score = Math.min(Math.round((matched.length / Math.max(userSkills.length, 1)) * 100), 95);
+    const { score, matched } = scoreJob(job, userSkillsArray);
     return { ...job, matchScore: score, matchedSkills: matched };
   });
 
@@ -171,7 +217,10 @@ export async function GET() {
 
   console.log(`[Jobs] Returning ${jobsWithScores.length} tech jobs`);
 
-  return NextResponse.json({ jobs: jobsWithScores });
+  return NextResponse.json({ 
+    jobs: jobsWithScores,
+    debugSkillCount: userSkillsArray.length 
+  });
 }
 
 

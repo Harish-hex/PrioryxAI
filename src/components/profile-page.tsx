@@ -119,7 +119,7 @@ function PlaceholderGraph() {
           <div key={i} className={`h-3 w-3 rounded-[3px] border border-white ${tones[v]}`} />
         ))}
       </div>
-      <p className="mt-2 text-xs text-slate-400">Connect GitHub to see your real contribution graph.</p>
+      <p className="mt-2 text-xs text-slate-400">Start learning and completing tasks to build your activity graph.</p>
     </div>
   );
 }

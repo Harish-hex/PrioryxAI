@@ -3,8 +3,10 @@ import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
 import { extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
 import OpenAI from 'openai'
 
-export const config = { api: { bodyParser: false } };
+// Removed deprecated config
 export const maxDuration = 60;
+
+
 // ── Environment check ─────────────────────────────────────────
 const OPENAI_KEY = process.env.OPENAI_API_KEY
 if (!OPENAI_KEY) {

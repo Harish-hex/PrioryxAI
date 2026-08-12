@@ -7,6 +7,7 @@ import { ExamUploader } from "@/components/schedule/ExamUploader";
 import { TimetablePreview } from "@/components/schedule/TimetablePreview";
 import { ExamPreview } from "@/components/schedule/ExamPreview";
 import { TimetableEntry, ExamEntry } from "@/lib/schedule/extractor";
+import { createClient } from "@/lib/supabase/client";
 
 interface UserProfile {
   name: string | null;
@@ -52,6 +53,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
 
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
+
+
 
   const PRO_VISION_LIMIT = 10;
   const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
@@ -246,6 +249,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     }
   }
 
+
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Left — profile form */}
@@ -339,6 +344,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </button>
           </form>
         </div>
+
+
 
         {/* ── SECTION 1: TIMETABLE ── */}
         <div className="glass rounded-[28px] p-5 sm:p-6 space-y-4">

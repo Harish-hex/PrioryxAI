@@ -2,10 +2,24 @@
 
 import { useState, useRef } from 'react';
 import { FileText, Upload, CheckCircle2, Loader2, CalendarCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+// Client-side image compression using compressorjs
+const compressImage = async (file: File): Promise<Blob> =>
+  new Promise(async (resolve, reject) => {
+    const Compressor = (await import('compressorjs')).default;
+    new Compressor(file, {
+      quality: 0.5, 
+      maxWidth: 1600, 
+      maxHeight: 1200,
+      success: resolve, 
+      error: reject
+    });
+  });
 
 export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, visionRemaining: number | null }) {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'compressing' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
   const [result, setResult] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
@@ -13,30 +27,67 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
 
   const handleUpload = async () => {
     if (!file) return;
-    setStatus('uploading');
+    setStatus('compressing');
     setErrorMsg(null);
     setResult(null);
 
-    if (file.size > 4.5 * 1024 * 1024) {
-      setErrorMsg("File too large. Vercel allows a maximum of 4.5 MB. Please compress the file and try again.");
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       setStatus('error');
+      setErrorMsg('Not signed in.');
       return;
     }
 
     try {
-      const form = new FormData();
-      form.append("file", file);
-      
-      const res = await fetch("/api/schedule/timetable", { method: "POST", body: form });
-      
-      let data;
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+      // Step 1: Compress image client-side (bypasses Vercel 4.5MB body limit)
+      let uploadBlob: Blob;
+      if (file.type.startsWith('image/')) {
+        setStatus('compressing');
+        uploadBlob = await compressImage(file);
+      } else {
+        // PDFs and docs — upload directly (they're already small enough usually)
+        uploadBlob = file;
+      }
+
+      // Step 2: Upload to Supabase Storage via our new API route to bypass RLS issues
+      setStatus('uploading');
+      const storagePath = `${user.id}/timetable-${Date.now()}.jpg`;
+
+      const formData = new FormData();
+      formData.append('file', uploadBlob);
+      formData.append('bucket', 'schedules');
+      formData.append('path', storagePath);
+
+      const uploadRes = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData) {
+        setStatus('error');
+        setErrorMsg('Storage upload failed: ' + (uploadData?.error ?? 'unknown error'));
+        return;
+      }
+
+      // Step 3: Call processing API with only the storage path
+      setStatus('processing');
+      const res = await fetch('/api/schedule/process-timetable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storagePath: uploadData.path, userId: user.id }),
+      });
+
+      let data: any;
+      const contentType = res.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
         data = await res.json();
       } else {
         const text = await res.text();
-        console.error("Timetable Upload Non-JSON response:", text);
-        setErrorMsg(`Upload failed: ${res.status} ${res.statusText}. Please try a smaller file.`);
+        console.error('Timetable Upload Non-JSON response:', text);
+        setErrorMsg(`Upload failed: ${res.status} ${res.statusText}`);
         setStatus('error');
         return;
       }
@@ -50,16 +101,23 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
       setResult(`Found ${data.entryCount} class slots`);
       setStatus('success');
       setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = '';
       
       // Emit event to refresh feed/preview
       window.dispatchEvent(new CustomEvent('timetable_extracted', { detail: data.entries }));
 
-    } catch (err) {
-      setErrorMsg("Network error uploading document.");
+    } catch (err: any) {
+      setErrorMsg(err.message ?? 'Network error uploading document.');
       setStatus('error');
     }
   };
+
+  const isLoading = status === 'compressing' || status === 'uploading' || status === 'processing';
+
+  const loadingLabel =
+    status === 'compressing' ? 'Compressing image...' :
+    status === 'uploading' ? 'Uploading to storage...' :
+    'Extracting your timetable...';
 
   return (
     <div className="space-y-4">
@@ -103,11 +161,11 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
         <button
           type="button"
           onClick={handleUpload}
-          disabled={!file || status === 'uploading'}
+          disabled={!file || isLoading}
           className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
         >
-          {status === 'uploading' ? (
-            <><Loader2 size={15} className="animate-spin" /> Extracting your timetable...</>
+          {isLoading ? (
+            <><Loader2 size={15} className="animate-spin" /> {loadingLabel}</>
           ) : (
             <><CalendarCheck size={15} /> Extract Timetable</>
           )}
@@ -127,6 +185,7 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
           <li>Photos: make sure text is in focus and well-lit</li>
           <li>PDFs: text-based PDFs work best; scanned PDFs are also supported</li>
           <li>Word docs: export directly from your college portal if possible</li>
+          <li>Large images are auto-compressed before upload</li>
         </ul>
       </details>
     </div>

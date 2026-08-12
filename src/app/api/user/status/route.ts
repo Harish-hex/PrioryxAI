@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withFallback, redis } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 
@@ -18,10 +17,16 @@ export async function GET() {
     .eq('id', user.id)
     .single();
 
-  const [messagesToday, visionToday] = await Promise.all([
-    withFallback(() => redis.get<number>(`msg_count:${user.id}`), 0),
-    withFallback(() => redis.get<number>(`vision_count:${user.id}`), 0),
-  ]);
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
+  const { count: messagesToday } = await supabase
+    .from('assistant_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', todayStart.toISOString());
+    
+  const visionToday = 0;
 
   const isPro = Boolean(userData?.pro_status) &&
     (!userData?.pro_expires_at || new Date(userData.pro_expires_at) > new Date());

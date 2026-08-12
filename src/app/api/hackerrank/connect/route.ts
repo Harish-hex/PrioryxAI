@@ -5,6 +5,8 @@ import { fetchMultiPlatformProfiles, analyzeHackerRankProfile } from '@/lib/hack
 import { analyzeHackerRankWithAI, generateHRPracticeProblems } from '@/lib/hackerrank/ai-analyzer';
 import { saveMockProfile } from '@/lib/mock-db';
 
+export const maxDuration = 30;
+
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies();
@@ -81,6 +83,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to save profile data' }, { status: 500 });
       }
     }
+
+    // 4.5. Also upsert to unified user_coding_profiles table
+    await supabase.from('user_coding_profiles').upsert({
+      user_id: user.id,
+      platform: 'hackerrank',
+      username: hackerrank_username,
+      data: fetchedData.hackerrank,
+      connected: true,
+      last_synced: new Date().toISOString()
+    }, { onConflict: 'user_id,platform' }).then(res => res, (e: any) => console.warn('user_coding_profiles upsert warn:', e.message));
 
     // Fire-and-forget: AI Analysis
     (async () => {

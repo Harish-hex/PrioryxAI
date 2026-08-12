@@ -75,28 +75,6 @@ export default function UnifiedCodingDashboardPage() {
     : overallScore >= 50 ? 'Getting There'
     : overallScore >= 35 ? 'Keep Practicing' : 'Just Starting';
 
-  if (!hasLC && !hasHR) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
-        <div className="text-5xl mb-4">💻</div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">No Profiles Connected</h2>
-        <p className="text-slate-500 mb-6 max-w-md">
-          Connect your LeetCode or HackerRank accounts to see your unified coding profile and skill analysis.
-        </p>
-        <div className="flex gap-3">
-          <a href="/career/coding"
-            className="px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-medium text-sm transition">
-            Connect LeetCode
-          </a>
-          <a href="/career/hackerrank"
-            className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium text-sm transition">
-            Connect HackerRank
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-5xl mx-auto py-8 px-6 space-y-8 bg-white text-slate-900 min-h-screen">
       {/* Header */}

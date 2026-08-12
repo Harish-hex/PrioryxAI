@@ -78,7 +78,7 @@ export default function LeetCodeDashboard() {
       const data = await res.json();
       if (!res.ok) {
         if (data.rateLimited) {
-          alert(`Rate limited. Try again in ${Math.ceil(data.nextSyncIn / 60)} minutes.`);
+          setError(`Rate limited. Try again in ${Math.ceil(data.nextSyncIn / 60)} minutes.`);
         } else {
           throw new Error(data.error);
         }
@@ -87,7 +87,7 @@ export default function LeetCodeDashboard() {
         setScore(data.score);
       }
     } catch (err: any) {
-      alert("Failed to sync: " + err.message);
+      setError("Failed to sync: " + err.message);
     } finally {
       setSyncing(false);
     }

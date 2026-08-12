@@ -1,44 +1,54 @@
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules/
+.pnp
 .pnp.js
-.yarn/install-state.gz
 
-# build outputs
-/.next/
-/out/
-/build
-/coverage
-*.tsbuildinfo
-next-env.d.ts
+# Build output
+.next/
+out/
+dist/
+build/
 
-# local environment and secrets
+# Environment files
 .env
-.env.*
-!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# editor and OS metadata
-.DS_Store
-.idea/
+# Vercel
+.vercel
+
+# IDE
 .vscode/
-.claude/
+.idea/
+*.swp
+*.swo
 
-# logs
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-*.log
 
-# deployment
-.vercel
+# Testing
+coverage/
 
-# local-only archives and stray workspaces
-/Frontend/
+# Debug
+oauth-oauth-debug-log.md
 
-# local planning docs
-*.docx
+# Planning docs (keep locally, don't push)
 priorix_plan_final.md
+DeadlineOS_PRD.docx
+*.md
+!README.md
 
-# certificates and keys
-*.pem
+# Supabase migration files (keep schema, exclude verbose migrations)
+# Comment these out if you need them in CI/CD
+# supabase-migration-v2.sql
+# supabase-migration-v3.sql
+# supabase-migration-v4.sql

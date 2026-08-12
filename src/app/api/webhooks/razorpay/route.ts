@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { verifyRazorpaySignature } from '@/lib/security';
 
 export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 // Diagnostic endpoint — safe to call anytime, reveals no secret values
 export async function GET() {
@@ -85,10 +86,20 @@ export async function POST(request: NextRequest) {
       ? new Date(currentEnd * 1000).toISOString()
       : new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Update users table
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: payment?.id })
       .eq('id', resolvedUserId);
+
+    // Update profiles table
+    await supabase
+      .from('profiles')
+      .update({ subscription_status: 'pro', subscription_plan: 'pro' })
+      .eq('id', resolvedUserId)
+      .then(({ error }) => {
+        if (error) console.error('[webhook/razorpay] Failed to update profile:', error);
+      });
 
     if (updateErr) {
       console.error('[webhook/razorpay] Failed to activate Pro:', updateErr);
@@ -120,6 +131,14 @@ export async function POST(request: NextRequest) {
         .from('users')
         .update({ pro_status: false, pro_expires_at: new Date().toISOString() })
         .eq('id', userId);
+
+      await supabase
+        .from('profiles')
+        .update({ subscription_status: 'free', subscription_plan: 'free' })
+        .eq('id', userId)
+        .then(({ error }) => {
+          if (error) console.error('[webhook/razorpay] Failed to revoke profile Pro status:', error);
+        });
 
       if (subscriptionId) {
         await supabase
@@ -184,8 +203,16 @@ export async function POST(request: NextRequest) {
     const proExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: paymentId })
       .eq('id', user.id);
+
+    await supabase
+      .from('profiles')
+      .update({ subscription_status: 'pro', subscription_plan: 'pro' })
+      .eq('id', user.id)
+      .then(({ error }) => {
+        if (error) console.error('[webhook/razorpay] Failed to update profile (payment link):', error);
+      });
 
     if (updateError) {
       console.error('[webhook/razorpay] payment_link.paid — DB update failed for user', user.id, ':', updateError.message, updateError.code);

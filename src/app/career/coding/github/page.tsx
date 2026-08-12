@@ -35,6 +35,7 @@ interface IntelligenceReport {
   priorityActions: PriorityAction[];
   careerReadiness: { resumeReadyProjects: string[]; languageDiversity: string[]; estimatedProfileStrength: string };
   commitPatterns: { totalCommitsLast90Days: number; averageCommitsPerWeek: number; longestStreak: number; currentStreak: number; consistencyScore: number };
+  isStale?: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -100,8 +101,8 @@ export default function GitHubIntelligencePage() {
   const [expandedRepo, setExpandedRepo] = useState<string | null>(null);
   const [showCommands, setShowCommands] = useState<string | null>(null);
 
-  const loadActions = useCallback(async () => {
-    const res = await fetch('/api/github/analyse');
+  const loadActions = useCallback(async (forceRefresh = false) => {
+    const res = await fetch(`/api/github/analyse${forceRefresh ? '?refresh=1' : ''}`);
     if (res.ok) {
       const d = await res.json();
       if (!d.notAnalysed) {
@@ -175,11 +176,20 @@ export default function GitHubIntelligencePage() {
             </h1>
             <p className="text-slate-500 mt-1">Project scoring, weakness detection &amp; priority action plan</p>
           </div>
-          <button onClick={runAnalysis} disabled={analysing}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-60">
-            {analysing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-            {analysing ? progress : (report ? 'Re-analyse' : 'Analyse Portfolio')}
-          </button>
+          <div className="flex gap-2">
+            {report?.isStale && (
+              <button onClick={() => loadActions(true)} disabled={analysing}
+                className="flex items-center gap-2 bg-amber-100 text-amber-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-amber-200 transition disabled:opacity-60">
+                <AlertTriangle size={16} />
+                Data Stale (Clear Cache)
+              </button>
+            )}
+            <button onClick={runAnalysis} disabled={analysing}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-60">
+              {analysing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+              {analysing ? progress : (report ? 'Re-analyse Portfolio' : 'Analyse Portfolio')}
+            </button>
+          </div>
         </div>
 
         {/* ── Empty state ── */}

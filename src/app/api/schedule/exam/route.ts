@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
