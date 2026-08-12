@@ -4,6 +4,7 @@ import { runPriorityOrchestrator } from '@/lib/priority/orchestrator'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const user = await getAuthUser()
