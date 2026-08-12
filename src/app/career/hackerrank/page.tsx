@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { StreamSelector } from '@/components/leetcode/StreamSelector';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, Award, Code2 } from 'lucide-react';
 import { UserStream } from '@/lib/leetcode/types';
+import { friendlyError } from '@/components/ui/feedback';
 
 const CERTIFICATIONS = [
   {
@@ -117,7 +118,7 @@ export default function HackerRankConnectPage() {
       setIsConnected(true);
       router.refresh();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Connection failed');
+      setError(friendlyError(e));
     } finally {
       setIsConnecting(false);
     }

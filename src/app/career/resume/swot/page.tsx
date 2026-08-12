@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { SkillEntity, SWOTAnalysis, SWOTItem } from "@/lib/mcp/types";
+import { friendlyError } from '@/components/ui/feedback';
 
 export default function SWOTPage() {
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export default function SWOTPage() {
         setSkills(data.skills ?? []);
         setSwot(data.swot ?? null);
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(friendlyError(err)))
       .finally(() => setLoading(false));
   }, []);
 

@@ -2,8 +2,10 @@
 
 import { Bot, ChevronLeft, ChevronRight, LayoutDashboard, Settings, Sparkles, UserRound, FileText, Hammer, Code2, Briefcase, Users, Play, GitBranch } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { SidebarLeetCodeBadge } from "./leetcode/SidebarBadge";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/feed" },
@@ -32,11 +34,28 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricing, onToggle }: SidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [careerOpen, setCareerOpen] = useState(false);
+
+  // Keep the career group open when the user is already inside it, so the
+  // active item stays visible after a navigation.
+  useEffect(() => {
+    if (pathname?.startsWith("/career")) setCareerOpen(true);
+  }, [pathname]);
+
+  // Prefetch career destinations so the first click is instant. Next only
+  // auto-prefetches <Link>, and these are buttons.
+  useEffect(() => {
+    careerItems.forEach((item) => router.prefetch(item.path));
+  }, [router]);
 
   const handleNavigate = (id: string, path?: string) => {
     if (path && path.startsWith("/career")) {
-      window.location.href = path;
+      // Was window.location.href, which triggered a FULL page reload on every
+      // sidebar click — re-downloading the bundle, re-running auth and
+      // refetching everything. router.push keeps it a client-side transition.
+      router.push(path);
     } else {
       onNavigate(id);
     }
@@ -65,14 +84,17 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
           )}
         </button>
 
-        <button
-          type="button"
-          onClick={onToggle}
-          className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
-        </button>
+        <div className={`flex items-center gap-2 ${collapsed ? "flex-col" : ""}`}>
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={onToggle}
+            className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-800 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+          </button>
+        </div>
       </div>
 
       <nav className="mt-8 space-y-1.5">
@@ -129,7 +151,10 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
             >
               {careerItems.map((item) => {
                 const Icon = item.icon;
-                const active = activeView === item.id || (typeof window !== "undefined" && window.location.pathname.startsWith(item.path));
+                // usePathname is reactive; the previous `window.location`
+                // read never re-evaluated after a client-side navigation, so
+                // the active highlight got stuck on the first page visited.
+                const active = activeView === item.id || (pathname?.startsWith(item.path) ?? false);
                 
                 return (
                   <button

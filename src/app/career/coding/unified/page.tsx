@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Code2 } from 'lucide-react';
+import { PageSkeleton, EmptyState, ErrorBanner } from '@/components/ui/feedback';
 
 interface LCData {
   leetcode_username?: string;
@@ -29,24 +30,27 @@ interface UnifiedData {
 export default function UnifiedCodingDashboardPage() {
   const [data, setData] = useState<UnifiedData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
-    fetch('/api/platforms/unified')
-      .then(res => res.json())
-      .then((d: UnifiedData) => {
-        if (d && !(d as { error?: string }).error) setData(d);
-        setLoading(false);
+  function load() {
+    setLoading(true);
+    setError(null);
+    fetch('/api/platforms/unified', { cache: 'no-store' })
+      .then(async res => {
+        const d = await res.json();
+        if (!res.ok) throw new Error(d?.error ?? `Request failed (${res.status})`);
+        return d as UnifiedData;
       })
-      .catch(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-      </div>
-    );
+      .then(d => setData(d))
+      .catch(e => setError(e))
+      .finally(() => setLoading(false));
   }
+
+  useEffect(() => { load(); }, []);
+
+  // Skeleton mirrors the real layout so content doesn't jump on arrival —
+  // previously this was a bare spinner with no indication of what was coming.
+  if (loading) return <PageSkeleton cards={2} />;
 
   // Pull scores — use placement_readiness_score first, fall back to quick_score
   const lc = data?.leetcode ?? null;
@@ -76,15 +80,47 @@ export default function UnifiedCodingDashboardPage() {
     : overallScore >= 35 ? 'Keep Practicing' : 'Just Starting';
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-6 space-y-8 bg-white text-slate-900 min-h-screen">
+    // px-4 on mobile (was px-6) and overflow-x-hidden to stop the wide score
+    // row pushing the page sideways on narrow screens.
+    <div className="max-w-5xl mx-auto py-6 sm:py-8 px-4 sm:px-6 space-y-6 sm:space-y-8 bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Unified Coding Profile</h1>
-        <p className="text-slate-500 mt-1">Aggregated insights across all your coding platforms</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50">Unified Coding Profile</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Aggregated insights across all your coding platforms</p>
       </div>
 
-      {/* Overall Score Hero */}
-      <div className="rounded-2xl border border-slate-200 p-8 flex flex-col items-center bg-slate-50">
+      <ErrorBanner error={error} onRetry={load} />
+
+      {/* Neither platform connected — previously this rendered a 0/100 gauge
+          with no explanation of why or what to do about it. */}
+      {!hasLC && !hasHR && !error && (
+        <EmptyState
+          icon={<Code2 className="h-12 w-12" />}
+          title="No coding platforms connected yet"
+          description="Connect LeetCode or HackerRank to see a combined placement-readiness score, topic breakdown and contest history in one place."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <a
+                href="/career/coding"
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 active:scale-95 dark:bg-slate-100 dark:text-slate-900"
+              >
+                Connect LeetCode
+              </a>
+              <a
+                href="/career/hackerrank"
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Connect HackerRank
+              </a>
+            </div>
+          }
+        />
+      )}
+
+      {/* Overall Score Hero — hidden until something is connected, otherwise
+          it showed a meaningless 0/100 "Just Starting" gauge. */}
+      {(hasLC || hasHR) && (
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 flex flex-col items-center bg-slate-50 dark:bg-slate-900">
         <div className="relative h-44 w-44">
           <svg viewBox="0 0 100 100" className="transform -rotate-90 h-44 w-44">
             <circle cx="50" cy="50" r="42" fill="none" stroke="#e2e8f0" strokeWidth="8" />
@@ -103,12 +139,13 @@ export default function UnifiedCodingDashboardPage() {
           </div>
         </div>
         <p className="text-xl font-semibold mt-4" style={{ color: scoreColor }}>{scoreLabel}</p>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 text-center px-2">
           {hasLC && hasHR ? 'Combined LeetCode (60%) + HackerRank (40%)'
             : hasLC ? 'Based on LeetCode score'
             : 'Based on HackerRank score'}
         </p>
       </div>
+      )}
 
       {/* Platform Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

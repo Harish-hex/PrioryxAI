@@ -8,6 +8,7 @@ import { UserStream, LeetCodeProfile } from "@/lib/leetcode/types";
 import { Loader2, ArrowRight, Code2, LineChart, Target, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { friendlyError } from '@/components/ui/feedback';
 
 export default function LeetCodeDashboard() {
   const [profile, setProfile] = useState<LeetCodeProfile | null>(null);
@@ -71,7 +72,7 @@ export default function LeetCodeDashboard() {
       setProfile(data.profile);
       setScore(data.quickScore);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setConnecting(false);
     }
@@ -93,7 +94,7 @@ export default function LeetCodeDashboard() {
         setScore(data.score);
       }
     } catch (err: any) {
-      setError("Failed to sync: " + err.message);
+      setError("Couldn't sync: " + friendlyError(err));
     } finally {
       setSyncing(false);
     }

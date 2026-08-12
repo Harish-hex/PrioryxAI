@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, Bot, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, Bot, Menu, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
@@ -9,6 +9,8 @@ import { PricingModal } from "@/components/pricing-modal";
 import { ProfilePage } from "@/components/profile-page";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { CareerSheet } from "@/components/mobile-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { FeedPageContent } from "@/components/youtube/FeedPageContent";
 
 const pageTitles: Record<string, string> = {
@@ -45,6 +47,7 @@ export default function AppShell({ username, initialView = "dashboard", children
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [careerSheetOpen, setCareerSheetOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState("all");
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -479,6 +482,10 @@ export default function AppShell({ username, initialView = "dashboard", children
                 <span>This week</span>
               </button>
 
+              {/* Dark-mode switch. Sits with the other header actions so it is
+                  reachable from every app-shell view, not just the sidebar. */}
+              <ThemeToggle className="h-[42px] w-[42px]" />
+
               {/* Profile dropdown */}
               <div ref={profileMenuRef} className="relative hidden md:block">
                 <button
@@ -829,8 +836,29 @@ export default function AppShell({ username, initialView = "dashboard", children
               </button>
             );
           })}
+
+          {/* The career section had no entry point on mobile — this bar only
+              covered the five app-shell views, so /career/* was unreachable
+              from a phone. Opens the shared sheet rather than adding a second
+              bottom bar. */}
+          <button
+            type="button"
+            onClick={() => setCareerSheetOpen((v) => !v)}
+            aria-expanded={careerSheetOpen}
+            aria-label="More navigation"
+            className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition active:scale-95 ${
+              careerSheetOpen ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            <div className={`flex h-8 w-8 items-center justify-center rounded-2xl transition ${careerSheetOpen ? "bg-slate-950 text-white" : ""}`}>
+              <Menu size={18} />
+            </div>
+            More
+          </button>
         </div>
       </nav>
+
+      <CareerSheet open={careerSheetOpen} onClose={() => setCareerSheetOpen(false)} />
 
       <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} isPro={isPro} />
     </main>

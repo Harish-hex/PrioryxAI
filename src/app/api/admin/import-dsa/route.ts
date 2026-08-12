@@ -6,6 +6,20 @@ import * as XLSX from 'xlsx';
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  // This endpoint had NO auth check while writing to the global
+  // `dsa_questions` reference table — any anonymous caller could upsert
+  // arbitrary rows. RLS was the only thing standing in the way, and the
+  // service-role client below bypasses RLS entirely, so the guard is now
+  // mandatory. Same ADMIN_SECRET pattern as /api/admin/activate-pro.
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret) {
+    console.error('[admin/import-dsa] ADMIN_SECRET env var not set');
+    return NextResponse.json({ error: 'Not configured' }, { status: 503 });
+  }
+  if (req.headers.get('x-admin-token') !== adminSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;

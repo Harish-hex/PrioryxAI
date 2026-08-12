@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, RefreshCw, Layers, LayoutGrid, List } from "lucide-react";
 import { ProblemCard } from "@/components/leetcode/ProblemCard";
 import { ProblemRecommendation } from "@/lib/leetcode/types";
+import { friendlyError } from '@/components/ui/feedback';
 
 export default function StudyPlan() {
   const [problems, setProblems] = useState<ProblemRecommendation[]>([]);
@@ -30,7 +31,7 @@ export default function StudyPlan() {
         setError(data.error);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ export default function StudyPlan() {
         setError(data.error || 'Failed to generate. Please connect your LeetCode profile or wait for the AI analysis to finish.');
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setGenerating(false);
     }

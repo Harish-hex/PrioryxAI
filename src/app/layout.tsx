@@ -41,7 +41,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the inline script below mutates <html> before
+    // React hydrates, so the class/style attributes legitimately differ from
+    // the server-rendered markup.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/*
+          Applies the saved theme before first paint. This must run blocking in
+          <head> — doing it in an effect would paint the light theme first and
+          then flip, which is a visible flash on every page load.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('prioryx-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}document.documentElement.style.colorScheme=t;}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
