@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { generateProblemRecommendations } from '@/lib/leetcode/ai-analyzer';
 import { PriorityTopic, UserStream } from '@/lib/leetcode/types';
 
+export const maxDuration = 20
+
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

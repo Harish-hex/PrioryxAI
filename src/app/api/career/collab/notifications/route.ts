@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 15
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const authClient = createClient()
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await getAuthUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   const { data: notifications } = await db
     .from('peer_notifications')
@@ -21,11 +23,10 @@ export async function GET() {
 }
 
 export async function PATCH() {
-  const authClient = createClient()
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await getAuthUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   await db
     .from('peer_notifications')

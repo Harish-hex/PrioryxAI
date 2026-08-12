@@ -3,6 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { withFallback, redis } from '@/lib/redis';
 
+export const maxDuration = 60
+
 export const runtime = 'nodejs';
 
 const PROFILE_CACHE_TTL = 600; // 10 minutes

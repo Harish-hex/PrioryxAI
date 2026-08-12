@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
+
+export const maxDuration = 60
 // pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';

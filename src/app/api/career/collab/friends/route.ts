@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 20
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const authClient = createClient()
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await getAuthUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   // Get all accepted connections for this user
   const { data: connections } = await db
@@ -23,7 +25,15 @@ export async function GET() {
     c.requester_id === user.id ? c.receiver_id : c.requester_id
   )))
 
-  const [profilesResult, xpResult, challengesResult, codingProfilesResult, resumesResult, githubResult] = await Promise.allSettled([
+  const [
+    profilesResult,
+    xpResult,
+    challengesResult,
+    codingProfilesResult,
+    resumesResult,
+    githubResult,
+    leetcodeResult,
+  ] = await Promise.allSettled([
     db.from('peer_profiles')
       .select('user_id, display_name, avatar_initial, connect_code, stream, skills, placement_score')
       .in('user_id', friendIds),
@@ -43,7 +53,12 @@ export async function GET() {
       .order('created_at', { ascending: false }),
     db.from('github_cache')
       .select('user_id, health_score, streak_days')
-      .in('user_id', friendIds)
+      .in('user_id', friendIds),
+    // Direct LeetCode read so friend cards can show solved count and
+    // readiness score without depending on user_coding_profiles being synced.
+    db.from('leetcode_profiles')
+      .select('user_id, leetcode_username, placement_readiness_score, solved_data')
+      .in('user_id', friendIds),
   ])
 
   const profiles = profilesResult.status === 'fulfilled' ? (profilesResult.value.data ?? []) : []
@@ -52,8 +67,10 @@ export async function GET() {
   const codingProfiles = codingProfilesResult.status === 'fulfilled' ? (codingProfilesResult.value.data ?? []) : []
   const resumes = resumesResult.status === 'fulfilled' ? (resumesResult.value.data ?? []) : []
   const githubProfiles = githubResult.status === 'fulfilled' ? (githubResult.value.data ?? []) : []
+  const leetcodeData = leetcodeResult.status === 'fulfilled' ? (leetcodeResult.value.data ?? []) : []
 
   const xpMap = Object.fromEntries(xpData.map(x => [x.user_id, x]))
+  const lcMap = Object.fromEntries(leetcodeData.map(x => [x.user_id, x]))
 
   // Deduplicate connections manually so we only map each friend once
   const uniqueFriends = new Map()
@@ -75,6 +92,23 @@ export async function GET() {
         richSkills = (userResume.skill_entities as { skills?: string[] })?.skills ?? (userResume.parsed_data as { skills?: string[] })?.skills ?? []
       }
       
+      // user_coding_profiles is a secondary mirror and can lag behind
+      // leetcode_profiles (the source of truth written by /leetcode/connect).
+      // Synthesize an entry from it when the mirror has no LeetCode row, so
+      // friend cards show stats instead of appearing empty.
+      const lcRow = lcMap[friendId]
+      if (lcRow?.leetcode_username && !userCodings.some(c => c.platform === 'leetcode')) {
+        userCodings.push({
+          user_id: friendId,
+          platform: 'leetcode',
+          username: lcRow.leetcode_username,
+          solved_count:
+            (lcRow.solved_data as { solvedProblem?: number } | null)?.solvedProblem ?? 0,
+          ranking: '',
+          badge_name: '',
+        } as (typeof userCodings)[number])
+      }
+
       (profile as any).coding_profiles = userCodings
       if (richSkills.length > 0) {
         profile.skills = richSkills
@@ -101,6 +135,11 @@ export async function GET() {
         winStreak: xp.win_streak,
       } : null,
       activeChallenge,
+      leetcode: lcMap[friendId] ? {
+        username: lcMap[friendId].leetcode_username,
+        score: lcMap[friendId].placement_readiness_score ?? 0,
+        solved: (lcMap[friendId].solved_data as { solvedProblem?: number } | null)?.solvedProblem ?? 0,
+      } : null,
     })
   })
 

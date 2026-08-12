@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 20
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const authClient = createClient()
-
-  const { data: { user } } = await authClient.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   // Get current user's profile for matching
   const { data: myProfile } = await db

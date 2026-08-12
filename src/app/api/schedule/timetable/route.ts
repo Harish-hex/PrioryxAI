@@ -2,7 +2,11 @@ export const maxDuration = 60;
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase-server';
 import { extractSchedule, TimetableEntry } from '@/lib/schedule/extractor';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -65,12 +69,20 @@ export async function POST(req: Request) {
       type: entry.type || 'lecture',
     }));
 
-    const { error: dbError } = await supabase
+    // Service role: RLS on the anon cookie client was silently rejecting these
+    // writes in production.
+    const db = createServiceRoleClient();
+
+    // Full replace — re-uploading a timetable previously appended, leaving the
+    // user with every old class duplicated alongside the new ones.
+    await db.from('schedule_timetable').delete().eq('user_id', user.id);
+
+    const { error: dbError } = await db
       .from('schedule_timetable')
       .insert(inserts);
 
     if (dbError) {
-      console.error('[Schedule Extract] DB Insert Error:', dbError);
+      console.error('[Schedule Extract] DB Insert Error:', dbError.message, dbError.code, dbError.details);
       return NextResponse.json({ error: 'Failed to save timetable to database' }, { status: 500 });
     }
 
@@ -95,7 +107,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await createServiceRoleClient()
       .from('schedule_timetable')
       .select('*')
       .eq('user_id', user!.id);

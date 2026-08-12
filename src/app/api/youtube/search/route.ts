@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server'
 
+export const maxDuration = 20
+
 // Trusted channels to boost in results
 const TRUSTED_CHANNELS = [
   'freecodecamp', 'traversy media', 'programming with mosh',

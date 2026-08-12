@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+export const maxDuration = 20
+
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = cookies();

@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 20
+export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const authClient = createClient()
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await getAuthUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json() as {
     action: 'accept' | 'decline' | 'submit_result'
     resultValue?: string
   }
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   const { data: challenge } = await db
     .from('peer_challenges')
@@ -67,15 +69,30 @@ export async function PATCH(
       .single()
 
     if (updated?.creator_completed && updated?.opponent_completed) {
-      // Both submitted — first submitter wins (simple rule, can be improved)
-      const winnerId = user.id
-      const loserId = opponentId
+      // Both have now submitted. This branch is reached by the SECOND
+      // submitter — their write is what completed the pair — so the opponent
+      // is the one who finished first.
+      //
+      // The rule is "first to submit wins", which matches how the challenge
+      // types are described in the UI ("Fastest wins", "First to earn the
+      // badge wins"). The previous code awarded `user.id`, i.e. the *last*
+      // submitter, which is the exact opposite of its own comment.
+      //
+      // Count-based types (solve_count, streak_war) would ideally compare
+      // values, but the submitted result is free text and not safely
+      // comparable, so both values are recorded below for auditability.
+      const winnerId = opponentId
+      const loserId = user.id
+
+      const winnerValue = isCreator ? updated.opponent_value : updated.creator_value
+      const loserValue = body.resultValue ?? ''
 
       await db.from('peer_challenges').update({
         status: 'completed',
         winner_id: winnerId,
         completed_at: new Date().toISOString(),
-        result_description: `${isCreator ? 'Creator' : 'Opponent'} won with: ${body.resultValue}`,
+        result_description:
+          `Submitted first: "${winnerValue}" — runner-up: "${loserValue}"`,
       }).eq('id', params.id)
 
       // Award XP to winner

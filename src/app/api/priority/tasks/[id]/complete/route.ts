@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server'
 
+export const maxDuration = 20
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: { id: string } }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { syncGithubForUser } from '@/lib/github-sync';
 
+export const maxDuration = 20
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {

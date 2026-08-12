@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
-import { extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
-import OpenAI from 'openai'
+import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
 
-// Removed deprecated config
 export const maxDuration = 60;
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 
 // ── Environment check ─────────────────────────────────────────
@@ -124,28 +124,35 @@ export async function POST(req: NextRequest) {
   }
   console.log('[Resume API] File:', filename, '|', mimeType, '|', buffer.length, 'bytes')
 
-  // ── 3 & 4. Extract resume data directly with GPT-4o Vision ───
-  console.log('[Resume API] Calling GPT-4o Vision...')
-  const base64File = buffer.toString('base64')
-  const openai = new OpenAI({ apiKey: OPENAI_KEY })
+  // ── 3. Read the file ────────────────────────────────────────
+  // Previously this base64'd the raw buffer and sent it as an `image_url`
+  // regardless of type. OpenAI rejects a PDF supplied as an image, so every
+  // PDF resume failed — only image uploads ever worked. readFile() picks the
+  // right path per MIME type (pdf-parse text → docx → vision).
+  console.log('[Resume API] Reading file...')
+  const readResult = await readFile(buffer, mimeType, filename)
+  console.log('[Resume API] Read method:', readResult.method,
+    '| text length:', readResult.rawText.length)
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{
-      role: "user",
-      content: [
-        { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64File}` } },
-        { type: "text", text: "Extract all skills, projects, experience, education from this resume as JSON with keys: skills[], projects[], experience[], education[], name, email, phone, location, linkedin, github, summary, certifications[], achievements[], languages[]" }
-      ]
-    }],
-    max_tokens: 2000
-  });
+  if (!readResult.success) {
+    return NextResponse.json(
+      { error: readResult.error ?? 'Could not read this file. Try a different format.' },
+      { status: 400 }
+    )
+  }
 
-  const aiContent = response.choices[0]?.message?.content || ""
-  console.log('[Resume API] AI response preview:', aiContent.slice(0, 150))
-  
-  const aiResult = { success: true, content: aiContent }
-  const readResult = { method: 'gpt-4o-vision', rawText: 'Extracted via vision directly' }
+  // ── 4. Extract structured data with GPT-4o ──────────────────
+  console.log('[Resume API] Calling AI extraction...')
+  const aiResult = await extractWithAI(readResult, RESUME_SYSTEM, RESUME_PROMPT, 2000)
+
+  if (!aiResult.success) {
+    console.error('[Resume API] AI extraction failed:', aiResult.error)
+    return NextResponse.json(
+      { error: aiResult.error ?? 'Could not read your resume. Please try again.' },
+      { status: 502 }
+    )
+  }
+  console.log('[Resume API] AI response preview:', aiResult.content.slice(0, 150))
 
   // ── 5. Parse JSON from AI response ─────────────────────────
   interface ResumeData {

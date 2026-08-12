@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { openai, sanitize } from '@/lib/openai';
+import { openai, sanitize, isOpenAIConfigured } from '@/lib/openai';
 import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
@@ -9,7 +9,17 @@ export const maxDuration = 60;
 const FREE_MESSAGE_LIMIT = 20;
 
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
+  if (!isOpenAIConfigured()) {
+    console.error('[Assistant] OPENAI_API_KEY missing in this environment');
+    return NextResponse.json(
+      { error: 'AI is not configured on the server. Please contact support.' },
+      { status: 503 }
+    );
+  }
+
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -177,26 +187,46 @@ ${context}`,
 
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          const text = chunk.choices[0]?.delta?.content ?? '';
-          if (text) {
-            fullResponse += text;
-            controller.enqueue(encoder.encode(text));
+        // Anything thrown in here happens *after* headers are sent, so it can
+        // never become an HTTP error. Without this guard a mid-stream failure
+        // left the controller open and the client hung forever waiting for a
+        // response that would never close — the "assistant not responding" bug.
+        try {
+          for await (const chunk of stream) {
+            const text = chunk.choices[0]?.delta?.content ?? '';
+            if (text) {
+              fullResponse += text;
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+        } catch (streamErr) {
+          console.error('[Assistant] Stream interrupted:', streamErr);
+          if (!fullResponse) {
+            controller.enqueue(
+              encoder.encode('The assistant was interrupted. Please try again.')
+            );
           }
         }
 
-        // Save assistant reply and increment message count after stream completes
-        await Promise.all([
-          supabase.from('assistant_messages').insert({
-            user_id: user.id,
-            role: 'assistant',
-            content: fullResponse,
-          }).then(res => res, () => {}),
-          supabase.from('assistant_usage').insert({
-            user_id: user.id,
-          }).then(res => res, () => {})
-        ]);
+        // Persist whatever we managed to generate before closing.
+        try {
+          await Promise.all([
+            fullResponse
+              ? supabase.from('assistant_messages').insert({
+                  user_id: user.id,
+                  role: 'assistant',
+                  content: fullResponse,
+                }).then(res => res, () => {})
+              : Promise.resolve(),
+            supabase.from('assistant_usage').insert({
+              user_id: user.id,
+            }).then(res => res, () => {}),
+          ]);
+        } catch (persistErr) {
+          console.error('[Assistant] Failed to persist reply:', persistErr);
+        }
 
+        // Must always run, or the client never sees the response end.
         controller.close();
       },
     });
@@ -204,7 +234,11 @@ ${context}`,
     return new Response(readable, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
+        // Transfer-Encoding is a hop-by-hop header — setting it by hand made
+        // Vercel's proxy mishandle the stream. Disable proxy buffering instead
+        // so tokens reach the browser as they are produced.
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (err: any) {

@@ -6,6 +6,8 @@ import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
+export const maxDuration = 60
+
 export const runtime = 'nodejs';
 
 const styles = StyleSheet.create({

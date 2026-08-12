@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { fetchMultiPlatformProfiles, analyzeHackerRankProfile } from '@/lib/hackerrank/cps-client';
 import { analyzeHackerRankWithAI, generateHRPracticeProblems } from '@/lib/hackerrank/ai-analyzer';
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies();

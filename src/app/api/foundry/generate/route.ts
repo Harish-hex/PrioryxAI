@@ -6,7 +6,7 @@ import { createSSEStream, sseResponse } from '@/lib/mcp/stream'
 import type { SkillEntity, SWOTAnalysis } from '@/lib/mcp/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 90
+export const maxDuration = 60
 
 export async function POST() {
   const user = await getAuthUser()

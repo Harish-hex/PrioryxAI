@@ -4,6 +4,8 @@ import { fetchFullLeetCodeProfile } from '@/lib/leetcode/alfa-api';
 import { computePlacementReadinessScore } from '@/lib/leetcode/ai-analyzer';
 import { UserStream } from '@/lib/leetcode/types';
 
+export const maxDuration = 60
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { redis, withFallback } from '@/lib/redis';
 
+export const maxDuration = 60
+
 export const runtime = 'nodejs';
 
 const CACHE_TTL = 6 * 60 * 60; // 6 hours — ideas don't need to change every visit

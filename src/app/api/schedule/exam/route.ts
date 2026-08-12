@@ -2,7 +2,11 @@ export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase-server'
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // ── PROMPTS ────────────────────────────────────────────────────
 
@@ -167,8 +171,12 @@ export async function POST(req: NextRequest) {
   console.log('[ExamSchedule API] Valid entries to store:', validEntries.length)
 
   if (validEntries.length > 0) {
+    // Writes go through the service role: the anon cookie client is subject to
+    // RLS, which silently rejected these inserts in production.
+    const db = createServiceRoleClient()
+
     // Delete existing entries for this user first (full replace)
-    await supabase
+    await db
       .from('schedule_exams')
       .delete()
       .eq('user_id', user.id)
@@ -194,13 +202,20 @@ export async function POST(req: NextRequest) {
       semester: scheduleData.semester ?? null
     }))
 
-    const { error: dbError } = await supabase
+    const { error: dbError } = await db
       .from('schedule_exams')
       .insert(rows)
 
     if (dbError) {
-      console.error('[ExamSchedule API] DB insert error:', dbError)
-      // Still return the data even if save fails
+      // Previously swallowed: the UI showed "success" while nothing was saved,
+      // which is exactly how this bug stayed invisible in production.
+      console.error('[ExamSchedule API] DB insert error:', dbError.message, dbError.code, dbError.details)
+      return NextResponse.json({
+        success: false,
+        extracted: true,
+        entries: validEntries,
+        error: 'Extracted your schedule but could not save it. Please try again.',
+      }, { status: 500 })
     }
   }
 
@@ -227,7 +242,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await createServiceRoleClient()
       .from('schedule_exams')
       .select('*')
       .eq('user_id', user.id);

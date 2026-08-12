@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { ensureSchemaMigrations } from '@/lib/schema-migrations';
 
+export const maxDuration = 20
+
 export const runtime = 'nodejs';
 
 export async function POST() {

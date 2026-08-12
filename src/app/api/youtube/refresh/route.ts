@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { generateRecommendations } from '@/lib/youtube/recommender';
 import { redis } from '@/lib/redis';
 
+export const maxDuration = 20
+
 export async function POST(req: Request) {
   try {
     const supabase = createClient();

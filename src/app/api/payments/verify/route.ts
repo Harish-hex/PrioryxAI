@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 
+export const maxDuration = 20
+
 export const runtime = 'nodejs';
 
 function verifyRedirectSignature(

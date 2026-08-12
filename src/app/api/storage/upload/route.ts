@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient, createClient } from '@/lib/supabase/server';
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = createClient();

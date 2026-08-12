@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 15
+export const dynamic = 'force-dynamic'
 
 // Generate deterministic 6-char code from user ID
 function generateConnectCode(userId: string, displayName: string): string {
@@ -23,7 +26,7 @@ function generateConnectCode(userId: string, displayName: string): string {
 
 // Ensure uniqueness — append number if collision
 async function getUniqueCode(
-  db: ReturnType<typeof createServiceClient>,
+  db: ReturnType<typeof createServiceRoleClient>,
   userId: string,
   baseName: string
 ): Promise<string> {
@@ -49,14 +52,12 @@ async function getUniqueCode(
 }
 
 export async function POST() {
-  const authClient = createClient()
-
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-  if (authErr || !user) {
+  const user = await getAuthUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   // Check if profile already exists
   const { data: existing } = await db

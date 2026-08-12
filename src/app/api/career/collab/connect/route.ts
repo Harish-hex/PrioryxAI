@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+
+export const maxDuration = 20
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   console.log('[Collab Connect] === Request received ===')
 
   // 1. Auth check
-  const authClient = createClient()
-  const { data: { user }, error: authErr } = await authClient.auth.getUser()
-
-  if (authErr || !user) {
-    console.error('[Collab Connect] Auth failed:', authErr?.message)
+  const user = await getAuthUser()
+  if (!user) {
+    console.error('[Collab Connect] Auth failed: no session')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Use SERVICE ROLE to find the peer (bypasses RLS)
-  const db = createServiceClient()
+  const db = createServiceRoleClient()
 
   // DIAGNOSTIC: First check if peer_profiles has ANY rows
   const { count: totalRows } = await db
