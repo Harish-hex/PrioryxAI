@@ -1,6 +1,7 @@
 // Job Market API Routes — Bug 4B: Real job fetching with Remotive + Arbeitnow
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -122,23 +123,23 @@ function isTechJob(job: { title: string; tags?: string[] }): boolean {
 }
 
 export async function GET() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const db = createServiceRoleClient();
 
   // Fetch user skills from multiple sources
   const [resumeRes, codingRes, profileRes] = await Promise.all([
-    supabase.from('user_resumes')
-      .select('extracted_data, skill_entities, parsed_data')
+    db.from('user_resumes')
+      .select('skill_entities, parsed_data')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from('user_coding_profiles')
+    db.from('user_coding_profiles')
       .select('data')
       .eq('user_id', user.id),
-    supabase.from('users')
+    db.from('users')
       .select('subjects')
       .eq('id', user.id)
       .single()
@@ -151,14 +152,7 @@ export async function GET() {
   // Extract skills from resume
   let resumeSkills: string[] = [];
   if (resume) {
-    const extractedData = resume.extracted_data as { skills?: string[], languages?: string[] } | null;
-    resumeSkills = [
-      ...(extractedData?.skills ?? []),
-      ...(extractedData?.languages ?? [])
-    ];
-    if (resumeSkills.length === 0) {
-      resumeSkills = (resume.skill_entities as { skills?: string[] })?.skills ?? [];
-    }
+    resumeSkills = (resume.skill_entities as { skills?: string[] })?.skills ?? [];
     if (resumeSkills.length === 0 && resume.parsed_data) {
       resumeSkills = (resume.parsed_data as { skills?: string[] }).skills ?? [];
     }

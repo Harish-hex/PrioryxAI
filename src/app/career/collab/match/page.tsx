@@ -16,6 +16,7 @@ interface PeerProfile {
   skills: string[]
   placement_score: number
   coding_profiles?: { platform: string; username: string; solved_count: number; ranking: string; badge_name: string }[]
+  github?: { health_score: number; streak_days: number }
 }
 
 interface Friend {
@@ -605,6 +606,13 @@ export default function CollabMatchPage() {
                           {cp.badge_name && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded flex items-center gap-1"><Trophy className="h-3 w-3" /> {cp.badge_name}</span>}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {friend.profile?.github && (
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">GitHub:</span>
+                      <span className="text-muted-foreground">{friend.profile.github.health_score}% health</span>
+                      <span className="flex items-center gap-0.5 text-orange-500 font-semibold"><Flame className="h-3 w-3" /> {friend.profile.github.streak_days} days</span>
                     </div>
                   )}
                   {friend.activeChallenge && (

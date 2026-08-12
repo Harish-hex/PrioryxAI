@@ -1,7 +1,5 @@
-const pdfParse = require('pdf-parse');
-import mammoth from 'mammoth'
 import OpenAI from 'openai'
-
+import { extractPdfText, extractDocxText } from './pdf-parser'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export type FileProcessResult = {
@@ -44,28 +42,17 @@ export async function readFile(
   if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       || filename.endsWith('.docx')) {
     console.log('[FileProcessor] Path: docx → mammoth text extraction')
-    try {
-      const result = await mammoth.extractRawText({ buffer })
-      const text = result.value.trim()
-      console.log(`[FileProcessor] DOCX extracted: ${text.length} chars`)
-      if (text.length < 50) {
-        return {
-          method: 'docx_text',
-          rawText: '',
-          success: false,
-          error: 'Word document appears empty or unreadable'
-        }
-      }
-      return { method: 'docx_text', rawText: text, success: true }
-    } catch (e) {
-      console.error('[FileProcessor] mammoth error:', e)
+    const text = await extractDocxText(buffer)
+    console.log(`[FileProcessor] DOCX extracted: ${text.length} chars`)
+    if (text.length < 50) {
       return {
         method: 'docx_text',
         rawText: '',
         success: false,
-        error: `Could not read Word document: ${String(e)}`
+        error: 'Word document appears empty or unreadable'
       }
     }
+    return { method: 'docx_text', rawText: text, success: true }
   }
 
   // ── PDF FILES ─────────────────────────────────────────────────
@@ -73,34 +60,23 @@ export async function readFile(
     
     // LAYER 1: Try text extraction with pdf-parse
     console.log('[FileProcessor] PDF Layer 1: trying pdf-parse text extraction')
-    try {
-      const parsed = await pdfParse(buffer, {
-        // Disable font loading (causes errors in some envs)
-        max: 5  // max 5 pages to keep it fast
-      })
-      const text = parsed.text?.trim() ?? ''
-      const pageCount = parsed.numpages ?? 1
-      
-      console.log(`[FileProcessor] pdf-parse result: ${text.length} chars, ${pageCount} pages`)
-      
-      if (text.length >= 100) {
-        // Good — text-based PDF
-        console.log('[FileProcessor] PDF Layer 1 SUCCESS: sufficient text extracted')
-        return {
-          method: 'text_extraction',
-          rawText: text,
-          pageCount,
-          success: true
-        }
+    const text = await extractPdfText(buffer)
+    
+    console.log(`[FileProcessor] pdf-parse result: ${text.length} chars`)
+    
+    if (text.length >= 100) {
+      // Good — text-based PDF
+      console.log('[FileProcessor] PDF Layer 1 SUCCESS: sufficient text extracted')
+      return {
+        method: 'text_extraction',
+        rawText: text,
+        pageCount: 1,
+        success: true
       }
-      
-      // Text too short — likely scanned PDF
-      console.log(`[FileProcessor] PDF Layer 1: text too short (${text.length} chars), falling back to vision`)
-    } catch (e) {
-      // pdf-parse can throw on encrypted or malformed PDFs
-      console.warn('[FileProcessor] pdf-parse threw:', String(e))
-      console.log('[FileProcessor] Falling back to vision layer')
     }
+    
+    // Text too short — likely scanned PDF
+    console.log(`[FileProcessor] PDF Layer 1: text too short (${text.length} chars), falling back to vision`)
 
     // LAYER 2: Send raw PDF as base64 to GPT-4o vision
     // GPT-4o natively reads PDFs — no canvas, no image conversion needed

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     // Update users table
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: payment?.id })
       .eq('id', resolvedUserId);
 
     // Update profiles table
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
     const proExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: paymentId })
       .eq('id', user.id);
 
     await supabase

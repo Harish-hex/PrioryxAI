@@ -19,13 +19,21 @@ async function fetchWithRetry<T>(endpoint: string, cacheKey: string): Promise<T 
   if (cached) return cached;
 
   // 2. Fetch with 1 retry
-  let res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 } });
-  if (!res.ok) {
+  let controller = new AbortController();
+  let timeout = setTimeout(() => controller.abort(), 10000);
+  let res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 }, signal: controller.signal }).catch(() => null);
+  clearTimeout(timeout);
+
+  if (!res || !res.ok) {
     // Retry once after 2 seconds
     await new Promise(resolve => setTimeout(resolve, 2000));
-    res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 } });
-    if (!res.ok) {
-      console.error(`[alfa-api] Failed to fetch ${endpoint}: ${res.status}`);
+    controller = new AbortController();
+    timeout = setTimeout(() => controller.abort(), 10000);
+    res = await fetch(`${BASE_URL}${endpoint}`, { next: { revalidate: 3600 }, signal: controller.signal }).catch(() => null);
+    clearTimeout(timeout);
+    
+    if (!res || !res.ok) {
+      console.error(`[alfa-api] Failed to fetch ${endpoint}: ${res?.status ?? 'timeout'}`);
       return null;
     }
   }
@@ -81,8 +89,11 @@ export async function fetchProblems(tags: string[], difficulty?: string, limit: 
   if (tags.length > 0) query.set('tags', tags.join('+'));
   // Note: For Alfa API, difficulty might need to be appended or handled differently, but let's assume it accepts difficulty param as per spec.
   // Actually alfa api might not have this exact param, but we will pass it anyway.
-  const res = await fetch(`${BASE_URL}/problems?limit=${limit}&${query.toString()}`);
-  if (!res.ok) return [];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  const res = await fetch(`${BASE_URL}/problems?limit=${limit}&${query.toString()}`, { signal: controller.signal }).catch(() => null);
+  clearTimeout(timeout);
+  if (!res || !res.ok) return [];
   const data = await res.json();
   
   let problems = (data.problemsetQuestionList || []) as LeetCodeProblem[];

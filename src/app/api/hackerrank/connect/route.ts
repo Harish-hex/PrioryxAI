@@ -5,6 +5,8 @@ import { fetchMultiPlatformProfiles, analyzeHackerRankProfile } from '@/lib/hack
 import { analyzeHackerRankWithAI, generateHRPracticeProblems } from '@/lib/hackerrank/ai-analyzer';
 import { saveMockProfile } from '@/lib/mock-db';
 
+export const maxDuration = 30;
+
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies();

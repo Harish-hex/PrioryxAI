@@ -80,7 +80,6 @@ async function generate9TailoredProjects(
       difficulty: project.difficulty,
       phases: project.phases,
       current_phase: 1,
-      completion_pct: 0,
     });
     if (error) {
       console.error('[Foundry] Insert project error:', error);
@@ -189,7 +188,6 @@ async function verifyPhaseCompletion(
       .update({
         phases,
         current_phase: Math.min(phaseNumber + 1, 6),
-        completion_pct: completionPct,
         verified,
       })
       .eq('id', projectId);
@@ -273,7 +271,7 @@ async function trackProjectProgress(
   const supabase = createClient();
   const { data: projects } = await supabase
     .from('user_projects')
-    .select('id, title, difficulty, current_phase, completion_pct, verified')
+    .select('id, title, difficulty, current_phase, verified')
     .eq('user_id', userId)
     .order('created_at');
 

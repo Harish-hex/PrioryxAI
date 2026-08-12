@@ -1,9 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
+
+
+  // Increase body size limit for file uploads
+  // Default is 4.5MB — resumes can be larger
+  experimental: {
+    serverComponentsExternalPackages: [
+      'pdf-parse',
+      'mammoth',
+      'xlsx',
+      'sharp',
+      'canvas',
+      'pdfjs-dist',
+      'apify-client',
+      'proxy-agent',
+    ],
+    // serverActionsBodySizeLimit is for Server Actions
+    // For API routes, set in the route itself
+    optimizePackageImports: [
+      'lucide-react',
+      'recharts',
+      '@radix-ui/react-icons',
+      'framer-motion'
+    ],
   },
+
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 3600,
@@ -11,22 +32,22 @@ const nextConfig = {
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: '**' },
+    ],
+  },
+
+  async headers() {
+    return [
+      {
+        // Allow large file uploads on API routes
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
     ]
   },
-  experimental: {
-    serverComponentsExternalPackages: ["apify-client", "proxy-agent", "pdf-parse", "mammoth", "canvas", "pdfjs-dist"],
-    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
-    outputFileTracingIncludes: {
-      '/api/**/*': ['./node_modules/pdf-parse/test/data/05-versions-space.pdf']
-    }
-  },
-  swcMinify: true,
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias.canvas = false;
-    }
-    return config;
-  },
 }
+
 export default nextConfig

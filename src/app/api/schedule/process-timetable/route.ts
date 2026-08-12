@@ -1,14 +1,19 @@
+export const maxDuration = 60;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: NextRequest) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: 50000,
+    maxRetries: 1,
+  });
+
   // Auth check
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();

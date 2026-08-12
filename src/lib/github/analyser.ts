@@ -126,19 +126,22 @@ export async function runGitHubIntelligence(
 
   emit('Saving analysis to database...');
 
-  // Upsert per-repo analysis
-  for (const ps of scored) {
-    await supabase.from('github_analysis').upsert({
-      user_id: userId,
-      repo_name: ps.repoName,
-      total_score: ps.totalScore,
-      grade: ps.grade,
-      dimensions: ps.dimensions,
-      weaknesses: ps.weaknesses,
-      strengths: ps.strengths,
-      career_relevance: ps.careerRelevance,
-      analysed_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,repo_name' });
+  // Upsert per-repo analysis in bulk
+  const analysisPayload = scored.map(ps => ({
+    user_id: userId,
+    repo_name: ps.repoName,
+    total_score: ps.totalScore,
+    grade: ps.grade,
+    dimensions: ps.dimensions,
+    weaknesses: ps.weaknesses,
+    strengths: ps.strengths,
+    career_relevance: ps.careerRelevance,
+    analysed_at: new Date().toISOString(),
+  }));
+
+  if (analysisPayload.length > 0) {
+    const { error: upsertErr } = await supabase.from('github_analysis').upsert(analysisPayload, { onConflict: 'user_id,repo_name' });
+    if (upsertErr) console.error('[GitHub Analyser] Failed to bulk upsert analysis:', upsertErr);
   }
 
   // Clear non-completed actions and insert fresh ones

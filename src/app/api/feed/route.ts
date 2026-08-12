@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
@@ -384,7 +385,10 @@ export async function GET(request: Request) {
     const due = new Date(task.due_at).getTime();
     const now = Date.now();
     
-    if (filterType === 'upcoming') {
+    if (filterType === 'this_week') {
+      const nextWeek = now + 7 * 24 * 60 * 60 * 1000;
+      return due >= now && due <= nextWeek;
+    } else if (filterType === 'upcoming') {
       return due >= now;
     } else if (filterType === 'past') {
       return due < now;
@@ -435,16 +439,13 @@ export async function GET(request: Request) {
   // 6. Coding Question -> 3 (score 95)
   const orderedTasks: any[] = [];
   
-  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 115, priority: 'amber' }); // 1. Urgent
   if (resumeTasks.length > 0) orderedTasks.push({ task: resumeTasks.shift(), score: 99, priority: 'green' }); // 2. Resume
   if (subjectTasks.length > 0) orderedTasks.push({ task: subjectTasks.shift(), score: 98, priority: 'green' }); // 3. Subject
   if (githubTasks.length > 0) orderedTasks.push({ task: githubTasks.shift(), score: 97, priority: 'green' }); // 4. Github
-  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 96, priority: 'green' }); // 5. DSA 2
-  if (dsaTasks.length > 0) orderedTasks.push({ task: dsaTasks.shift(), score: 95, priority: 'green' }); // 6. DSA 3
 
   // Add remaining tasks
   let fallbackScore = 94;
-  [...dsaTasks, ...resumeTasks, ...subjectTasks, ...githubTasks, ...otherTasks].forEach(t => {
+  [...resumeTasks, ...subjectTasks, ...githubTasks, ...otherTasks].forEach(t => {
     orderedTasks.push({ task: t, score: fallbackScore--, priority: 'green' });
   });
 

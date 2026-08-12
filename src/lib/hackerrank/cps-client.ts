@@ -131,9 +131,13 @@ export async function fetchMultiPlatformProfiles(usernames: {
   };
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${CPS_BASE}/stats?${params.toString()}`, {
       next: { revalidate: 21600 },
+      signal: controller.signal
     });
+    clearTimeout(timeout);
 
     if (!res.ok) {
       throw new Error(`CPS returned status ${res.status}`);

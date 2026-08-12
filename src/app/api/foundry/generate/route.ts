@@ -19,7 +19,7 @@ export async function POST() {
   // Find resume deterministically by user_id
   const { data: resume, error: resumeErr } = await db
     .from('user_resumes')
-    .select('skill_entities, swot, parsed_data, extracted_data')
+    .select('skill_entities, swot, parsed_data')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -34,13 +34,7 @@ export async function POST() {
   
   let skills: string[] = []
   if (resume) {
-    // Priority: extracted_data (new storage upload path) > skill_entities > parsed_data
-    const extractedData = (resume.extracted_data as { skills?: string[] } | null)
-    if (extractedData?.skills?.length) {
-      skills = extractedData.skills
-    } else {
-      skills = (resume.skill_entities as { skills?: string[] })?.skills ?? []
-    }
+    skills = (resume.skill_entities as { skills?: string[] })?.skills ?? []
     if (skills.length === 0 && resume.parsed_data) {
       skills = (resume.parsed_data as { skills?: string[] }).skills ?? []
     }
@@ -115,7 +109,7 @@ export async function GET() {
 
   const { data: resume } = await db
     .from('user_resumes')
-    .select('skill_entities, parsed_data, extracted_data')
+    .select('skill_entities, parsed_data')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -126,12 +120,7 @@ export async function GET() {
   
   let skillsCount = 0
   if (resume) {
-    // Priority: extracted_data > skill_entities > parsed_data
-    const extractedData = (resume.extracted_data as { skills?: string[] } | null)
-    skillsCount = extractedData?.skills?.length ?? 0
-    if (skillsCount === 0) {
-      skillsCount = (resume.skill_entities as { skills?: string[] })?.skills?.length ?? 0
-    }
+    skillsCount = (resume.skill_entities as { skills?: string[] })?.skills?.length ?? 0
     if (skillsCount === 0 && resume.parsed_data) {
       skillsCount = (resume.parsed_data as { skills?: string[] }).skills?.length ?? 0
     }

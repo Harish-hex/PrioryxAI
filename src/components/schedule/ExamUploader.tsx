@@ -4,30 +4,18 @@ import { useState, useRef } from 'react';
 import { FileText, Upload, CheckCircle2, Loader2, CalendarCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-// Client-side image compression using Canvas API (no extra npm package)
-async function compressImage(file: File, maxWidthPx = 1600): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidthPx / img.naturalWidth);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.naturalWidth * scale);
-      canvas.height = Math.round(img.naturalHeight * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas not supported')); return; }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error('Compression failed')),
-        'image/jpeg',
-        0.6
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
-    img.src = url;
+// Client-side image compression using compressorjs
+const compressImage = async (file: File): Promise<Blob> =>
+  new Promise(async (resolve, reject) => {
+    const Compressor = (await import('compressorjs')).default;
+    new Compressor(file, {
+      quality: 0.5, 
+      maxWidth: 1600, 
+      maxHeight: 1200,
+      success: resolve, 
+      error: reject
+    });
   });
-}
 
 export function ExamUploader({ isPro, visionRemaining }: { isPro: boolean, visionRemaining: number | null }) {
   const [file, setFile] = useState<File | null>(null);
@@ -55,21 +43,30 @@ export function ExamUploader({ isPro, visionRemaining }: { isPro: boolean, visio
       // Step 1: Compress image client-side (bypasses Vercel 4.5MB body limit)
       let uploadBlob: Blob;
       if (file.type.startsWith('image/')) {
-        uploadBlob = await compressImage(file, 1600);
+        uploadBlob = await compressImage(file);
       } else {
         uploadBlob = file;
       }
 
-      // Step 2: Upload to Supabase Storage
+      // Step 2: Upload to Supabase Storage via our new API route to bypass RLS issues
       setStatus('uploading');
       const storagePath = `${user.id}/exam-${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('schedules')
-        .upload(storagePath, uploadBlob, { upsert: true, contentType: 'image/jpeg' });
 
-      if (uploadError || !uploadData) {
+      const formData = new FormData();
+      formData.append('file', uploadBlob);
+      formData.append('bucket', 'schedules');
+      formData.append('path', storagePath);
+
+      const uploadRes = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData) {
         setStatus('error');
-        setErrorMsg('Storage upload failed: ' + (uploadError?.message ?? 'unknown'));
+        setErrorMsg('Storage upload failed: ' + (uploadData?.error ?? 'unknown error'));
         return;
       }
 

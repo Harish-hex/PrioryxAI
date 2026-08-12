@@ -17,13 +17,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Per-minute rate limit (all users) — fail closed: block if Redis is unreachable
-  const rl = await checkRateLimit(assistantRatelimit, user.id);
-  if (rl.blocked) {
-    const msg = rl.reason === 'redis_error'
-      ? 'Service temporarily unavailable. Try again shortly.'
-      : 'Too many requests. Wait a moment.';
-    return NextResponse.json({ error: msg }, { status: rl.reason === 'redis_error' ? 503 : 429 });
+  // Check rate limit using assistant_usage table
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
+  const { count: usageCount, error: usageError } = await supabase
+    .from('assistant_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', todayStart.toISOString());
+
+  if (usageError) {
+    console.error('Usage check failed', usageError);
   }
 
   // Check pro status
@@ -37,11 +42,9 @@ export async function POST(request: NextRequest) {
     userData?.pro_status &&
     (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  // Free user daily message limit (resets at midnight IST)
-  const msgCountKey = `msg_count:${user.id}`;
+  // Free user daily message limit
   if (!isPro) {
-    const count = await withFallback(() => redis.get<number>(msgCountKey), 0);
-    if ((count ?? 0) >= FREE_MESSAGE_LIMIT) {
+    if ((usageCount ?? 0) >= FREE_MESSAGE_LIMIT) {
       return NextResponse.json(
         { error: 'Free message limit reached', upgrade: true },
         { status: 403 }
@@ -189,10 +192,9 @@ ${context}`,
             role: 'assistant',
             content: fullResponse,
           }).then(res => res, () => {}),
-          withFallback(async () => {
-            const current = (await redis.get<number>(msgCountKey)) ?? 0;
-            await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
-          }, undefined),
+          supabase.from('assistant_usage').insert({
+            user_id: user.id,
+          }).then(res => res, () => {})
         ]);
 
         controller.close();

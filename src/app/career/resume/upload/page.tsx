@@ -5,6 +5,7 @@ import {
   FileText, Upload, Loader2, CheckCircle, AlertCircle,
   RefreshCw, User, Code, Briefcase, GraduationCap, X
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface ResumeData {
   name?: string | null
@@ -106,17 +107,40 @@ export default function ResumeUploadPage() {
 
     setState({ status: 'uploading', filename: file.name })
 
-    const formData = new FormData()
-    formData.append('file', file)
-
     try {
       setState({ status: 'extracting' })
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setState({ status: 'error', message: 'Not authenticated.' })
+        return
+      }
 
-      // Find the correct API path from the existing route
-      const res = await fetch('/api/career/resume/upload', {
+      // Upload directly to Supabase Storage via our new API route to bypass RLS issues
+      const storagePath = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'resumes');
+      formData.append('path', storagePath);
+
+      const uploadRes = await fetch('/api/storage/upload', {
         method: 'POST',
-        body: formData
-        // Do NOT set Content-Type — browser sets it with boundary
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData) {
+        setState({ status: 'error', message: uploadData?.error || 'Storage upload failed.' })
+        return
+      }
+
+      // Call process API with just the storage path
+      const res = await fetch('/api/resume/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storagePath: uploadData.path, userId: user.id })
       })
 
       let json: {

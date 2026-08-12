@@ -45,6 +45,7 @@ export default function AppShell({ username, initialView = "dashboard", children
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [feedFilter, setFeedFilter] = useState("all");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [setupItems, setSetupItems] = useState<any[]>([]);
@@ -105,10 +106,10 @@ export default function AppShell({ username, initialView = "dashboard", children
     } catch {}
   }, []);
 
-  const fetchFeed = useCallback(async () => {
+  const fetchFeed = useCallback(async (filter: string = "all") => {
     setLoadingTasks(true);
     try {
-      const res = await fetch("/api/feed");
+      const res = await fetch(`/api/feed?filter=${filter}`);
       if (res.ok) {
         const data = await res.json();
         setTasks(data.feed ?? []);
@@ -131,10 +132,10 @@ export default function AppShell({ username, initialView = "dashboard", children
   }, []);
 
   useEffect(() => {
-    fetchFeed();
+    fetchFeed(feedFilter);
     fetchStats();
     fetchStatus();
-  }, [fetchFeed, fetchStats, fetchStatus]);
+  }, [fetchFeed, fetchStats, fetchStatus, feedFilter]);
 
   // Track previous isPro to detect the moment it flips true → show activation banner
   const prevIsProRef = useRef(false);
@@ -466,10 +467,17 @@ export default function AppShell({ username, initialView = "dashboard", children
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600 md:inline-flex">
+              <button 
+                onClick={() => setFeedFilter(prev => prev === 'this_week' ? 'all' : 'this_week')}
+                className={`hidden items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm transition md:inline-flex ${
+                  feedFilter === 'this_week' 
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
                 <CalendarClock size={16} />
                 <span>This week</span>
-              </div>
+              </button>
 
               {/* Profile dropdown */}
               <div ref={profileMenuRef} className="relative hidden md:block">

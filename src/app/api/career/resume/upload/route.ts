@@ -5,6 +5,8 @@ import OpenAI from 'openai'
 
 // Removed deprecated config
 export const maxDuration = 60;
+
+
 // ── Environment check ─────────────────────────────────────────
 const OPENAI_KEY = process.env.OPENAI_API_KEY
 if (!OPENAI_KEY) {
