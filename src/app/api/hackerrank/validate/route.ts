@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchMultiPlatformProfiles } from '@/lib/hackerrank/cps-client';
 
