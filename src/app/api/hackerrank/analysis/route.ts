@@ -1,57 +1,85 @@
-export const maxDuration = 60;
-export const dynamic = 'force-dynamic';
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
 
-export async function GET(req: NextRequest) {
-  try {
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+export const maxDuration = 30;
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+export async function GET() {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from('multi_platform_profiles')
-      .select('ai_analysis, hr_practice_recommendations, hackerrank_analysis')
-      .eq('user_id', user.id)
-      .single();
+    // Reads go through the service role. This route previously built an inline
+    // anon cookie client and used `.single()`, which raises PGRST116 on zero
+    // rows — so a connected account read back as an error, fell through to the
+    // file-backed mock (impossible on Vercel's read-only FS) and returned 404,
+    // which the UI renders as "not connected". Same defect as the LeetCode
+    // profile route.
+    const db = createServiceRoleClient();
 
-    let profileData = data;
-    if (error || !data) {
-      const mock = getMockProfile('hackerrank', user.id);
-      if (mock) {
-        profileData = mock;
-      } else {
-        return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      }
+    const { data, error } = await db
+      .from('multi_platform_profiles')
+      .select(
+        'hackerrank_username, hackerrank_score, ai_analysis, hr_practice_recommendations, hackerrank_analysis, last_synced_at'
+      )
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[HR Analysis] query error:', error.message);
     }
 
-    if (!profileData || !profileData.ai_analysis) {
-      return NextResponse.json({ status: 'analyzing' }, { status: 202 });
+    let profileData: any = data;
+
+    if (!profileData && process.env.NODE_ENV === 'development') {
+      profileData = getMockProfile('hackerrank', user.id) ?? null;
+    }
+
+    console.log(
+      '[HR Analysis] user:', user.id,
+      '| HR:', profileData?.hackerrank_username ?? 'NULL',
+      '| analysis:', profileData?.ai_analysis ? 'ready' : 'pending'
+    );
+
+    // Distinguish "never connected" from "connected, analysis still running".
+    // The old code returned 404 for both, so a connected user with a pending
+    // analysis was told to reconnect.
+    if (!profileData?.hackerrank_username) {
+      return NextResponse.json(
+        { connected: false, error: 'Not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!profileData.ai_analysis) {
+      return NextResponse.json(
+        {
+          connected: true,
+          status: 'analyzing',
+          hackerrank_username: profileData.hackerrank_username,
+          hackerrank_score: profileData.hackerrank_score ?? 0,
+        },
+        { status: 202 }
+      );
     }
 
     return NextResponse.json({
+      connected: true,
+      hackerrank_username: profileData.hackerrank_username,
+      hackerrank_score: profileData.hackerrank_score ?? 0,
       ai_analysis: profileData.ai_analysis,
       hr_practice_recommendations: profileData.hr_practice_recommendations,
       hackerrank_analysis: profileData.hackerrank_analysis,
     });
   } catch (err: any) {
-    console.error('Analysis API Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    console.error('[HR Analysis] Unhandled error:', err);
+    return NextResponse.json(
+      { error: err.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }

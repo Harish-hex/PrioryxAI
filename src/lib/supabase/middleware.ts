@@ -26,8 +26,19 @@ export async function updateSession(request: NextRequest) {
   // Refresh session if expired — required for Server Components
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users away from protected routes
-  const protectedPaths = ['/feed', '/assistant', '/onboarding', '/settings', '/profile'];
+  // Redirect unauthenticated users away from protected routes.
+  // `/career` covers the whole authenticated product surface — coding, collab,
+  // foundry, hackerrank, market and resume. It was missing here, so every one
+  // of those pages was served 200 to logged-out visitors, who then hit a
+  // client-side fetch that 401s and renders as "not connected".
+  const protectedPaths = [
+    '/feed',
+    '/assistant',
+    '/onboarding',
+    '/settings',
+    '/profile',
+    '/career',
+  ];
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p));
 
   if (!user && isProtected) {

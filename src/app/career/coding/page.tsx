@@ -30,7 +30,13 @@ export default function LeetCodeDashboard() {
   const fetchProfile = async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      // Returning here without clearing `loading` left the page on its spinner
+      // forever for anyone with an expired session. Middleware should redirect
+      // before we get here, but bail out visibly rather than hanging.
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/leetcode/profile');

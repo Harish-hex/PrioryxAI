@@ -1,29 +1,42 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 15;
+
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let { data, error } = await supabase
+  // Service role + maybeSingle for the same reason as the LeetCode profile
+  // route: RLS plus `.single()`'s zero-row error made connected accounts read
+  // back as disconnected in production.
+  const db = createServiceRoleClient();
+
+  const { data, error } = await db
     .from('multi_platform_profiles')
     .select('*')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    const mock = getMockProfile('hackerrank', user.id);
-    if (mock) {
-      data = mock;
-    } else {
-      return NextResponse.json({ data: null });
-    }
+  if (error) {
+    console.error('[HackerRank Profile] query error:', error.message);
   }
 
-  return NextResponse.json({ data });
+  if (data) {
+    return NextResponse.json({ data });
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    const mock = getMockProfile('hackerrank', user.id);
+    if (mock) return NextResponse.json({ data: mock });
+  }
+
+  console.log('[HackerRank Profile] no profile row for user:', user.id);
+  return NextResponse.json({ data: null });
 }

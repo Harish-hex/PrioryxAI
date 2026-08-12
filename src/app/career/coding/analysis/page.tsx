@@ -36,14 +36,22 @@ export default function AnalysisDashboard() {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // Without this the page sat on its spinner forever once a session
+        // expired. Middleware redirects first now, but fail visibly regardless.
+        setError("Please sign in to view your analysis.");
+        setLoading(false);
+        return;
+      }
 
-      const { data: profileRow } = await supabase
-        .from('leetcode_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-        
+      // Read through the API rather than querying the table from the browser:
+      // the anon client is RLS-bound and `.single()` errors on zero rows, so
+      // this read reported "No profile found" for connected users. The route
+      // uses the service role and maybeSingle().
+      const profileRes = await fetch('/api/leetcode/profile', { cache: 'no-store' });
+      const profileRow = profileRes.ok ? (await profileRes.json()).data : null;
+
+
       if (profileRow) {
         setProfile(profileRow);
         

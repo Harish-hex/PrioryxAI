@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 20
+
 export async function GET() {
   const user = await getAuthUser()
   if (!user) {

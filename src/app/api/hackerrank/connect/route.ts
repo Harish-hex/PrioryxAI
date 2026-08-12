@@ -1,31 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { fetchMultiPlatformProfiles, analyzeHackerRankProfile } from '@/lib/hackerrank/cps-client';
 import { analyzeHackerRankWithAI, generateHRPracticeProblems } from '@/lib/hackerrank/ai-analyzer';
 import { saveMockProfile } from '@/lib/mock-db';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/**
+ * The coding-profile-service is Render-hosted and cold-starts, so a fetch can
+ * time out for an already-connected user. Reporting "profile not found" in
+ * that case drops the UI's connection state, so fall back to stored data.
+ */
+async function getCachedHackerRankProfile(
+  userId: string,
+  db: ReturnType<typeof createServiceRoleClient>
+) {
+  const { data, error } = await db
+    .from('multi_platform_profiles')
+    .select('hackerrank_username, hackerrank_score, hackerrank_data, last_synced_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[hackerrank connect] cached read failed:', error.message);
+    return null;
+  }
+  return data?.hackerrank_username ? data : null;
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Service role for all writes — RLS on the anon cookie client was
+    // rejecting these upserts in production.
+    const supabase = createServiceRoleClient();
 
     const body = await req.json();
     let { hackerrank_username, codechef_username, gfg_username, codeforces_username, stream, targetCompanies } = body;
@@ -44,6 +58,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (!fetchedData.hackerrank) {
+      // Indistinguishable from a CPS cold-start timeout, so prefer stored data
+      // over telling an already-connected user their profile is missing.
+      const cached = await getCachedHackerRankProfile(user.id, supabase);
+      if (cached) {
+        console.warn(
+          '[hackerrank connect] fetch failed but cached profile exists — serving cache for',
+          cached.hackerrank_username
+        );
+        const cachedData = cached.hackerrank_data as
+          | { badges?: unknown; certifications?: unknown }
+          | null;
+        return NextResponse.json({
+          success: true,
+          stale: true,
+          quickScore: cached.hackerrank_score ?? 0,
+          badges: cachedData?.badges ?? [],
+          certifications: cachedData?.certifications ?? [],
+          message:
+            'HackerRank is slow to respond right now — showing your last synced data. Try syncing again in a minute.',
+        });
+      }
       return NextResponse.json({ error: 'HackerRank username not found or profile is private' }, { status: 404 });
     }
 
@@ -94,23 +129,24 @@ export async function POST(req: NextRequest) {
       last_synced: new Date().toISOString()
     }, { onConflict: 'user_id,platform' }).then(res => res, (e: any) => console.warn('user_coding_profiles upsert warn:', e.message));
 
-    // Fire-and-forget: AI Analysis
-    (async () => {
-      try {
-        const aiAnalysis = await analyzeHackerRankWithAI(analyzedHR, stream, targetCompanies);
-        
-        const earnedBadges = analyzedHR.raw.badges || [];
-        const missingBadges = analyzedHR.missingBadges || [];
-        const practiceRecs = await generateHRPracticeProblems(stream, missingBadges, earnedBadges, targetCompanies);
-        
-        await supabase.from('multi_platform_profiles').update({
-          ai_analysis: aiAnalysis as any,
-          hr_practice_recommendations: practiceRecs as any,
-        }).eq('user_id', user.id);
-      } catch (e) {
-        console.error('Background AI task failed', e);
-      }
-    })();
+    // AI analysis — previously fire-and-forget, which never completed on
+    // Vercel because the serverless instance freezes as soon as the response
+    // is returned. The profile is already saved above, so a failure here
+    // degrades gracefully instead of failing the connection.
+    try {
+      const aiAnalysis = await analyzeHackerRankWithAI(analyzedHR, stream, targetCompanies);
+
+      const earnedBadges = analyzedHR.raw.badges || [];
+      const missingBadges = analyzedHR.missingBadges || [];
+      const practiceRecs = await generateHRPracticeProblems(stream, missingBadges, earnedBadges, targetCompanies);
+
+      await supabase.from('multi_platform_profiles').update({
+        ai_analysis: aiAnalysis as any,
+        hr_practice_recommendations: practiceRecs as any,
+      }).eq('user_id', user.id);
+    } catch (e) {
+      console.error('[hackerrank connect] AI analysis failed (profile still saved):', e);
+    }
 
     return NextResponse.json({
       success: true,
