@@ -19,11 +19,11 @@ export async function GET() {
     return NextResponse.json({ friends: [] })
   }
 
-  const friendIds = connections.map(c =>
+  const friendIds = Array.from(new Set(connections.map(c =>
     c.requester_id === user.id ? c.receiver_id : c.requester_id
-  )
+  )))
 
-  const [profilesResult, xpResult, challengesResult] = await Promise.allSettled([
+  const [profilesResult, xpResult, challengesResult, codingProfilesResult, resumesResult] = await Promise.allSettled([
     db.from('peer_profiles')
       .select('user_id, display_name, avatar_initial, connect_code, stream, skills, placement_score')
       .in('user_id', friendIds),
@@ -34,23 +34,54 @@ export async function GET() {
       .select('id, status, creator_id, opponent_id, challenge_type, title')
       .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
       .eq('status', 'in_progress'),
+    db.from('user_coding_profiles')
+      .select('user_id, platform, username, solved_count, ranking, badge_name')
+      .in('user_id', friendIds),
+    db.from('user_resumes')
+      .select('user_id, parsed_data, extracted_data, skill_entities, created_at')
+      .in('user_id', friendIds)
+      .order('created_at', { ascending: false }),
   ])
 
   const profiles = profilesResult.status === 'fulfilled' ? (profilesResult.value.data ?? []) : []
   const xpData = xpResult.status === 'fulfilled' ? (xpResult.value.data ?? []) : []
   const activeChallenges = challengesResult.status === 'fulfilled' ? (challengesResult.value.data ?? []) : []
+  const codingProfiles = codingProfilesResult.status === 'fulfilled' ? (codingProfilesResult.value.data ?? []) : []
+  const resumes = resumesResult.status === 'fulfilled' ? (resumesResult.value.data ?? []) : []
 
   const xpMap = Object.fromEntries(xpData.map(x => [x.user_id, x]))
 
-  const friends = connections.map(conn => {
+  // Deduplicate connections manually so we only map each friend once
+  const uniqueFriends = new Map()
+
+  connections.forEach(conn => {
     const friendId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id
+    if (uniqueFriends.has(friendId)) return
+
     const profile = profiles.find(p => p.user_id === friendId) ?? null
     const xp = xpMap[friendId] ?? null
+    
+    // Attach rich data
+    if (profile) {
+      const userCodings = codingProfiles.filter(c => c.user_id === friendId)
+      const userResume = resumes.find(r => r.user_id === friendId) // first one is newest
+      
+      let richSkills: string[] = []
+      if (userResume) {
+        const extractedData = (userResume.extracted_data as { skills?: string[] } | null)
+        richSkills = extractedData?.skills ?? (userResume.skill_entities as { skills?: string[] })?.skills ?? (userResume.parsed_data as { skills?: string[] })?.skills ?? []
+      }
+      
+      (profile as any).coding_profiles = userCodings
+      if (richSkills.length > 0) {
+        profile.skills = richSkills
+      }
+    }
     const activeChallenge = activeChallenges.find(c =>
       c.creator_id === friendId || c.opponent_id === friendId
     ) ?? null
 
-    return {
+    uniqueFriends.set(friendId, {
       connectionId: conn.id,
       userId: friendId,
       connectedAt: conn.accepted_at,
@@ -62,8 +93,10 @@ export async function GET() {
         winStreak: xp.win_streak,
       } : null,
       activeChallenge,
-    }
+    })
   })
+
+  const friends = Array.from(uniqueFriends.values())
 
   return NextResponse.json({ friends })
 }

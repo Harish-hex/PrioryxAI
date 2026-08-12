@@ -15,6 +15,7 @@ interface PeerProfile {
   stream: string
   skills: string[]
   placement_score: number
+  coding_profiles?: { platform: string; username: string; solved_count: number; ranking: string; badge_name: string }[]
 }
 
 interface Friend {
@@ -587,8 +588,22 @@ export default function CollabMatchPage() {
                   <p className="text-xs text-muted-foreground">{friend.profile?.stream}</p>
                   {friend.profile?.skills && friend.profile.skills.length > 0 && (
                     <div className="flex gap-1 mt-1.5 flex-wrap">
-                      {friend.profile.skills.slice(0, 3).map(s => (
+                      {friend.profile.skills.slice(0, 5).map(s => (
                         <span key={s} className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400">{s}</span>
+                      ))}
+                      {friend.profile.skills.length > 5 && (
+                        <span className="text-xs px-1.5 py-0.5 text-muted-foreground">+{friend.profile.skills.length - 5}</span>
+                      )}
+                    </div>
+                  )}
+                  {friend.profile?.coding_profiles && friend.profile.coding_profiles.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {friend.profile.coding_profiles.map(cp => (
+                        <div key={cp.platform} className="flex items-center gap-2 text-xs">
+                          <span className="font-semibold capitalize text-purple-600 dark:text-purple-400">{cp.platform}:</span>
+                          <span className="text-muted-foreground">{cp.solved_count} solved</span>
+                          {cp.badge_name && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded flex items-center gap-1"><Trophy className="h-3 w-3" /> {cp.badge_name}</span>}
+                        </div>
                       ))}
                     </div>
                   )}

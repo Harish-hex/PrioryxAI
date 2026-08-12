@@ -192,21 +192,21 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
 }
 
 const proFeatures: { label: string; sub?: string }[] = [
-  { label: "Unlimited AI messages", sub: "No daily cap, context aware" },
-  { label: "Full task feed", sub: "All matches ranked, no 5-task cap" },
-  { label: "Plan with AI on any task", sub: "Instant action plan per deadline" },
-  { label: "Priority scoring (0–100)", sub: "See which task to do first and why" },
-  { label: "Auto-scheduled focus blocks", sub: "AI slots tasks into your calendar" },
-  { label: "10 timetable uploads/day", sub: "PDF, DOC, image — all formats" },
-  { label: "Pro badge on public profile", sub: "Visible to recruiters" },
+  { label: "Unlimited AI messages", sub: "Context-aware study & career plans" },
+  { label: "Full task feed access", sub: "View and prioritize 100+ opportunities" },
+  { label: "Internshala Direct Match", sub: "Browse roles matching your specific skills" },
+  { label: "AI Generated Resume", sub: "Auto-generates from your GitHub & skills" },
+  { label: "Project Foundry", sub: "1-click codebase setup for portfolio projects" },
+  { label: "10 timetable/exam uploads/day", sub: "Auto-extracts class & test schedules" },
+  { label: "Pro badge on public profile", sub: "Stand out to recruiters" },
 ];
 
 const freeItems: { label: string; locked: boolean }[] = [
-  { label: "5 AI-ranked tasks visible", locked: false },
-  { label: "3 AI messages/day", locked: false },
-  { label: "Unlimited timetable uploads", locked: false },
-  { label: "Basic public profile", locked: false },
-  { label: "Plan with AI", locked: true },
-  { label: "Priority scoring", locked: true },
-  { label: "Auto-scheduling", locked: true },
+  { label: "20 AI messages/day", locked: false },
+  { label: "5 AI-ranked feed items", locked: false },
+  { label: "Basic priority scoring", locked: false },
+  { label: "GitHub contribution streaks", locked: false },
+  { label: "Full task feed access", locked: true },
+  { label: "Project Foundry generation", locked: true },
+  { label: "AI Generated Resume download", locked: true },
 ];

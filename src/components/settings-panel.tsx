@@ -7,6 +7,7 @@ import { ExamUploader } from "@/components/schedule/ExamUploader";
 import { TimetablePreview } from "@/components/schedule/TimetablePreview";
 import { ExamPreview } from "@/components/schedule/ExamPreview";
 import { TimetableEntry, ExamEntry } from "@/lib/schedule/extractor";
+import { createClient } from "@/lib/supabase/client";
 
 interface UserProfile {
   name: string | null;
@@ -52,6 +53,12 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
 
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
+
+  // Resume upload (Supabase Storage pattern — bypasses Vercel 4.5MB body limit)
+  const [resumeUploadFile, setResumeUploadFile] = useState<File | null>(null);
+  const [resumeUploadStatus, setResumeUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
+  const [resumeUploadMessage, setResumeUploadMessage] = useState<string | null>(null);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
 
   const PRO_VISION_LIMIT = 10;
   const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
@@ -246,6 +253,60 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     }
   }
 
+  async function handleResumeUpload() {
+    if (!resumeUploadFile) return;
+    setResumeUploadStatus('uploading');
+    setResumeUploadMessage(null);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setResumeUploadStatus('error');
+      setResumeUploadMessage('Not signed in.');
+      return;
+    }
+
+    try {
+      // Step 1: Upload directly to Supabase Storage — bypasses Vercel body limit
+      const filePath = `${user.id}/${Date.now()}-${resumeUploadFile.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, resumeUploadFile, { upsert: true });
+
+      if (uploadError || !uploadData) {
+        setResumeUploadStatus('error');
+        setResumeUploadMessage('Upload failed: ' + (uploadError?.message ?? 'unknown error'));
+        return;
+      }
+
+      // Step 2: Call process API with only the storage path (no file body)
+      setResumeUploadStatus('processing');
+      setResumeUploadMessage('AI is extracting your resume data...');
+
+      const processRes = await fetch('/api/resume/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storagePath: uploadData.path, userId: user.id }),
+      });
+
+      const processData = await processRes.json().catch(() => ({}));
+
+      if (!processRes.ok) {
+        setResumeUploadStatus('error');
+        setResumeUploadMessage(processData.error ?? 'Failed to process resume.');
+        return;
+      }
+
+      setResumeUploadStatus('success');
+      setResumeUploadMessage(`Resume uploaded! ${processData.skillsCount ?? 0} skills extracted.`);
+      setResumeUploadFile(null);
+      if (resumeFileInputRef.current) resumeFileInputRef.current.value = '';
+    } catch (err: any) {
+      setResumeUploadStatus('error');
+      setResumeUploadMessage(err.message ?? 'Network error.');
+    }
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Left — profile form */}
@@ -338,6 +399,69 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               {saving ? "Saving…" : "Save changes"}
             </button>
           </form>
+        </div>
+
+        {/* ── SECTION 0: RESUME UPLOAD ── */}
+        <div className="glass rounded-[28px] p-5 sm:p-6 space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload Your Resume</h3>
+            <p className="text-sm text-slate-500 mt-1 leading-6">
+              Upload your resume (PDF, PNG, JPG). AI extracts skills, projects, experience, and education for job matching and Project Foundry.
+            </p>
+          </div>
+
+          <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
+            {resumeUploadFile ? (
+              <FileText size={18} className="shrink-0 text-slate-500" />
+            ) : (
+              <Upload size={18} className="shrink-0 text-slate-400" />
+            )}
+            <span className="min-w-0 flex-1 truncate">
+              {resumeUploadFile ? resumeUploadFile.name : "Choose PDF, JPG, or PNG — up to 10 MB"}
+            </span>
+            <input
+              ref={resumeFileInputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                setResumeUploadFile(e.target.files?.[0] ?? null);
+                setResumeUploadStatus('idle');
+                setResumeUploadMessage(null);
+              }}
+            />
+          </label>
+
+          {resumeUploadStatus === 'error' && resumeUploadMessage && (
+            <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{resumeUploadMessage}</p>
+          )}
+          {(resumeUploadStatus === 'uploading' || resumeUploadStatus === 'processing') && resumeUploadMessage && (
+            <p className="flex items-center gap-2 rounded-[22px] border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              <Loader2 size={14} className="animate-spin" />
+              {resumeUploadMessage ?? (resumeUploadStatus === 'uploading' ? 'Uploading...' : 'Extracting data...')}
+            </p>
+          )}
+          {resumeUploadStatus === 'success' && resumeUploadMessage && (
+            <p className="flex items-center gap-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <CheckCircle2 size={15} />
+              {resumeUploadMessage}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleResumeUpload}
+            disabled={!resumeUploadFile || resumeUploadStatus === 'uploading' || resumeUploadStatus === 'processing'}
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+          >
+            {resumeUploadStatus === 'uploading' ? (
+              <><Loader2 size={15} className="animate-spin" /> Uploading...</>
+            ) : resumeUploadStatus === 'processing' ? (
+              <><Loader2 size={15} className="animate-spin" /> Extracting data...</>
+            ) : (
+              <><Upload size={15} /> Upload Resume</>
+            )}
+          </button>
         </div>
 
         {/* ── SECTION 1: TIMETABLE ── */}

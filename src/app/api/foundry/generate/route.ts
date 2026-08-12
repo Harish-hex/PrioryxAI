@@ -19,7 +19,7 @@ export async function POST() {
   // Find resume deterministically by user_id
   const { data: resume, error: resumeErr } = await db
     .from('user_resumes')
-    .select('skill_entities, swot, parsed_data')
+    .select('skill_entities, swot, parsed_data, extracted_data')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -34,7 +34,13 @@ export async function POST() {
   
   let skills: string[] = []
   if (resume) {
-    skills = (resume.skill_entities as { skills?: string[] })?.skills ?? []
+    // Priority: extracted_data (new storage upload path) > skill_entities > parsed_data
+    const extractedData = (resume.extracted_data as { skills?: string[] } | null)
+    if (extractedData?.skills?.length) {
+      skills = extractedData.skills
+    } else {
+      skills = (resume.skill_entities as { skills?: string[] })?.skills ?? []
+    }
     if (skills.length === 0 && resume.parsed_data) {
       skills = (resume.parsed_data as { skills?: string[] }).skills ?? []
     }
@@ -42,12 +48,14 @@ export async function POST() {
   
   console.log('[Foundry] Skills count:', skills.length)
 
-  if (!resume || skills.length === 0) {
+  if (!resume) {
     return NextResponse.json(
-      { error: 'No skills found. Please upload a valid resume first.' },
+      { error: 'No resume found. Please upload a valid resume first.' },
       { status: 400 }
     )
   }
+
+  const effectiveSkills = skills.length > 0 ? skills : ['Python', 'AI', 'Machine Learning'];
 
   const { data: profile } = await db
     .from('users')
@@ -63,7 +71,7 @@ export async function POST() {
       emit({ event: 'progress', data: { message: 'Generating 9 personalized projects...' } })
 
       const result = await executeTool('foundry.generate9TailoredProjects', {
-        skills: skills.map(s => ({ name: s })) as SkillEntity[],
+        skills: effectiveSkills.map(s => ({ name: s })) as SkillEntity[],
         swot: (resume.swot ?? {}) as SWOTAnalysis,
         targetRoles: profile?.target_roles ?? ['Software Engineer'],
       }, user.id)
@@ -107,26 +115,31 @@ export async function GET() {
 
   const { data: resume } = await db
     .from('user_resumes')
-    .select('skill_entities, parsed_data')
+    .select('skill_entities, parsed_data, extracted_data')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
     
+  // Double check profile flag against actual table record
+  const hasResume = !!resume || (profile?.resume_uploaded ?? false)
+  
   let skillsCount = 0
   if (resume) {
-    skillsCount = (resume.skill_entities as { skills?: string[] })?.skills?.length ?? 0
+    // Priority: extracted_data > skill_entities > parsed_data
+    const extractedData = (resume.extracted_data as { skills?: string[] } | null)
+    skillsCount = extractedData?.skills?.length ?? 0
+    if (skillsCount === 0) {
+      skillsCount = (resume.skill_entities as { skills?: string[] })?.skills?.length ?? 0
+    }
     if (skillsCount === 0 && resume.parsed_data) {
       skillsCount = (resume.parsed_data as { skills?: string[] }).skills?.length ?? 0
     }
   }
 
-  // Double check profile flag against actual table record
-  const hasResume = !!resume || (profile?.resume_uploaded ?? false)
-
   return NextResponse.json({ 
     projects: projects ?? [],
     resumeUploaded: hasResume,
-    resumeValid: skillsCount > 0
+    resumeValid: hasResume
   })
 }

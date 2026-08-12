@@ -82,6 +82,16 @@ export async function POST(req: Request) {
       }
     }
 
+    // 4.5. Also upsert to unified user_coding_profiles table
+    await (await supabase).from('user_coding_profiles').upsert({
+      user_id: user.id,
+      platform: 'leetcode',
+      username: username,
+      data: fullData,
+      connected: true,
+      last_synced: new Date().toISOString()
+    }, { onConflict: 'user_id,platform' }).then(res => res, e => console.warn('user_coding_profiles upsert warn:', e.message));
+
     // 5. Trigger background analysis (Fire and forget)
     // We don't await this so the UI can proceed immediately
     analyzeProfile(fullData, stream, targetCompanies).then(async (analysis) => {

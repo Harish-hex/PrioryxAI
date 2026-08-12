@@ -297,6 +297,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const forceAi = url.searchParams.get('force_ai') === '1';
+  const filterType = url.searchParams.get('filter') || 'all'; // 'upcoming', 'past', or 'all'
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -378,7 +379,18 @@ export async function GET(request: Request) {
       subject: exam.subject,
       weightage: exam.priority === 'high' ? 80 : exam.priority === 'medium' ? 50 : 20
     }))
-  ];
+  ].filter(task => {
+    if (!task.due_at) return true; // Keep tasks without deadlines
+    const due = new Date(task.due_at).getTime();
+    const now = Date.now();
+    
+    if (filterType === 'upcoming') {
+      return due >= now;
+    } else if (filterType === 'past') {
+      return due < now;
+    }
+    return true; // 'all'
+  });
 
   // Enrich job tasks with a specific match reason (skills + stipend + urgency)
   // so the Next Move Card and feed cards show concrete context, not a generic label.

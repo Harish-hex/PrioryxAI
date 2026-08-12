@@ -11,23 +11,28 @@ export async function GET(_req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const url = new URL(_req.url);
+  const refresh = url.searchParams.get('refresh') === '1';
+
   // 1. Try to read a cached report from github_intelligence_reports
   const serviceClient = createServiceClient();
-  const { data: cached } = await serviceClient
-    .from('github_intelligence_reports')
-    .select('report, generated_at')
-    .eq('user_id', user.id)
-    .single();
+  if (!refresh) {
+    const { data: cached } = await serviceClient
+      .from('github_intelligence_reports')
+      .select('report, generated_at')
+      .eq('user_id', user.id)
+      .single();
 
-  if (cached?.report) {
-    console.log('[GitHub Intel] Returning cached report from DB');
-    const generatedAt = new Date(cached.generated_at as string);
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    return NextResponse.json({
-      ...(cached.report as object),
-      cachedAt: cached.generated_at,
-      isStale: generatedAt < twoHoursAgo,
-    });
+    if (cached?.report) {
+      console.log('[GitHub Intel] Returning cached report from DB');
+      const generatedAt = new Date(cached.generated_at as string);
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      return NextResponse.json({
+        ...(cached.report as object),
+        cachedAt: cached.generated_at,
+        isStale: generatedAt < twoHoursAgo,
+      });
+    }
   }
 
   // 2. Fall back: check if any per-repo data exists in github_analysis

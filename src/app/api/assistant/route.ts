@@ -4,6 +4,7 @@ import { openai, sanitize } from '@/lib/openai';
 import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const FREE_MESSAGE_LIMIT = 20;
 
@@ -56,16 +57,21 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch context: top 5 feed items + github health + repos
-  const [{ data: tasks }, { data: github }] = await Promise.all([
+  const [tasksRes, githubRes] = await Promise.all([
     supabase
       .from('tasks')
       .select('type, title, due_at')
       .eq('user_id', user.id)
       .eq('completed', false)
       .order('due_at', { ascending: true })
-      .limit(5),
-    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single(),
+      .limit(5)
+      .then(res => res, () => ({ data: [] as any[] })),
+    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single()
+      .then(res => res, () => ({ data: null })),
   ]);
+  
+  const tasks = tasksRes.data;
+  const github = githubRes.data;
 
   // Classify student profile for richer AI context
   const subjects: string[] = userData?.subjects ?? [];
@@ -152,50 +158,59 @@ ${context}`,
     user_id: user.id,
     role: 'user',
     content: userMessage,
-  });
+  }).then(res => res, () => {});
 
-  // Stream response
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages,
-    max_tokens: 800,
-    stream: true,
-  });
+  try {
+    // Stream response
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages,
+      max_tokens: 800,
+      stream: true,
+    });
 
-  const encoder = new TextEncoder();
-  let fullResponse = '';
+    const encoder = new TextEncoder();
+    let fullResponse = '';
 
-  const readable = new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content ?? '';
-        if (text) {
-          fullResponse += text;
-          controller.enqueue(encoder.encode(text));
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? '';
+          if (text) {
+            fullResponse += text;
+            controller.enqueue(encoder.encode(text));
+          }
         }
-      }
 
-      // Save assistant reply and increment message count after stream completes
-      await Promise.all([
-        supabase.from('assistant_messages').insert({
-          user_id: user.id,
-          role: 'assistant',
-          content: fullResponse,
-        }),
-        withFallback(async () => {
-          const current = (await redis.get<number>(msgCountKey)) ?? 0;
-          await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
-        }, undefined),
-      ]);
+        // Save assistant reply and increment message count after stream completes
+        await Promise.all([
+          supabase.from('assistant_messages').insert({
+            user_id: user.id,
+            role: 'assistant',
+            content: fullResponse,
+          }).then(res => res, () => {}),
+          withFallback(async () => {
+            const current = (await redis.get<number>(msgCountKey)) ?? 0;
+            await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
+          }, undefined),
+        ]);
 
-      controller.close();
-    },
-  });
+        controller.close();
+      },
+    });
 
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-    },
-  });
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
+  } catch (err: any) {
+    console.error('[Assistant] OpenAI Error:', err);
+    const status = err.status || 500;
+    let msg = 'AI temporarily unavailable, try again';
+    if (status === 429) msg = 'Rate limited by AI provider — try in 30 seconds';
+    else if (status === 401) msg = 'API key invalid — contact support';
+    return NextResponse.json({ error: msg }, { status });
+  }
 }
