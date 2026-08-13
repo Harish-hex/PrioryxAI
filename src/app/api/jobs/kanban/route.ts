@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 const STAGES = ['saved', 'applied', 'interview', 'offer', 'rejected'] as const;

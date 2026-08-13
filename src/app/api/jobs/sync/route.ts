@@ -3,8 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { syncInternshalaJobsForUser } from '@/lib/job-sync';
 import { Receiver } from '@upstash/qstash';
 
-export const maxDuration = 60
-
 export const runtime = 'nodejs';
 
 // Called by QStash on schedule OR directly by authenticated user to trigger a sync

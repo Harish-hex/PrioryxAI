@@ -4,8 +4,6 @@ import { syncGithubForUser } from '@/lib/github-sync';
 import { withFallback, redis } from '@/lib/redis';
 import { Receiver } from '@upstash/qstash';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 const GITHUB_SYNC_LOCK_TTL = 300; // 5 min lock — one sync per user per 5min

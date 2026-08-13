@@ -12,19 +12,6 @@
   --muted: #475569;
 }
 
-/* Dark theme. Driven by the `dark` class on <html> (tailwind darkMode:"class"),
-   set pre-paint by the inline script in layout.tsx. Only the token values
-   change — the light palette above is untouched. */
-.dark {
-  color-scheme: dark;
-  --bg: #0b1120;
-  --surface: rgba(15, 23, 42, 0.88);
-  --surface-strong: #0f172a;
-  --line: rgba(148, 163, 184, 0.16);
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-}
-
 * {
   box-sizing: border-box;
 }

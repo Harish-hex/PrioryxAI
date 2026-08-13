@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build',
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Sanitize user-controlled strings before LLM context injection

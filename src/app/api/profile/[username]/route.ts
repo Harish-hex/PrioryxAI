@@ -3,8 +3,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { withFallback, redis } from '@/lib/redis';
 
-export const maxDuration = 60
-
 export const runtime = 'nodejs';
 
 const PROFILE_CACHE_TTL = 600; // 10 minutes
@@ -44,17 +42,13 @@ export async function GET(
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  const [{ data: github }, { data: tasks }, { data: internalContribs }] = await Promise.all([
+  const [{ data: github }, { data: tasks }] = await Promise.all([
     supabase
       .from('github_cache')
       .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
       .eq('user_id', user.id)
       .single(),
     supabase.from('tasks').select('completed').eq('user_id', user.id),
-    supabase.rpc('get_user_daily_activity', {
-      p_user_id: user.id,
-      p_from: new Date(Date.now() - 126 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    }),
   ]);
 
   let projectBullets: string[] = [];
@@ -102,10 +96,7 @@ Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), desc
           url: repo.url,
         })),
       project_bullets: projectBullets,
-      contribution_days: (internalContribs ?? [])?.map((row: any) => ({
-        date: row.activity_date,
-        count: Number(row.count)
-      })),
+      contribution_days: (github?.contribution_days ?? []) as { date: string; count: number }[],
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
     },

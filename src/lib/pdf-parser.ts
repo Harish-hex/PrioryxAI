@@ -1,23 +1,42 @@
 /**
- * Vercel-safe PDF text extractor.
- * Uses dynamic import to avoid bundling issues.
- * Falls back to empty string (triggers vision fallback).
+ * Vercel-safe PDF/DOCX text extractors.
+ *
+ * pdf-parse v2 is ESM-first and exposes a `PDFParse` class — there is no
+ * default export and no `lib/pdf-parse.js` entrypoint (both were v1 only).
+ * Calling the v1 API silently yields `undefined`, which is why every PDF
+ * used to fall through to the vision path.
+ *
+ * Both helpers are non-throwing: an empty string signals the caller to fall
+ * back to GPT-4o vision.
  */
 export async function extractPdfText(buffer: Buffer): Promise<string> {
+  let parser: { getText: () => Promise<unknown>; destroy: () => Promise<void> } | null = null
   try {
-    // Dynamic import prevents Vercel from failing at build time
-    // if pdf-parse has native dependencies
-    const pdfParse = (await import('pdf-parse')).default
+    const { PDFParse } = await import('pdf-parse')
 
-    const result = await pdfParse(buffer, {
-      // Disable test file warnings
-      max: 10,
-    })
+    parser = new PDFParse({ data: new Uint8Array(buffer) }) as any
+    const result: any = await parser!.getText()
 
-    return result.text?.trim() ?? ''
+    // v2 returns { text, total, pages } — older shapes only had `text`.
+    const text: string =
+      typeof result === 'string'
+        ? result
+        : result?.text ??
+          (Array.isArray(result?.pages)
+            ? result.pages.map((p: any) => p?.text ?? '').join('\n')
+            : '')
+
+    // v2 injects "-- 3 of 12 --" separators between pages; strip so they
+    // don't end up as noise in the extraction prompt.
+    return text.replace(/^\s*--\s*\d+\s+of\s+\d+\s*--\s*$/gm, '').trim()
   } catch (e) {
     console.warn('[PDF Parser] pdf-parse failed, will use vision fallback:', String(e))
-    return ''  // triggers GPT-4o vision path
+    return '' // triggers GPT-4o vision path
+  } finally {
+    // v2 holds onto a worker; not destroying it leaks across warm invocations.
+    try {
+      await parser?.destroy()
+    } catch {}
   }
 }
 

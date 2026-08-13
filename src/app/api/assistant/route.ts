@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { openai, sanitize, isOpenAIConfigured } from '@/lib/openai';
+import { openai, sanitize } from '@/lib/openai';
 import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
 
-const FREE_MESSAGE_LIMIT = 20;
-
-
-export const dynamic = 'force-dynamic';
+const FREE_MESSAGE_LIMIT = 3;
 
 export async function POST(request: NextRequest) {
-  if (!isOpenAIConfigured()) {
-    console.error('[Assistant] OPENAI_API_KEY missing in this environment');
-    return NextResponse.json(
-      { error: 'AI is not configured on the server. Please contact support.' },
-      { status: 503 }
-    );
-  }
-
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -27,18 +15,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check rate limit using assistant_usage table
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
-
-  const { count: usageCount, error: usageError } = await supabase
-    .from('assistant_usage')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', todayStart.toISOString());
-
-  if (usageError) {
-    console.error('Usage check failed', usageError);
+  // Per-minute rate limit (all users) — fail closed: block if Redis is unreachable
+  const rl = await checkRateLimit(assistantRatelimit, user.id);
+  if (rl.blocked) {
+    const msg = rl.reason === 'redis_error'
+      ? 'Service temporarily unavailable. Try again shortly.'
+      : 'Too many requests. Wait a moment.';
+    return NextResponse.json({ error: msg }, { status: rl.reason === 'redis_error' ? 503 : 429 });
   }
 
   // Check pro status
@@ -52,9 +35,11 @@ export async function POST(request: NextRequest) {
     userData?.pro_status &&
     (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  // Free user daily message limit
+  // Free user daily message limit (resets at midnight IST)
+  const msgCountKey = `msg_count:${user.id}`;
   if (!isPro) {
-    if ((usageCount ?? 0) >= FREE_MESSAGE_LIMIT) {
+    const count = await withFallback(() => redis.get<number>(msgCountKey), 0);
+    if ((count ?? 0) >= FREE_MESSAGE_LIMIT) {
       return NextResponse.json(
         { error: 'Free message limit reached', upgrade: true },
         { status: 403 }
@@ -70,21 +55,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch context: top 5 feed items + github health + repos
-  const [tasksRes, githubRes] = await Promise.all([
+  const [{ data: tasks }, { data: github }] = await Promise.all([
     supabase
       .from('tasks')
       .select('type, title, due_at')
       .eq('user_id', user.id)
       .eq('completed', false)
       .order('due_at', { ascending: true })
-      .limit(5)
-      .then(res => res, () => ({ data: [] as any[] })),
-    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single()
-      .then(res => res, () => ({ data: null })),
+      .limit(5),
+    supabase.from('github_cache').select('health_score, last_commit_at, languages, repos').eq('user_id', user.id).single(),
   ]);
-  
-  const tasks = tasksRes.data;
-  const github = githubRes.data;
 
   // Classify student profile for richer AI context
   const subjects: string[] = userData?.subjects ?? [];
@@ -171,82 +151,50 @@ ${context}`,
     user_id: user.id,
     role: 'user',
     content: userMessage,
-  }).then(res => res, () => {});
+  });
 
-  try {
-    // Stream response
-    const stream = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 800,
-      stream: true,
-    });
+  // Stream response
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages,
+    max_tokens: 800,
+    stream: true,
+  });
 
-    const encoder = new TextEncoder();
-    let fullResponse = '';
+  const encoder = new TextEncoder();
+  let fullResponse = '';
 
-    const readable = new ReadableStream({
-      async start(controller) {
-        // Anything thrown in here happens *after* headers are sent, so it can
-        // never become an HTTP error. Without this guard a mid-stream failure
-        // left the controller open and the client hung forever waiting for a
-        // response that would never close — the "assistant not responding" bug.
-        try {
-          for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content ?? '';
-            if (text) {
-              fullResponse += text;
-              controller.enqueue(encoder.encode(text));
-            }
-          }
-        } catch (streamErr) {
-          console.error('[Assistant] Stream interrupted:', streamErr);
-          if (!fullResponse) {
-            controller.enqueue(
-              encoder.encode('The assistant was interrupted. Please try again.')
-            );
-          }
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content ?? '';
+        if (text) {
+          fullResponse += text;
+          controller.enqueue(encoder.encode(text));
         }
+      }
 
-        // Persist whatever we managed to generate before closing.
-        try {
-          await Promise.all([
-            fullResponse
-              ? supabase.from('assistant_messages').insert({
-                  user_id: user.id,
-                  role: 'assistant',
-                  content: fullResponse,
-                }).then(res => res, () => {})
-              : Promise.resolve(),
-            supabase.from('assistant_usage').insert({
-              user_id: user.id,
-            }).then(res => res, () => {}),
-          ]);
-        } catch (persistErr) {
-          console.error('[Assistant] Failed to persist reply:', persistErr);
-        }
+      // Save assistant reply and increment message count after stream completes
+      await Promise.all([
+        supabase.from('assistant_messages').insert({
+          user_id: user.id,
+          role: 'assistant',
+          content: fullResponse,
+        }),
+        withFallback(async () => {
+          const current = (await redis.get<number>(msgCountKey)) ?? 0;
+          await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
+        }, undefined),
+      ]);
 
-        // Must always run, or the client never sees the response end.
-        controller.close();
-      },
-    });
+      controller.close();
+    },
+  });
 
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        // Transfer-Encoding is a hop-by-hop header — setting it by hand made
-        // Vercel's proxy mishandle the stream. Disable proxy buffering instead
-        // so tokens reach the browser as they are produced.
-        'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no',
-      },
-    });
-  } catch (err: any) {
-    console.error('[Assistant] OpenAI Error:', err);
-    const status = err.status || 500;
-    let msg = 'AI temporarily unavailable, try again';
-    if (status === 429) msg = 'Rate limited by AI provider — try in 30 seconds';
-    else if (status === 401) msg = 'API key invalid — contact support';
-    return NextResponse.json({ error: msg }, { status });
-  }
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Transfer-Encoding': 'chunked',
+    },
+  });
 }

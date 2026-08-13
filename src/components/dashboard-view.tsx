@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, ChevronRight, Clock3, Code2, GitBranch, Lock, MapPin, Plus, Settings, Sparkles, Target, X, Zap, ExternalLink, FileText } from "lucide-react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, ChevronRight, Clock3, Code2, GitBranch, Lock, MapPin, Plus, Settings, Sparkles, Target, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FocusSessionModal } from "@/components/focus-session-modal";
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
@@ -167,6 +167,7 @@ export function DashboardView({
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
         <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
+        <InsightPanel nextTask={nextTask} />
       </aside>
 
       <FocusSessionModal
@@ -426,8 +427,6 @@ function PriorityFeed({
           {displayed.map((task, index) =>
             task.type === "job" ? (
               <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
-            ) : task.type.startsWith("ai_plan_") ? (
-              <AIPlanCard key={task.id} task={task} index={index} onComplete={onComplete} onSnooze={onSnooze} />
             ) : (
               <motion.article
                 key={task.id}
@@ -1137,99 +1136,5 @@ function SetupStrip({
         </div>
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-const AI_CATEGORIES = {
-  dsa: { label: "DSA", icon: Code2, color: "border-amber-200 bg-amber-50 text-amber-700" },
-  learning: { label: "Learning", icon: BookOpen, color: "border-blue-200 bg-blue-50 text-blue-700" },
-  project: { label: "Project", icon: Target, color: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  exam: { label: "Exam", icon: FileText, color: "border-rose-200 bg-rose-50 text-rose-700" },
-  github: { label: "GitHub", icon: Code2, color: "border-slate-300 bg-slate-100 text-slate-700" },
-  job_application: { label: "Application", icon: Briefcase, color: "border-indigo-200 bg-indigo-50 text-indigo-700" },
-  resume: { label: "Resume", icon: FileText, color: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700" }
-} as const;
-
-function AIPlanCard({ task, index, onComplete, onSnooze }: { task: any; index: number; onComplete: (id: string) => void; onSnooze: (id: string, hours: number) => void; }) {
-  const source = task.ai_source_type || 'dsa';
-  const cat = AI_CATEGORIES[source as keyof typeof AI_CATEGORIES] || AI_CATEGORIES.dsa;
-  const Icon = cat.icon;
-  const isExternal = task.action_url?.startsWith("http");
-
-  return (
-    <motion.article
-      animate={{ opacity: 1, y: 0 }}
-      className="group relative rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
-      initial={{ opacity: 0, y: 8 }}
-      transition={{ delay: index * 0.03, duration: 0.24 }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border ${cat.color}`}>
-              <Icon className="h-3 w-3" />
-              {cat.label}
-            </span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium border ${task.ai_urgency_score > 90 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-              HIGH
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-slate-500">
-              <Target className="h-3 w-3 text-rose-500" /> Focus block
-            </span>
-          </div>
-
-          <h3 className="mt-2 text-sm font-semibold text-slate-950 leading-snug">
-            {task.title}
-          </h3>
-
-          {task.ai_description && (
-            <p className="mt-1 text-xs text-slate-500 leading-5 line-clamp-2">
-              {task.ai_description}
-            </p>
-          )}
-
-          {task.reason && (
-            <p className="mt-1.5 text-xs text-indigo-600 font-medium">
-              {task.reason}
-            </p>
-          )}
-
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-1 text-xs text-slate-400">
-              <Clock3 className="h-3 w-3" />
-              {task.estimate}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 flex-col gap-1.5 items-end">
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => onComplete(task.id)}
-              title="Mark done"
-              className="flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
-            >
-              <div className="h-3.5 w-3.5 rounded-full border-2 border-current" />
-            </button>
-            <button
-              onClick={() => onSnooze(task.id, 24)}
-              title="Dismiss"
-              className="flex h-7 w-7 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-600"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          {task.action_label && (
-            <button
-              onClick={() => task.external_url ? window.open(task.external_url, "_blank") : null}
-              className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
-            >
-              {task.action_label}
-              {isExternal ? <ExternalLink className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-          )}
-        </div>
-      </div>
-    </motion.article>
   );
 }

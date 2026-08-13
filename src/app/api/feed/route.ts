@@ -1,12 +1,9 @@
-export const maxDuration = 60;
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
 import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl } from '@/lib/job-sync';
 import { generateRepoNextStep } from '@/lib/repo-next-step';
-import { runPriorityOrchestrator } from '@/lib/priority/orchestrator';
 
 export const runtime = 'nodejs';
 
@@ -293,24 +290,19 @@ function buildJobReason(task: any, userSubjects: string[]): string {
   return `${skillText}${stipendText}${urgencyText}`;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  const url = new URL(request.url);
-  const forceAi = url.searchParams.get('force_ai') === '1';
-  const filterType = url.searchParams.get('filter') || 'all'; // 'upcoming', 'past', or 'all'
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Try cache first
   const cacheKey = `feed:${user.id}`;
-  if (!forceAi) {
-    const cached = await withFallback(() => redis.get(cacheKey), null);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
+  const cached = await withFallback(() => redis.get(cacheKey), null);
+  if (cached) {
+    return NextResponse.json(cached);
   }
 
   const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
@@ -334,8 +326,7 @@ export async function GET(request: Request) {
     ((userProfile?.subjects?.length ?? 0) > 0 || Object.keys(githubCache?.languages ?? {}).length > 0);
 
   if (shouldSyncJobs) {
-    // Fire and forget without await so it doesn't block the API response
-    withFallback(
+    await withFallback(
       () =>
         syncInternshalaJobsForUser({
           userId: user.id,
@@ -344,63 +335,26 @@ export async function GET(request: Request) {
           languages: githubCache?.languages ?? null,
         }),
       null
-    ).catch(err => console.error('[feed] Job sync error:', err));
+    );
   }
 
-  const [
-    { data: tasks, error: tasksError },
-    { data: exams, error: examsError }
-  ] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('completed', false)
-      .limit(200),
-    supabase
-      .from('schedule_exams')
-      .select('*')
-      .eq('user_id', user.id)
-      .limit(50)
-  ]);
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('completed', false)
+    .limit(200);
 
-  if (tasksError) {
-    console.error('[feed] DB error:', tasksError);
+  if (error) {
+    console.error('[feed] DB error:', error);
     return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 });
   }
 
   const userSubjects: string[] = userProfile?.subjects ?? [];
 
-  const combinedTasks = [
-    ...(tasks || []),
-    ...(exams || []).map((exam: any) => ({
-      id: exam.id,
-      title: exam.title,
-      type: exam.type || 'exam',
-      due_at: exam.date ? (exam.start_time ? `${exam.date}T${exam.start_time}:00.000Z` : `${exam.date}T00:00:00.000Z`) : null,
-      completed: false,
-      subject: exam.subject,
-      weightage: exam.priority === 'high' ? 80 : exam.priority === 'medium' ? 50 : 20
-    }))
-  ].filter(task => {
-    if (!task.due_at) return true; // Keep tasks without deadlines
-    const due = new Date(task.due_at).getTime();
-    const now = Date.now();
-    
-    if (filterType === 'this_week') {
-      const nextWeek = now + 7 * 24 * 60 * 60 * 1000;
-      return due >= now && due <= nextWeek;
-    } else if (filterType === 'upcoming') {
-      return due >= now;
-    } else if (filterType === 'past') {
-      return due < now;
-    }
-    return true; // 'all'
-  });
-
   // Enrich job tasks with a specific match reason (skills + stipend + urgency)
   // so the Next Move Card and feed cards show concrete context, not a generic label.
-  const scored = combinedTasks
+  const scored = (tasks ?? [])
     .map(t => {
       const enriched = { ...t, score: computePriorityScore(t) };
       if (t.type === 'job' && !t.reason) {
@@ -421,66 +375,16 @@ export async function GET(request: Request) {
 
   // Setup items: what the user still needs to configure (shown as a strip, not the hero card)
   const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
+
   const FREE_LIMIT = 5;
-
-  const { tasks: aiTasks } = await runPriorityOrchestrator(supabase, user.id, forceAi);
-
-  // Group AI tasks by source_type
-  const dsaTasks = aiTasks.filter((t: any) => t.source_type === 'dsa_excel' || t.source_type === 'dsa');
-  const resumeTasks = aiTasks.filter((t: any) => t.source_type === 'resume_gap');
-  const subjectTasks = aiTasks.filter((t: any) => t.source_type === 'subject');
-  const githubTasks = aiTasks.filter((t: any) => t.source_type === 'github_repo');
-  const otherTasks = aiTasks.filter((t: any) => !['dsa_excel', 'dsa', 'resume_gap', 'subject', 'github_repo'].includes(t.source_type));
-
-  // The requested order:
-  // 1. Coding Question -> 1 (Urgent, score 115)
-  // 2. Upskilling or ai_plan_resume_gap task (score 99)
-  // 3. Academic Subject to study (score 98)
-  // 4. AI-Driven GitHub Analysis (score 97)
-  // 5. Coding Question -> 2 (score 96)
-  // 6. Coding Question -> 3 (score 95)
-  const orderedTasks: any[] = [];
-  
-  if (resumeTasks.length > 0) orderedTasks.push({ task: resumeTasks.shift(), score: 99, priority: 'green' }); // 2. Resume
-  if (subjectTasks.length > 0) orderedTasks.push({ task: subjectTasks.shift(), score: 98, priority: 'green' }); // 3. Subject
-  if (githubTasks.length > 0) orderedTasks.push({ task: githubTasks.shift(), score: 97, priority: 'green' }); // 4. Github
-
-  // Add remaining tasks
-  let fallbackScore = 94;
-  [...resumeTasks, ...subjectTasks, ...githubTasks, ...otherTasks].forEach(t => {
-    orderedTasks.push({ task: t, score: fallbackScore--, priority: 'green' });
-  });
-
-  const mappedAiTasks = orderedTasks.map(({ task: t, score, priority }) => {
-    return {
-      id: t.id,
-      title: t.title,
-      type: `ai_plan_${t.source_type}`,
-      due_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-      completed: t.completed,
-      score,
-      priority,
-      estimate: `${t.estimated_minutes} min`,
-      reason: t.why,
-      action_label: t.action_label,
-      action_view: t.action_url?.startsWith('http') ? 'external' : 'internal',
-      external_url: t.action_url,
-      ai_source_type: t.source_type,
-      ai_description: t.description,
-      ai_urgency_score: t.urgency_score
-    };
-  });
-
-  const resultFeed = [...realFeed, ...mappedAiTasks].sort((a, b) => b.score - a.score);
-
-  const totalCount = resultFeed.length;
+  const totalCount = realFeed.length;
   const hasMore = !isPro && totalCount > FREE_LIMIT;
-  const feed = isPro ? resultFeed : resultFeed.slice(0, FREE_LIMIT);
+  const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
 
   // Build hiddenPreview so the blur wall can show a specific tease (job title, breakdown)
   let hiddenPreview: { count: number; topJobTitle: string | null; breakdown: string | null } | null = null;
   if (!isPro && totalCount > FREE_LIMIT) {
-    const hiddenTasks = resultFeed.slice(FREE_LIMIT);
+    const hiddenTasks = realFeed.slice(FREE_LIMIT);
     const topJob = hiddenTasks.find((t) => t.type === 'job');
     const examCount = hiddenTasks.filter((t) => t.type === 'exam').length;
     const assignmentCount = hiddenTasks.filter((t) => t.type === 'assignment').length;

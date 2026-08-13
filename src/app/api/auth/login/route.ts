@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 const ALLOWED_PROVIDERS = ['github', 'google'] as const;

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
-
-export const maxDuration = 60
 // pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';
@@ -198,12 +196,10 @@ export async function POST(request: NextRequest) {
       // PDF → extract text with pdf-parse (dynamic import avoids webpack crash)
       let extractedText = '';
       try {
-        // @ts-ignore
         const pdfParseModule = await import('pdf-parse');
-        const pdfModuleAny = pdfParseModule as any;
-        const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : (pdfModuleAny.default || pdfModuleAny.PDFParse || pdfModuleAny);
-        const data = await pdfParse(buffer);
-        extractedText = data.text ?? '';
+        const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
+        const parsed = await pdfParse(buffer);
+        extractedText = parsed.text ?? '';
       } catch (pdfErr) {
         console.error('[vision] pdf-parse failed:', pdfErr);
       }

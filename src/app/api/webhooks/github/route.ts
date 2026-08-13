@@ -3,8 +3,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { syncGithubForUser } from '@/lib/github-sync';
 import { verifyGitHubSignature } from '@/lib/security';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 // GitHub sends push/star events here — trigger a GitHub cache sync for the user

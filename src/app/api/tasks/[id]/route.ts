@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 // Fields the user is allowed to edit on a task

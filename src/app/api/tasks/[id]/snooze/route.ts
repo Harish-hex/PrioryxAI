@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 const ALLOWED_HOURS = [1, 2, 4, 8, 24, 48];

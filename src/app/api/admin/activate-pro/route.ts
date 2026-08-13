@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 // Manual Pro activation — break-glass endpoint for payments where auto-activation failed.

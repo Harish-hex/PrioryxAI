@@ -66,16 +66,9 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
       .sort((a: any, b: any) => b.date.localeCompare(a.date));
 
   let streak = 0;
-  let isFirstDay = true;
   for (const day of allDays) {
-    if (day.contributionCount > 0) {
-      streak++;
-    } else if (isFirstDay) {
-      // It's okay if today has 0 contributions, the streak is still alive from yesterday
-    } else {
-      break;
-    }
-    isFirstDay = false;
+    if (day.contributionCount > 0) streak++;
+    else break;
   }
 
   // Keep the most recent 182 days (26 weeks) for the contribution graph

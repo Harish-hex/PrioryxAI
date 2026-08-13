@@ -3,8 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
 import { errorMentionsColumn } from '@/lib/schema-migrations';
 
-export const maxDuration = 20
-
 export const runtime = 'nodejs';
 
 // Fields the user can read about themselves (includes private fields)

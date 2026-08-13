@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export interface AppUserProfile {
   username: string;
@@ -23,16 +23,10 @@ export async function requireAppUser(options?: { requireOnboarding?: boolean }):
     .eq("id", user.id)
     .single();
 
-  let username = profile?.username;
-
-  if (!username) {
-    username = user.email?.split("@")[0]?.replace(/[^a-zA-Z0-9-]/g, "") ?? "student";
-    // Avoid race conditions by awaiting the update
-    // Use service role to bypass any RLS update restrictions on the username column
-    const serviceClient = createServiceClient();
-    const { error } = await serviceClient.from("users").update({ username }).eq("id", user.id);
-    if (error) console.error("Failed to update username", error);
-  }
+  const username =
+    profile?.username ??
+    user.email?.split("@")[0]?.replace(/[^a-zA-Z0-9-]/g, "") ??
+    "student";
 
   const onboarded = Boolean(
     profile?.college &&
