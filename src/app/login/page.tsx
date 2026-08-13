@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Bot, Briefcase, Check, Eye, EyeOff, GitBranch, ImagePlus, Lock, Mail, Sparkles, Target } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import ModernLoginSignup from "@/components/ui/modern-login-signup";
 
 const ERROR_COPY: Record<string, string> = {
   oauth_failed: "OAuth sign-in could not be started. Please try again.",
@@ -43,17 +44,19 @@ function LoginForm() {
 
   if (oauthCode || oauthProviderError) {
     return (
-      <main className="app-background flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
-        <section className="glass-strong w-full max-w-lg rounded-[32px] p-6 text-center sm:p-8">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
-            <Sparkles size={20} />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Completing sign-in…</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Redirecting your OAuth session back into the app.
-          </p>
-        </section>
-      </main>
+      <ModernLoginSignup>
+        <div className="flex w-full items-center justify-center px-4 py-8 sm:px-6">
+          <section className="glass-strong w-full max-w-lg rounded-[32px] p-6 text-center sm:p-8">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
+              <Sparkles size={20} />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Completing sign-in…</h1>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Redirecting your OAuth session back into the app.
+            </p>
+          </section>
+        </div>
+      </ModernLoginSignup>
     );
   }
 
@@ -101,11 +104,12 @@ function LoginForm() {
   }
 
   return (
-    <main className="app-background flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
-      <section className="grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
+    <ModernLoginSignup>
+      <div className="flex w-full items-center justify-center px-4 py-8 sm:px-6">
+        <section className="grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
 
-        {/* Left panel — brand + feature list */}
-        <div className="glass-strong flex flex-col rounded-[32px] p-6 sm:p-8">
+          {/* Left panel — brand + feature list */}
+          <div className="glass-strong flex flex-col rounded-[32px] p-6 sm:p-8">
           {/* Brand */}
           <a href="/" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white">
@@ -371,7 +375,8 @@ function LoginForm() {
           </AnimatePresence>
         </div>
       </section>
-    </main>
+      </div>
+    </ModernLoginSignup>
   );
 }
 
