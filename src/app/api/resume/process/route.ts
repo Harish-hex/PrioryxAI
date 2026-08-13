@@ -161,13 +161,13 @@ CRITICAL RULES:
   let skills: string[] = [];
 
   if (Array.isArray(resumeData.skills)) {
-    skills = resumeData.skills.flat().map(s => String(s).trim()).filter(s => s.length > 1 && s !== 'null');
+    skills = resumeData.skills.flat().map((s: any) => String(s).trim()).filter((s: string) => s.length > 1 && s !== 'null');
   }
 
   const projectSkills = (resumeData.projects ?? [])
     .flatMap((p: any) => p.tech_stack ?? [])
     .map((s: any) => String(s).trim())
-    .filter(s => s.length > 1);
+    .filter((s: string) => s.length > 1);
 
   const certSkills = (resumeData.certifications ?? [])
     .flatMap((cert: string) => {
