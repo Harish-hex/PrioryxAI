@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
+import { assistantRateLimiter, getClientIp } from '@/lib/rate-limiter';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,18 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Global per-IP + per-user rate limit (in-memory LRU) — fail open on error to avoid lockouts
+  const ip = getClientIp(request);
+  try {
+    const ipRl = assistantRateLimiter.check(`ip:${ip}`);
+    if (!ipRl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests from this network. Try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((ipRl.reset - Date.now()) / 1000)) } }
+      );
+    }
+  } catch {}
 
   // Per-minute rate limit (all users) — fail closed: block if Redis is unreachable
   const rl = await checkRateLimit(assistantRatelimit, user.id);

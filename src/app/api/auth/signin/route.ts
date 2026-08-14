@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { authRateLimiter, getClientIp } from '@/lib/rate-limiter';
 
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: NextRequest) {
+  // Rate limit signin attempts per IP
+  const ip = getClientIp(request);
+  try {
+    const rl = authRateLimiter.check(`signin:${ip}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many signin attempts. Try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      );
+    }
+  } catch {}
+
   let body: any;
   try {
     body = await request.json();

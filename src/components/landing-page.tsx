@@ -410,7 +410,7 @@ export default function LandingPage() {
                 <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-black">Popular</span>
               </div>
               <div className="mt-5 flex items-end gap-1">
-                <span className="text-4xl font-semibold text-white">₹99</span>
+                <span className="text-4xl font-semibold text-white">₹59</span>
                 <span className="pb-1 text-sm text-neutral-500">/month</span>
               </div>
               <ul className="mt-6 space-y-3">
@@ -433,7 +433,7 @@ export default function LandingPage() {
                 href="/login"
                 className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:scale-[1.02]"
               >
-                <Zap size={15} /> Upgrade to Pro — ₹99/month
+                <Zap size={15} /> Upgrade to Pro — ₹59/month
               </a>
               <p className="mt-2 text-center text-xs text-neutral-500">
                 Secure payment via Razorpay · Cancel anytime

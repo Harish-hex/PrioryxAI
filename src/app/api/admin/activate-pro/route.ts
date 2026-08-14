@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -16,15 +17,30 @@ export const runtime = 'nodejs';
 //   -d '{"email": "user@example.com", "days": 30}'
 
 export async function POST(request: NextRequest) {
-  const adminSecret = process.env.ADMIN_SECRET;
+
+const adminSecret = process.env.ADMIN_SECRET;
   if (!adminSecret) {
     console.error('[admin/activate-pro] ADMIN_SECRET env var not set');
     return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   }
 
   const token = request.headers.get('x-admin-token');
-  if (!token || token !== adminSecret) {
-    console.warn('[admin/activate-pro] Unauthorized attempt — bad or missing token');
+  if (!token) {
+    console.warn('[admin/activate-pro] Unauthorized attempt — missing token');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Constant-time comparison to prevent timing attacks
+  const tokenBuf = Buffer.from(token);
+  const secretBuf = Buffer.from(adminSecret);
+  let valid = false;
+  try {
+    valid = tokenBuf.length === secretBuf.length && crypto.timingSafeEqual(tokenBuf, secretBuf);
+  } catch {
+    valid = false;
+  }
+  if (!valid) {
+    console.warn('[admin/activate-pro] Unauthorized attempt — bad token');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -2,21 +2,39 @@ import crypto from 'crypto';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export function verifyRazorpaySignature(body: string, sig: string): boolean {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error('[security] RAZORPAY_WEBHOOK_SECRET not set — failing closed');
+    return false;
+  }
   const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET!)
+    .createHmac('sha256', secret)
     .update(body)
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 export function verifyGitHubSignature(body: string, sig: string): boolean {
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error('[security] GITHUB_WEBHOOK_SECRET not set — failing closed');
+    return false;
+  }
   const expected =
     'sha256=' +
     crypto
-      .createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET!)
+      .createHmac('sha256', secret)
       .update(body)
       .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 export async function requirePro(userId: string): Promise<void> {

@@ -27,7 +27,7 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Redirect unauthenticated users away from protected routes
-  const protectedPaths = ['/feed', '/assistant', '/onboarding', '/settings', '/profile'];
+  const protectedPaths = ['/feed', '/assistant', '/onboarding', '/settings', '/profile', '/admin', '/career'];
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p));
 
   if (!user && isProtected) {
@@ -42,6 +42,17 @@ export async function updateSession(request: NextRequest) {
     const feedUrl = request.nextUrl.clone();
     feedUrl.pathname = '/feed';
     return NextResponse.redirect(feedUrl);
+  }
+
+  // Admin routes: restrict to allowlisted admin emails only
+  const ADMIN_EMAILS = ["yugendhars06@gmail.com"];
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() ?? "");
+    if (!isAdmin) {
+      const feedUrl = request.nextUrl.clone();
+      feedUrl.pathname = user ? '/feed' : '/login';
+      return NextResponse.redirect(feedUrl);
+    }
   }
 
   return supabaseResponse;

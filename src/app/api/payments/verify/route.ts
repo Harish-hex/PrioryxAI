@@ -73,10 +73,40 @@ export async function POST(request: NextRequest) {
     }
     console.log('[payments/verify] Signature verified for payment:', paymentId);
   } else {
-    // No real secret configured — trust the authenticated session + paid status.
-    // The user is already logged in; Razorpay only redirects with status=paid after
-    // a successful transaction on the configured payment link.
-    console.log('[payments/verify] No key secret configured — activating via session trust for payment:', paymentId, 'user:', user.id);
+    // No real secret configured — MUST verify payment with Razorpay API
+    // We cannot trust session alone (security hole: fake payment_id = free Pro)
+    if (!keySecret || keySecret === 'YOUR_SECRET' || keySecret.length <= 10) {
+      console.error('[payments/verify] RAZORPAY_KEY_SECRET not configured — cannot verify payment. Set RAZORPAY_KEY_SECRET in env.');
+      return NextResponse.json({
+        error: 'Payment verification not configured. Contact support.',
+        code: 'verification_not_configured'
+      }, { status: 503 });
+    }
+
+    // Verify payment with Razorpay API using key_secret
+    const Razorpay = (await import('razorpay')).default;
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID!,
+      key_secret: keySecret,
+    });
+
+    try {
+      const payment = await razorpay.payments.fetch(paymentId);
+      if (payment.status !== 'captured' && payment.status !== 'authorized') {
+        console.error('[payments/verify] Payment not captured — status:', payment.status, 'payment:', paymentId);
+        return NextResponse.json({ error: 'Payment not completed', code: 'not_captured', status: payment.status }, { status: 400 });
+      }
+      // Verify payment link ID matches if provided
+      const paymentLinkIdFromApi = (payment as any).payment_link_id;
+      if (paymentLinkId && paymentLinkIdFromApi !== paymentLinkId) {
+        console.error('[payments/verify] Payment link mismatch — expected:', paymentLinkId, 'got:', paymentLinkIdFromApi);
+        return NextResponse.json({ error: 'Payment link mismatch', code: 'link_mismatch' }, { status: 400 });
+      }
+      console.log('[payments/verify] Payment verified via Razorpay API for payment:', paymentId);
+    } catch (err: any) {
+      console.error('[payments/verify] Razorpay API error:', err.message);
+      return NextResponse.json({ error: 'Payment verification failed', code: 'api_error' }, { status: 502 });
+    }
   }
 
   // Activate Pro for 30 days

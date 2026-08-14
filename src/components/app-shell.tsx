@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, Bot, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, Bot, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
@@ -9,6 +9,7 @@ import { PricingModal } from "@/components/pricing-modal";
 import { ProfilePage } from "@/components/profile-page";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { CareerSheet } from "@/components/mobile-nav";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -40,6 +41,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [careerSheetOpen, setCareerSheetOpen] = useState(false);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [setupItems, setSetupItems] = useState<any[]>([]);
@@ -788,15 +790,16 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           {[
             { id: "dashboard", label: "Home", icon: LayoutDashboard },
             { id: "assistant", label: "AI", icon: Bot },
+            { id: "career", label: "Career", icon: Menu },
             { id: "profile", label: "Profile", icon: UserRound },
             { id: "settings", label: "Settings", icon: Settings },
           ].map(({ id, label, icon: Icon }) => {
-            const active = activeView === id;
+            const active = id === "career" ? careerSheetOpen : activeView === id;
             return (
               <button
                 key={id}
                 type="button"
-                onClick={() => navigateToView(id)}
+                onClick={() => (id === "career" ? setCareerSheetOpen(true) : navigateToView(id))}
                 className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition ${
                   active ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
                 }`}
@@ -810,6 +813,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           })}
         </div>
       </nav>
+
+      <CareerSheet open={careerSheetOpen} onClose={() => setCareerSheetOpen(false)} />
 
       <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} isPro={isPro} />
     </main>

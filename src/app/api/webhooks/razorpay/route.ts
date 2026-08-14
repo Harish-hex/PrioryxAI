@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       if (email) {
         const { data: u } = await supabase
           .from('users')
-          .select('id')
+          .select('id, pro_expires_at')
           .eq('email', email.toLowerCase().trim())
           .maybeSingle();
         resolvedUserId = u?.id;
@@ -81,13 +81,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    const proExpiresAt = currentEnd
-      ? new Date(currentEnd * 1000).toISOString()
-      : new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString();
+    // For subscription.charged, compute new expiry from current_end
+    // Only extend expiry if current_end is provided and extends beyond current expiry
+    let newProExpiresAt: string;
+    if (currentEnd) {
+      newProExpiresAt = new Date(currentEnd * 1000).toISOString();
+    } else {
+      // Fallback: add 32 days from now
+      newProExpiresAt = new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    // Get current expiry to avoid shortening it (race condition guard)
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('pro_expires_at')
+      .eq('id', resolvedUserId)
+      .single();
+
+    const finalExpiry = currentUser?.pro_expires_at && new Date(currentUser.pro_expires_at) > new Date(newProExpiresAt)
+      ? currentUser.pro_expires_at
+      : newProExpiresAt;
 
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: finalExpiry })
       .eq('id', resolvedUserId);
 
     if (updateErr) {
@@ -100,12 +117,12 @@ export async function POST(request: NextRequest) {
         .from('subscriptions')
         .update({
           status: eventType === 'subscription.activated' ? 'active' : 'charged',
-          current_period_end: proExpiresAt,
+          current_period_end: finalExpiry,
         })
         .eq('razorpay_subscription_id', subscriptionId);
     }
 
-    console.log(`[webhook/razorpay] Pro activated — user ${resolvedUserId}, expires ${proExpiresAt}`);
+    console.log(`[webhook/razorpay] Pro activated — user ${resolvedUserId}, expires ${finalExpiry}`);
     return NextResponse.json({ received: true });
   }
 
@@ -116,10 +133,38 @@ export async function POST(request: NextRequest) {
     const subscriptionId: string | undefined = sub?.id;
 
     if (userId) {
-      await supabase
+      // CRITICAL FIX: Only revoke Pro if this subscription is the SOURCE of current Pro
+      // Check if user has a later payment_link expiry that should take precedence
+      const { data: currentUser } = await supabase
         .from('users')
-        .update({ pro_status: false, pro_expires_at: new Date().toISOString() })
-        .eq('id', userId);
+        .select('pro_expires_at, pro_status')
+        .eq('id', userId)
+        .single();
+
+      // Only revoke if the subscription expiry matches or exceeds current pro_expires_at
+      // (i.e., this subscription was the active Pro source)
+      let shouldRevoke = false;
+      if (currentUser?.pro_status && currentUser?.pro_expires_at) {
+        const subEnd = sub?.current_end
+          ? new Date(sub.current_end * 1000).toISOString()
+          : new Date().toISOString();
+        // If subscription end is >= current pro_expires_at, it's the source
+        if (new Date(subEnd) >= new Date(currentUser.pro_expires_at)) {
+          shouldRevoke = true;
+        }
+      } else {
+        shouldRevoke = true; // No Pro or no expiry — safe to revoke
+      }
+
+      if (shouldRevoke) {
+        await supabase
+          .from('users')
+          .update({ pro_status: false, pro_expires_at: new Date().toISOString() })
+          .eq('id', userId);
+        console.log(`[webhook/razorpay] Pro revoked — user ${userId}, event ${eventType}`);
+      } else {
+        console.log(`[webhook/razorpay] Pro NOT revoked — user ${userId} has later expiry from payment_link`);
+      }
 
       if (subscriptionId) {
         await supabase
@@ -127,8 +172,6 @@ export async function POST(request: NextRequest) {
           .update({ status: eventType === 'subscription.cancelled' ? 'cancelled' : 'completed' })
           .eq('razorpay_subscription_id', subscriptionId);
       }
-
-      console.log(`[webhook/razorpay] Pro revoked — user ${userId}, event ${eventType}`);
     }
 
     return NextResponse.json({ received: true });
