@@ -50,7 +50,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Admin routes: restrict to allowlisted admin emails only
-  const ADMIN_EMAILS = ["yugendhars06@gmail.com"];
+  const ADMIN_EMAILS = Array.from(
+    new Set(
+      (process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase()) : []).concat([
+        'yugendhars06@gmail.com',
+      ])
+    )
+  );
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() ?? "");
     if (!isAdmin) {

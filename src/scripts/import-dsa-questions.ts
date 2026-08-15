@@ -77,4 +77,8 @@ function parseCompanies(raw: unknown): string[] {
   return str.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
 }
 
-importDSAQuestions('D:\\Project\\Curious Freaks Coding Sheet.xlsx');
+import path from 'path';
+const defaultFilePath = path.join(process.cwd(), 'assets', 'Curious Freaks Coding Sheet.xlsx');
+const targetFilePath = process.env.FILE_PATH || defaultFilePath;
+
+importDSAQuestions(targetFilePath);

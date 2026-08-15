@@ -1,6 +1,10 @@
 const { Client } = require('pg');
 
-const dbUrl = 'postgresql://postgres:6F%40rpP%23S_yV%40%25mS@db.wgvswyatbrdggrdadqss.supabase.co:5432/postgres';
+const dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+if (!dbUrl) {
+  console.error('Missing DIRECT_URL or DATABASE_URL environment variable');
+  process.exit(1);
+}
 
 const migrationSql = `
 -- Ensure table has all required columns
