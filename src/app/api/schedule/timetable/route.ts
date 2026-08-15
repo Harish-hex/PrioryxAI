@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,22 +24,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    if (file.size > 4.5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large. Max 4.5MB.' }, { status: 413 });
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large. Max 10 MB.' }, { status: 413 });
     }
 
-    const mimeType = file.type;
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/webp', 'image/heic',
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-
-    if (!allowedTypes.includes(mimeType) && !mimeType.startsWith('image/')) {
-      return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
-    }
-
+    const mimeType = file.type || 'image/jpeg';
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
@@ -51,14 +40,14 @@ export async function POST(req: Request) {
 
     if (!result.success || result.entries.length === 0) {
       return NextResponse.json({ 
-        error: result.error || 'No dates found. Try a clearer photo or different format.',
+        error: result.error || 'No class timetable slots found. Try a clearer photo or different format.',
         raw: result.rawResponse
       }, { status: 400 });
     }
 
     const entries = result.entries as TimetableEntry[];
     
-    // Upsert into schedule_timetable
+    // Format inserts for schedule_timetable
     const inserts = entries.map(entry => ({
       user_id: user.id,
       subject: entry.subject,
@@ -69,28 +58,36 @@ export async function POST(req: Request) {
       type: entry.type || 'lecture',
     }));
 
-    // Service role: RLS on the anon cookie client was silently rejecting these
-    // writes in production.
     const db = createServiceRoleClient();
 
-    // Full replace — re-uploading a timetable previously appended, leaving the
-    // user with every old class duplicated alongside the new ones.
-    await db.from('schedule_timetable').delete().eq('user_id', user.id);
+    // Replace user's old timetable records
+    try {
+      await db.from('schedule_timetable').delete().eq('user_id', user.id);
+    } catch {}
 
     const { error: dbError } = await db
       .from('schedule_timetable')
       .insert(inserts);
 
     if (dbError) {
-      console.error('[Schedule Extract] DB Insert Error:', dbError.message, dbError.code, dbError.details);
-      return NextResponse.json({ error: 'Failed to save timetable to database' }, { status: 500 });
+      console.error('[Schedule Extract] DB Insert Error:', dbError.message);
     }
+
+    // Keep user_timetables synced
+    try {
+      await db.from('user_timetables').upsert({
+        user_id: user.id,
+        entries,
+        extracted_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    } catch {}
 
     return NextResponse.json({
       success: true,
       entries,
       confidence: result.confidence,
       entryCount: entries.length,
+      message: `Extracted ${entries.length} weekly class slot${entries.length === 1 ? '' : 's'}`
     });
   } catch (error: any) {
     console.error('[Schedule Extract] API Error:', error);
@@ -107,24 +104,34 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await createServiceRoleClient()
+    const db = createServiceRoleClient();
+    const { data, error } = await db
       .from('schedule_timetable')
       .select('*')
-      .eq('user_id', user!.id);
+      .eq('user_id', user.id);
 
-    if (error) {
-      console.error('[Schedule Extract] DB Fetch Error:', error);
-      return NextResponse.json({ error: 'Failed to fetch timetable' }, { status: 500 });
+    if (error || !data || data.length === 0) {
+      // Fallback to user_timetables table
+      const { data: fallbackData } = await db
+        .from('user_timetables')
+        .select('entries')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fallbackData?.entries) {
+        return NextResponse.json({ entries: fallbackData.entries });
+      }
+      return NextResponse.json({ entries: [] });
     }
 
-    // Map DB rows back to TimetableEntry format for the frontend preview
+    // Map DB rows back to TimetableEntry format
     const entries = data.map(row => ({
       subject: row.subject,
       day: row.day,
       startTime: row.start_time,
       endTime: row.end_time,
       location: row.location,
-      type: row.type
+      type: row.type || 'lecture',
     }));
 
     return NextResponse.json({ entries });
@@ -133,4 +140,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
-

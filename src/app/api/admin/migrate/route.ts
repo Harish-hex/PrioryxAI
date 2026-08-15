@@ -3,6 +3,10 @@ import { ensureSchemaMigrations } from '@/lib/schema-migrations';
 
 export const runtime = 'nodejs';
 
+export async function GET() {
+  return NextResponse.json({ message: 'Migration endpoint ready. Use POST to execute.' });
+}
+
 export async function POST() {
   try {
     const results = await ensureSchemaMigrations({ force: true });

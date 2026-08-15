@@ -27,7 +27,7 @@ export async function generateDailyPlan(
 
   // ── Read user context ─────────────────────────────────────
   const [profileRes, resumeRes, lcProfileRes] = await Promise.allSettled([
-    db.from('profiles').select('stream, target_companies, display_name').eq('id', userId).maybeSingle(),
+    db.from('users').select('stream, target_companies, display_name').eq('id', userId).maybeSingle(),
     db.from('user_resumes').select('skill_entities, swot').eq('user_id', userId)
       .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     db.from('leetcode_profiles').select('placement_readiness_score, ai_analysis')
@@ -105,7 +105,7 @@ export async function generateDailyPlan(
     .filter(e => e.daysUntil <= 3)
     .forEach(e => {
       urgentAlerts.push(
-        `🚨 ${e.subjectName} ${e.examType ?? 'exam'} in ` +
+        `URGENT: ${e.subjectName} ${e.examType ?? 'exam'} in ` +
         `${e.daysUntil} day${e.daysUntil === 1 ? '' : 's'} ` +
         `(${new Date(e.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})`
       )
@@ -137,7 +137,7 @@ export async function generateDailyPlan(
   // ── Build today's focus headline ──────────────────────────
   let todaysFocus: string
   if (exams.some(e => e.daysUntil <= 1)) {
-    todaysFocus = `🚨 Exam day — focus 100% on ${exams[0].subjectName} revision`
+    todaysFocus = `Exam day — focus 100% on ${exams[0].subjectName} revision`
   } else if (exams.some(e => e.daysUntil <= 3)) {
     todaysFocus = `Exam in ${exams[0].daysUntil} days — prioritise ${exams[0].subjectName} revision + 1 DSA problem`
   } else if (exams.length > 0) {

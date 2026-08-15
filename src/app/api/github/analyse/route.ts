@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { runGitHubIntelligence } from '@/lib/github/analyser';
 
@@ -7,12 +7,12 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 // GET — returns cached report from DB (no re-analysis)
-export async function GET(_req: NextRequest) {
+export async function GET(req: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const url = new URL(_req.url);
+  const url = new URL(req.url);
   const refresh = url.searchParams.get('refresh') === '1';
 
   // 1. Try to read a cached report from github_intelligence_reports
@@ -53,7 +53,7 @@ export async function GET(_req: NextRequest) {
 }
 
 // POST — runs full analysis AND saves consolidated report to DB
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const encoder = new TextEncoder();
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +65,7 @@ export async function POST(_req: NextRequest) {
   const serviceClient = createServiceClient();
 
   const { data: profile } = await supabase
-    .from('profiles')
+    .from('users')
     .select('github_username')
     .eq('id', user.id)
     .single();

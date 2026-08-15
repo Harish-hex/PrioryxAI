@@ -61,7 +61,7 @@ export function signalToTask(
         action_url: '/settings#exam-schedule',
         action_label: 'View Schedule',
         why_now: s.daysUntil <= 2
-          ? `🚨 URGENT: ${s.subjectName} exam in ${s.daysUntil} day${s.daysUntil === 1 ? '' : 's'} — start revision now`
+          ? `URGENT: ${s.subjectName} exam in ${s.daysUntil} day${s.daysUntil === 1 ? '' : 's'} — start revision now`
           : `Exam in ${s.daysUntil} days — build daily revision blocks`,
         estimated_minutes: s.daysUntil <= 2 ? 180 : 120,
         effort_level: s.daysUntil <= 2 ? 'deep' : 'medium',
@@ -119,7 +119,7 @@ export function signalToTask(
       return {
         ...base,
         title: s.actionTitle,
-        description: `📁 ${s.repoName} — ${s.actionDescription.slice(0, 140)}`,
+        description: `${s.repoName} — ${s.actionDescription.slice(0, 140)}`,
         category: 'github',
         priority: s.priority,
         urgency_score: s.urgencyScore,

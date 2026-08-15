@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, CalendarCheck, CheckCircle2, FileText, GitBranch, Loader2, Lock, LogOut, Save, Shield, Sparkles, Upload, User } from "lucide-react";
+import { ArrowDownToLine, Calendar, CalendarCheck, CheckCircle2, ChevronDown, FileText, GitBranch, Loader2, Lock, LogOut, Moon, Save, Shield, Sun, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
@@ -16,13 +16,25 @@ interface UserProfile {
 }
 
 interface ExtractedTask {
-  id: string;
-  type: string;
+  id?: string;
+  type?: string;
   title: string;
-  subject: string | null;
-  due_at: string | null;
-  weightage: number | null;
-  notes: string | null;
+  subject?: string | null;
+  subject_name?: string | null;
+  due_at?: string | null;
+  date?: string | null;
+  weightage?: number | null;
+  notes?: string | null;
+}
+
+interface ExtractedClassSlot {
+  day: string;
+  subject: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  time?: string | null;
+  location?: string | null;
+  type?: string;
 }
 
 interface SettingsPanelProps {
@@ -46,12 +58,23 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [subjects, setSubjects] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
 
-  const [timetableFile, setTimetableFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[] | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // 1. Weekly Class Timetable Upload State
+  const [classFile, setClassFile] = useState<File | null>(null);
+  const [classUploading, setClassUploading] = useState(false);
+  const [classResult, setClassResult] = useState<string | null>(null);
+  const [classError, setClassError] = useState<string | null>(null);
+  const [extractedClasses, setExtractedClasses] = useState<ExtractedClassSlot[] | null>(null);
+  const [classWorksOpen, setClassWorksOpen] = useState(false);
+  const classInputRef = useRef<HTMLInputElement>(null);
+
+  // 2. Exam & Assignment Schedule Upload State
+  const [examFile, setExamFile] = useState<File | null>(null);
+  const [examUploading, setExamUploading] = useState(false);
+  const [examResult, setExamResult] = useState<string | null>(null);
+  const [examError, setExamError] = useState<string | null>(null);
+  const [extractedExams, setExtractedExams] = useState<ExtractedTask[] | null>(null);
+  const [examWorksOpen, setExamWorksOpen] = useState(false);
+  const examInputRef = useRef<HTMLInputElement>(null);
 
   const [generatingResume, setGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -145,51 +168,102 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     }
   }
 
-  async function handleTimetableUpload() {
-    if (!timetableFile) return;
-    setUploading(true);
-    setUploadError(null);
-    setUploadResult(null);
-    setExtractedTasks(null);
+  // 1. Handle Class Timetable Upload
+  async function handleClassTimetableUpload() {
+    if (!classFile) return;
+    setClassUploading(true);
+    setClassError(null);
+    setClassResult(null);
+    setExtractedClasses(null);
 
-    if (timetableFile.size > 10 * 1024 * 1024) {
-      setUploadError("File too large. Max 10 MB.");
-      setUploading(false);
+    if (classFile.size > 10 * 1024 * 1024) {
+      setClassError("File too large. Max 10 MB.");
+      setClassUploading(false);
       return;
     }
 
     try {
       const form = new FormData();
-      form.append("file", timetableFile);
-      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
-      const res = await fetch("/api/ingest/vision", { method: "POST", body: form });
+      form.append("file", classFile);
+      const res = await fetch("/api/schedule/timetable", { method: "POST", body: form });
       const data = await readJsonSafely(res);
 
       if (!res.ok) {
-        setUploadError(data?.error ?? "Failed to parse document. Try a clearer image or different file.");
+        setClassError(data?.error ?? "Failed to parse class timetable. Try a clearer image or PDF.");
         return;
       }
 
-      const tasks: ExtractedTask[] = data?.tasks ?? [];
+      const entries: ExtractedClassSlot[] = data?.entries ?? [];
       onVisionUploaded();
 
-      if (tasks.length === 0) {
-        setUploadResult("No exam or assignment dates found. Try a clearer image or a different format.");
+      if (entries.length === 0) {
+        setClassResult("No class slots found. Try a clearer image or a different format.");
       } else {
-        const sorted = [...tasks].sort((a, b) => {
-          if (!a.due_at) return 1;
-          if (!b.due_at) return -1;
-          return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
-        });
-        setExtractedTasks(sorted);
-        setUploadResult(`${tasks.length} item${tasks.length === 1 ? "" : "s"} extracted and added to your feed.`);
-        setTimetableFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        setExtractedClasses(entries);
+        setClassResult(`Successfully extracted ${entries.length} weekly class slot${entries.length === 1 ? "" : "s"}.`);
+        setClassFile(null);
+        if (classInputRef.current) classInputRef.current.value = "";
       }
     } catch {
-      setUploadError("Network error uploading document.");
+      setClassError("Network error uploading class timetable.");
     } finally {
-      setUploading(false);
+      setClassUploading(false);
+    }
+  }
+
+  // 2. Handle Exam & Assignment Schedule Upload
+  async function handleExamScheduleUpload() {
+    if (!examFile) return;
+    setExamUploading(true);
+    setExamError(null);
+    setExamResult(null);
+    setExtractedExams(null);
+
+    if (examFile.size > 10 * 1024 * 1024) {
+      setExamError("File too large. Max 10 MB.");
+      setExamUploading(false);
+      return;
+    }
+
+    try {
+      const form = new FormData();
+      form.append("file", examFile);
+      const res = await fetch("/api/schedule/exam", { method: "POST", body: form });
+      const data = await readJsonSafely(res);
+
+      if (!res.ok) {
+        // Fallback to ingest/vision
+        const fallbackRes = await fetch("/api/ingest/vision", { method: "POST", body: form });
+        const fallbackData = await readJsonSafely(fallbackRes);
+        if (fallbackRes.ok && fallbackData?.tasks?.length) {
+          const tasks: ExtractedTask[] = fallbackData.tasks;
+          setExtractedExams(tasks);
+          setExamResult(`${tasks.length} exam & deadline item${tasks.length === 1 ? "" : "s"} extracted and added to your feed.`);
+          setExamFile(null);
+          if (examInputRef.current) examInputRef.current.value = "";
+          onVisionUploaded();
+          return;
+        }
+
+        setExamError(data?.error ?? fallbackData?.error ?? "Failed to extract exams. Try a clearer document or format.");
+        return;
+      }
+
+      const entries: ExtractedTask[] = data?.entries ?? [];
+      onVisionUploaded();
+
+      if (entries.length === 0) {
+        setExamResult("No exam or assignment dates found. Try a clearer image or format.");
+      } else {
+        setExtractedExams(entries);
+        setExamResult(`Successfully extracted ${entries.length} exam deadline${entries.length === 1 ? "" : "s"} and added them to your dashboard.`);
+        setExamFile(null);
+        if (examInputRef.current) examInputRef.current.value = "";
+      }
+    } catch {
+      setExamError("Network error uploading exam schedule.");
+    } finally {
+      setExamUploading(false);
     }
   }
 
@@ -214,14 +288,14 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
         return;
       }
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "resume.pdf";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${profile?.name ? profile.name.replace(/\s+/g, "_") : "Student"}_Resume.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch {
       setResumeError("Network error generating resume.");
     } finally {
@@ -231,83 +305,98 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      {/* Left — profile form */}
+      {/* Main column */}
       <section className="space-y-6">
-        <div className="glass-strong rounded-[28px] p-5 sm:rounded-[32px] sm:p-8">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Workspace preferences</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-[15px]">
-            Keep your profile accurate so the feed, job matching, and recruiter profile stay meaningful.
+        {/* Profile form */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Academic profile</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Tell PrioryxAI what you study so it can prioritize the right coursework and exams.
           </p>
 
-          <form onSubmit={handleSave} className="mt-8 space-y-5">
-            <Field label="Display name" icon={User}>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="input-base"
-              />
-            </Field>
-
-            <Field label="College / University" icon={Shield}>
-              <input
-                value={college}
-                onChange={(e) => setCollege(e.target.value)}
-                placeholder="e.g. Anna University"
-                className="input-base"
-              />
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Semester (1–12)" icon={Shield}>
+          <form onSubmit={handleSave} className="mt-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Full name</label>
                 <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Priyan Sharma"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">College / University</label>
+                <input
+                  value={college}
+                  onChange={(e) => setCollege(e.target.value)}
+                  placeholder="e.g. Amrita Vishwa Vidyapeetham"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Semester</label>
+                <input
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  placeholder="e.g. 5"
                   type="number"
                   min="1"
                   max="12"
-                  value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
-                  placeholder="e.g. 6"
-                  className="input-base"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
                 />
-              </Field>
-              <Field label="CGPA (0–10)" icon={Shield}>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">CGPA (0 – 10)</label>
                 <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
                   value={cgpa}
                   onChange={(e) => setCgpa(e.target.value)}
                   placeholder="e.g. 8.4"
-                  className="input-base"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="10"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
                 />
-              </Field>
-              <Field label="GitHub username" icon={GitBranch}>
-                <input
-                  value={githubUsername}
-                  onChange={(e) => setGithubUsername(e.target.value)}
-                  placeholder="e.g. octocat"
-                  className="input-base"
-                />
-              </Field>
+              </div>
             </div>
 
-            <Field label="Subjects / skills (comma-separated)" icon={Shield}>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Subjects / Course Codes (comma-separated)</label>
               <input
                 value={subjects}
                 onChange={(e) => setSubjects(e.target.value)}
-                placeholder="e.g. DBMS, CN, OS, React, Python"
-                className="input-base"
+                placeholder="e.g. 19CSE301 DBMS, 19CSE302 OS, 19MAT201 Linear Algebra"
+                className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
               />
-            </Field>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">GitHub username</label>
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm font-semibold text-slate-400">@</span>
+                <input
+                  value={githubUsername}
+                  onChange={(e) => setGithubUsername(e.target.value)}
+                  placeholder="octocat"
+                  className="neu-inset w-full rounded-2xl py-3 pl-8 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                />
+              </div>
+            </div>
 
             {error && (
-              <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
                 {error}
               </p>
             )}
             {successMessage && (
-              <p className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 size={15} />
                 {successMessage}
               </p>
             )}
@@ -315,7 +404,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
             >
               <Save size={16} />
               {saving ? "Saving…" : "Save changes"}
@@ -323,113 +412,234 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </form>
         </div>
 
-        {/* Timetable upload */}
-        <div className="glass rounded-[28px] p-5 sm:p-6">
-          <h3 className="text-xl font-semibold tracking-tight text-slate-950">Upload timetable or exam schedule</h3>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            Upload a photo, PDF, or Word doc of your timetable — weekly, semester, or full-year.
-            PrioryxAI extracts every exam, assignment deadline, and lab date automatically.
+        {/* ── CARD 1: Upload Weekly Timetable (Class Timetable) ── */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-cyan-600 dark:text-cyan-400">
+            <Calendar size={15} /> Class Schedule
+          </div>
+          <h3 className="mt-1.5 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+            Upload Weekly Timetable
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Upload your weekly class schedule. PrioryxAI will extract every subject, day, and time slot automatically.
           </p>
 
           <div className="mt-5 space-y-3">
-            <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
-              {timetableFile ? (
-                <FileText size={18} className="shrink-0 text-slate-500" />
+            <label className="neu-inset flex cursor-pointer items-center gap-3 rounded-[22px] px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200 transition">
+              {classFile ? (
+                <FileText size={18} className="shrink-0 text-cyan-600 dark:text-cyan-400" />
               ) : (
-                <Upload size={18} className="shrink-0 text-slate-400" />
+                <Upload size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
               )}
               <span className="min-w-0 flex-1 truncate">
-                {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
+                {classFile ? classFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
               </span>
               <input
-                ref={fileInputRef}
+                ref={classInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                 className="hidden"
                 onChange={(e) => {
-                  setTimetableFile(e.target.files?.[0] ?? null);
-                  setUploadResult(null);
-                  setUploadError(null);
-                  setExtractedTasks(null);
+                  setClassFile(e.target.files?.[0] ?? null);
+                  setClassResult(null);
+                  setClassError(null);
+                  setExtractedClasses(null);
                 }}
               />
             </label>
 
-            {uploadError && (
-              <p className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {uploadError}
+            {classError && (
+              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                {classError}
               </p>
             )}
-            {uploadResult && (
-              <p className="flex items-center gap-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {classResult && (
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                 <CheckCircle2 size={15} />
-                {uploadResult}
+                {classResult}
               </p>
             )}
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={handleTimetableUpload}
-                disabled={!timetableFile || uploading}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                onClick={handleClassTimetableUpload}
+                disabled={!classFile || classUploading}
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition dark:text-slate-200 disabled:opacity-40"
               >
-                {uploading ? (
-                  <><Loader2 size={15} className="animate-spin" /> Extracting schedule…</>
+                {classUploading ? (
+                  <><Loader2 size={15} className="animate-spin" /> Extracting timetable…</>
                 ) : (
-                  <><CalendarCheck size={15} /> Extract schedule</>
+                  <><Calendar size={15} /> Extract Timetable</>
                 )}
               </button>
-              {isPro && visionRemaining !== null && (
-                <span className="text-xs font-medium text-emerald-600">
-                  {visionRemaining} of {PRO_VISION_LIMIT} uploads remaining today
-                </span>
-              )}
+
+              <button
+                type="button"
+                onClick={() => setClassWorksOpen(!classWorksOpen)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <span>What works best?</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${classWorksOpen ? "rotate-180" : ""}`} />
+              </button>
             </div>
 
-            {extractedTasks && extractedTasks.length > 0 && (
-              <div className="mt-2 overflow-hidden rounded-[22px] border border-slate-200 bg-white">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+            {classWorksOpen && (
+              <div className="neu-inset rounded-[20px] p-3.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400 space-y-1">
+                <p>• <strong>Photos of printed or written class schedules:</strong> Ensure good lighting and readable text.</p>
+                <p>• <strong>PDF or DOC exports:</strong> Directly exported from your college / university LMS portal.</p>
+                <p>• <strong>Spreadsheet screenshots:</strong> Clean tables with days as columns/rows and time slots.</p>
+              </div>
+            )}
+
+            {extractedClasses && extractedClasses.length > 0 && (
+              <div className="neu-card mt-3 overflow-hidden rounded-[24px]">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm font-bold text-slate-950 dark:text-white">
+                    <CheckCircle2 size={15} className="text-emerald-500" />
+                    {extractedClasses.length} weekly class slot{extractedClasses.length === 1 ? "" : "s"} extracted
+                  </span>
+                </div>
+                <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-200/60 dark:divide-white/10">
+                  {extractedClasses.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-950 dark:text-white">{item.subject}</span>
+                        <span className="ml-2 neu-pill rounded px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{item.day}</span>
+                      </div>
+                      <span className="font-mono text-slate-500 dark:text-slate-400">{item.startTime || item.time} - {item.endTime || ""}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── CARD 2: Upload Exam & Assignment Schedule ── */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-purple-600 dark:text-purple-400">
+            <CalendarCheck size={15} /> Exam & Deadlines
+          </div>
+          <h3 className="mt-1.5 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+            Upload Exam & Assignment Schedule
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Upload your exam timetable, assignment deadlines, or lab schedule. All dates are extracted and added to your dashboard calendar.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            <label className="neu-inset flex cursor-pointer items-center gap-3 rounded-[22px] px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200 transition">
+              {examFile ? (
+                <FileText size={18} className="shrink-0 text-purple-600 dark:text-purple-400" />
+              ) : (
+                <Upload size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
+              )}
+              <span className="min-w-0 flex-1 truncate">
+                {examFile ? examFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
+              </span>
+              <input
+                ref={examInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                className="hidden"
+                onChange={(e) => {
+                  setExamFile(e.target.files?.[0] ?? null);
+                  setExamResult(null);
+                  setExamError(null);
+                  setExtractedExams(null);
+                }}
+              />
+            </label>
+
+            {examError && (
+              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                {examError}
+              </p>
+            )}
+            {examResult && (
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 size={15} />
+                {examResult}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleExamScheduleUpload}
+                disabled={!examFile || examUploading}
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition dark:text-slate-200 disabled:opacity-40"
+              >
+                {examUploading ? (
+                  <><Loader2 size={15} className="animate-spin" /> Extracting exams…</>
+                ) : (
+                  <><CalendarCheck size={15} /> Extract Exam Schedule</>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setExamWorksOpen(!examWorksOpen)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <span>What works best?</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${examWorksOpen ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+
+            {examWorksOpen && (
+              <div className="neu-inset rounded-[20px] p-3.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400 space-y-1">
+                <p>• <strong>Mid-term, End-sem & Internal circulars:</strong> Official exam schedule notices and hall tickets.</p>
+                <p>• <strong>Assignment & Project deadlines:</strong> Course syllabus or assignment handouts with due dates.</p>
+                <p>• <strong>Academic Calendars:</strong> Full semester / yearly university calendars (Amrita, VIT, Anna Univ, etc.).</p>
+              </div>
+            )}
+
+            {extractedExams && extractedExams.length > 0 && (
+              <div className="neu-card mt-3 overflow-hidden rounded-[24px]">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm font-bold text-slate-950 dark:text-white">
                     <CalendarCheck size={15} className="text-emerald-500" />
-                    {extractedTasks.length} item{extractedTasks.length === 1 ? "" : "s"} extracted
+                    {extractedExams.length} item{extractedExams.length === 1 ? "" : "s"} extracted
                   </span>
                   <button
                     type="button"
                     onClick={onNavigateToDashboard}
-                    className="text-xs font-medium text-slate-600 underline-offset-2 hover:underline"
+                    className="text-xs font-bold text-purple-600 dark:text-purple-400 underline-offset-2 hover:underline"
                   >
                     View in feed →
                   </button>
                 </div>
-                <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
-                  {extractedTasks.map((task, i) => {
-                    const typeIcon = task.type === "exam" ? "📝" : task.type === "assignment" ? "📋" : "📌";
-                    const dateStr = task.due_at
-                      ? new Date(task.due_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                <ul className="max-h-[420px] divide-y divide-slate-200/60 dark:divide-white/10 overflow-y-auto">
+                  {extractedExams.map((task, i) => {
+                    const dateStr = task.due_at || (task as any).date
+                      ? new Date(task.due_at || (task as any).date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                       : null;
                     return (
                       <li key={task.id ?? i} className="flex items-start gap-3 px-4 py-3">
-                        <span className="mt-0.5 shrink-0 text-base">{typeIcon}</span>
+                        <span className="mt-0.5 shrink-0 text-slate-500 dark:text-slate-400">
+                          <FileText size={16} />
+                        </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium leading-snug text-slate-950">{task.title}</p>
+                            <p className="text-sm font-bold leading-snug text-slate-950 dark:text-white">{task.title}</p>
                             {dateStr && (
-                              <span className="shrink-0 tabular-nums text-xs text-slate-500">{dateStr}</span>
+                              <span className="shrink-0 tabular-nums text-xs font-semibold text-purple-600 dark:text-purple-400">{dateStr}</span>
                             )}
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            {task.subject && (
-                              <span className="text-xs text-slate-500">{task.subject}</span>
+                            {(task.subject || (task as any).subject_name) && (
+                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{task.subject || (task as any).subject_name}</span>
                             )}
                             {task.weightage != null && (
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs text-slate-600">
+                              <span className="neu-pill rounded-full px-2 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 {task.weightage}%
                               </span>
                             )}
                           </div>
                           {task.notes && (
-                            <p className="mt-1 text-xs leading-5 text-slate-500">{task.notes}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{task.notes}</p>
                           )}
                         </div>
                       </li>
@@ -445,8 +655,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
       {/* Right sidebar */}
       <aside className="space-y-6">
         {profile && (
-          <div className="glass rounded-[28px] p-5">
-            <h3 className="text-xl font-semibold tracking-tight text-slate-950">Account</h3>
+          <div className="neu-card rounded-[28px] p-5 sm:p-6">
+            <h3 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Account</h3>
             <div className="mt-5 space-y-3">
               <Row label="Username" value={`@${profile.username}`} />
               <Row label="Plan" value={isPro ? "Pro" : "Free"} highlight={isPro} />
@@ -455,116 +665,82 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               )}
             </div>
 
-            <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+            <div className="neu-raised-sm mt-5 rounded-[22px] p-4">
               <div className="flex items-center gap-2">
-                <GitBranch size={16} className="text-slate-500" />
-                <h4 className="text-sm font-semibold text-slate-950">
-                  {profile.github_username ? `Connected: @${profile.github_username}` : "Connect GitHub"}
-                </h4>
+                <Shield size={16} className="text-slate-500 dark:text-slate-400" />
+                <span className="text-xs font-bold text-slate-950 dark:text-white">Data & Privacy</span>
               </div>
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                {profile.github_username
-                  ? "PrioryxAI uses your repos, languages, and streak to rank tasks and match internships automatically."
-                  : "Connect GitHub to auto-sync your repos, streak, and get matched Internshala openings — no manual input needed."}
+              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                Your syllabus and tasks are stored privately. Only you can view your schedule data.
               </p>
-              <button
-                type="button"
-                onClick={handleGithubOAuth}
-                className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                {profile.github_username ? "Reconnect GitHub" : "Connect GitHub via OAuth"}
-              </button>
             </div>
           </div>
         )}
 
-        {isPro ? (
-          <div className="glass rounded-[28px] p-5">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
-                <ArrowDownToLine size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-semibold tracking-tight text-slate-950">Generate Resume</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Turn your GitHub repos, languages, and completed tasks into a recruiter-ready PDF — in seconds.
-                </p>
-              </div>
-            </div>
-            {resumeError && (
-              <p className="mt-4 rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {resumeError}
+        {/* GitHub connect card */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <GitBranch size={16} className="text-slate-500 dark:text-slate-400" />
+            <h3 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">GitHub integration</h3>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            Link your GitHub account to sync repo health, public commits, and unlock your recruiter-ready profile cards.
+          </p>
+          <div className="mt-5 space-y-3">
+            <button
+              type="button"
+              onClick={handleGithubOAuth}
+              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+            >
+              <GitBranch size={16} />
+              {profile?.github_username ? "Reconnect with GitHub" : "Connect with GitHub"}
+            </button>
+            {profile?.github_username && (
+              <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-400">
+                Linked as <span className="font-bold text-slate-900 dark:text-white">@{profile.github_username}</span>
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Resume Generation card */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <ArrowDownToLine size={16} className="text-slate-500 dark:text-slate-400" />
+            <h3 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Export Resume</h3>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            Generate an ATS-optimized, 1-page PDF resume directly from your profile, coursework, and GitHub projects.
+          </p>
+          <div className="mt-5 space-y-3">
             <button
               type="button"
               onClick={handleGenerateResume}
               disabled={generatingResume}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
             >
               {generatingResume ? (
-                <><Loader2 size={15} className="animate-spin" /> Generating resume…</>
+                <><Loader2 size={16} className="animate-spin" /> Generating PDF…</>
+              ) : !isPro ? (
+                <><Lock size={15} /> Export PDF Resume <span className="neu-pill rounded px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">PRO</span></>
               ) : (
-                <><ArrowDownToLine size={15} /> Download resume.pdf</>
+                <><ArrowDownToLine size={16} /> Download PDF Resume</>
               )}
             </button>
+            {resumeError && (
+              <p className="neu-inset rounded-2xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                {resumeError}
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="glass rounded-[28px] p-5">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-slate-100 p-3 text-slate-500">
-                <Lock size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-semibold tracking-tight text-slate-950">AI-generated Resume</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  PrioryxAI reads your GitHub repos, languages, and completed tasks to write a recruiter-ready PDF — no templates.
-                </p>
-              </div>
-            </div>
-            <ul className="mt-5 space-y-2 text-xs text-slate-500">
-              {["Your top repos → project bullets", "GitHub languages → skills section", "Completed tasks → achievements", "Downloaded as resume.pdf instantly"].map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <span className="h-1 w-1 shrink-0 rounded-full bg-slate-300" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              onClick={onOpenPricing}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              <Sparkles size={15} /> Unlock — Upgrade to Pro
-            </button>
-          </div>
-        )}
+        </div>
 
-        {!isPro && (
-          <div className="glass rounded-[28px] p-5">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Sparkles size={16} />
-              Pro automation
-            </div>
-            <h3 className="mt-3 text-xl font-semibold tracking-tight text-slate-950">Let the calendar do the heavy lifting</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              Automatically place deadlines around classes, lab slots, and practice time without making the schedule feel crowded.
-            </p>
-            <button
-              type="button"
-              onClick={onOpenPricing}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Upgrade
-            </button>
-          </div>
-        )}
-
-        <div className="glass rounded-[28px] p-5">
+        {/* Sign out */}
+        <div className="neu-card rounded-[28px] p-5 sm:p-6">
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
           >
             <LogOut size={16} />
             Sign out
@@ -575,23 +751,19 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   );
 }
 
-function Field({ label, icon: Icon, children }: { label: string; icon: any; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-500">
-        <Icon size={14} />
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[22px] border border-slate-200 bg-slate-50 p-3">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? "text-emerald-700" : "text-slate-950"}`}>{value}</span>
+    <div className="flex items-center justify-between gap-4 py-1 text-sm">
+      <span className="font-semibold text-slate-500 dark:text-slate-400">{label}</span>
+      <span
+        className={`truncate font-bold ${
+          highlight
+            ? "text-emerald-700 dark:text-emerald-400"
+            : "text-slate-950 dark:text-white"
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

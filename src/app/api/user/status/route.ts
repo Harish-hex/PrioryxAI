@@ -12,13 +12,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('pro_status, pro_expires_at')
-    .eq('id', user.id)
-    .single();
-
-  const [messagesToday, visionToday] = await Promise.all([
+  const [{ data: userData }, messagesToday, visionToday] = await Promise.all([
+    supabase
+      .from('users')
+      .select('pro_status, pro_expires_at')
+      .eq('id', user.id)
+      .maybeSingle(),
     withFallback(() => redis.get<number>(`msg_count:${user.id}`), 0),
     withFallback(() => redis.get<number>(`vision_count:${user.id}`), 0),
   ]);

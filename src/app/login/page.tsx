@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Bot, Briefcase, Check, Eye, EyeOff, GitBranch, ImagePlus, Lock, Mail, Sparkles, Target } from "lucide-react";
+import { ArrowRight, Bot, Briefcase, Check, Eye, EyeOff, GitBranch, ImagePlus, Lock, Mail, Target } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import ModernLoginSignup from "@/components/ui/modern-login-signup";
@@ -47,8 +47,8 @@ function LoginForm() {
       <ModernLoginSignup>
         <div className="flex w-full items-center justify-center px-4 py-8 sm:px-6">
           <section className="glass-strong w-full max-w-lg rounded-[32px] p-6 text-center sm:p-8">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <Sparkles size={20} />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+              <Bot size={20} />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Completing sign-in…</h1>
             <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -110,13 +110,17 @@ function LoginForm() {
 
           {/* Left panel — brand + feature list */}
           <div className="glass-strong flex flex-col rounded-[32px] p-6 sm:p-8">
-          {/* Brand */}
-          <a href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <Sparkles size={16} />
-            </div>
-            <span className="text-sm font-semibold text-slate-950">PrioryxAI</span>
-          </a>
+          {/* Brand header */}
+          <div className="flex items-center justify-between gap-3">
+            <a href="/" className="flex items-center gap-2.5">
+              <img
+                src="/logo.png"
+                alt="PrioryxAI"
+                className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
+              />
+              <span className="text-sm font-semibold text-slate-950 dark:text-white">PrioryxAI</span>
+            </a>
+          </div>
 
           {/* Headline */}
           <h1 className="mt-7 text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-4xl">
@@ -130,7 +134,7 @@ function LoginForm() {
           <div className="mt-8 space-y-4">
             {[
               {
-                icon: Sparkles,
+                icon: Target,
                 bg: "bg-amber-50 border-amber-200 text-amber-700",
                 title: "AI-ranked priority feed",
                 desc: "Every deadline scored by urgency × career impact. Always know what to do next.",

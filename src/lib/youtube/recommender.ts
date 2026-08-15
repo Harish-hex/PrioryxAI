@@ -42,9 +42,9 @@ async function generateWhyRecommended(
 
 export async function generateRecommendations(userId: string): Promise<RecommendedVideo[]> {
   const supabase = createClient();
-  
+
   // 1. Get user context
-  const { data: profile } = await supabase.from('profiles').select('stream').eq('id', userId).single();
+  const { data: profile } = await supabase.from('users').select('stream').eq('id', userId).single();
   const { data: lcProfile } = await supabase.from('leetcode_profiles').select('placement_readiness_score').eq('id', userId).single();
   
   const context = {

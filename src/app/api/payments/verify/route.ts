@@ -114,12 +114,29 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { error: dbError } = await service
     .from('users')
-    .update({ pro_status: true, pro_expires_at: proExpiresAt })
+    .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: paymentId })
     .eq('id', user.id);
 
   if (dbError) {
     console.error('[payments/verify] DB update failed for user', user.id, ':', dbError.message, dbError.code);
     return NextResponse.json({ error: 'Activation failed', code: 'db_error' }, { status: 500 });
+  }
+
+  // Store subscription record for consistency
+  try {
+    await service.from('subscriptions').upsert(
+      {
+        user_id: user.id,
+        razorpay_payment_id: paymentId,
+        status: 'active',
+        current_period_end: proExpiresAt,
+        plan_id: 'payment_link',
+        amount_paid: (body as any).amount ?? 0,
+      },
+      { onConflict: 'user_id' }
+    );
+  } catch (err: any) {
+    console.warn('[payments/verify] subscriptions upsert failed:', err?.message);
   }
 
   console.log(`[payments/verify] Pro activated — user ${user.id} (${user.email}), payment ${paymentId}, expires ${proExpiresAt}`);

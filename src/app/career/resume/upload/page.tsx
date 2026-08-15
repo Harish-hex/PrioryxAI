@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   FileText, Upload, Loader2, CheckCircle, AlertCircle,
-  RefreshCw, User, Code, Briefcase, GraduationCap, X
+  RefreshCw, User, Code, Briefcase, GraduationCap, X,
+  Mail, Phone, MapPin, Check, Sparkles, ArrowRight, ShieldCheck, Zap
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 
 interface ResumeData {
   name?: string | null
@@ -58,19 +58,36 @@ export default function ResumeUploadPage() {
 
   // ── Load saved resume on mount ──────────────────────────────
   useEffect(() => {
-    loadSavedResume()
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+      if (!cancelled) setState({ status: 'idle' });
+    }, 3000); // 3s max — show upload UI immediately if query times out or no resume exists
+
+    loadSavedResume(controller.signal).finally(() => {
+      if (!cancelled) {
+        clearTimeout(timeout);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timeout);
+    };
   }, [])
 
-  async function loadSavedResume() {
+  async function loadSavedResume(signal: AbortSignal) {
     setState({ status: 'loading_saved' })
     try {
-      const res = await fetch('/api/career/resume/saved')
+      const res = await fetch('/api/career/resume/saved', { signal })
       if (!res.ok) {
-        setState({ status: 'idle' })
+        if (!signal.aborted) setState({ status: 'idle' })
         return
       }
       const json = await res.json()
-      if (json.resume) {
+      if (json.resume && !signal.aborted) {
         const r: SavedResume = json.resume
         const data = r.parsed_data ?? {}
         const skills = r.skill_entities?.skills ?? data.skills ?? []
@@ -84,524 +101,454 @@ export default function ResumeUploadPage() {
           saved: true
         })
       } else {
-        setState({ status: 'idle' })
+        if (!signal.aborted) setState({ status: 'idle' })
       }
-    } catch (e) {
-      console.error('Failed to load saved resume:', e)
-      setState({ status: 'idle' })
+    } catch {
+      if (!signal.aborted) setState({ status: 'idle' })
     }
   }
 
-  // ── Handle file upload ──────────────────────────────────────
+  // ── Upload & process file ───────────────────────────────────
   const processFile = useCallback(async (file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    const allowed = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp']
-    if (!allowed.includes(ext ?? '')) {
-      setState({ status: 'error', message: 'Please upload a PDF, Word doc, or image.' })
+    // Validate
+    const allowed = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg', 'image/png', 'image/webp'
+    ]
+    if (!allowed.includes(file.type) && !file.name.endsWith('.docx')) {
+      setState({
+        status: 'error',
+        message: 'Unsupported format. Upload a PDF, Word doc (.docx), or image.'
+      })
       return
     }
+
     if (file.size > 10 * 1024 * 1024) {
-      setState({ status: 'error', message: 'File too large. Max 10MB.' })
+      setState({
+        status: 'error',
+        message: 'File too large. Maximum size is 10MB.'
+      })
       return
     }
 
     setState({ status: 'uploading', filename: file.name })
 
     try {
-      setState({ status: 'extracting' })
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setState({ status: 'error', message: 'Not authenticated.' })
-        return
-      }
+      const uploadForm = new FormData()
+      uploadForm.append('file', file)
 
-      // Upload directly to Supabase Storage via our new API route to bypass RLS issues
-      const storagePath = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('bucket', 'resumes');
-      formData.append('path', storagePath);
+      const timer = setTimeout(() => {
+        setState({ status: 'extracting' })
+      }, 1200)
 
-      const uploadRes = await fetch('/api/storage/upload', {
+      const uploadRes = await fetch('/api/career/resume/upload', {
         method: 'POST',
-        body: formData,
-      });
-
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok || !uploadData) {
-        setState({ status: 'error', message: uploadData?.error || 'Storage upload failed.' })
-        return
-      }
-
-      // Call process API with just the storage path
-      const res = await fetch('/api/resume/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storagePath: uploadData.path, userId: user.id })
+        body: uploadForm
       })
 
-      let json: {
-        success?: boolean
-        error?: string
-        data?: ResumeData
-        swot?: SwotData
-        extractionMethod?: string
-        skillsFound?: number
-        saved?: boolean
-      }
+      clearTimeout(timer)
 
-      try {
-        json = await res.json()
-      } catch {
-        setState({
-          status: 'error',
-          message: `Server error (${res.status}). Please try again.`
-        })
+      if (!uploadRes.ok) {
+        let errMsg = 'Upload failed. Please make sure you are logged in.'
+        try {
+          const err = await uploadRes.json()
+          if (err?.error) errMsg = err.error
+        } catch {}
+        setState({ status: 'error', message: errMsg })
         return
       }
 
-      console.log('[Upload Page] API response:', {
-        ok: res.ok,
-        status: res.status,
-        success: json.success,
-        skillsFound: json.skillsFound,
-        saved: json.saved
-      })
-
-      if (!res.ok || !json.success) {
-        setState({
-          status: 'error',
-          message: json.error ?? `Upload failed (${res.status}). Please try again.`
-        })
-        return
-      }
+      const json = await uploadRes.json()
 
       setState({
         status: 'success',
         data: json.data ?? {},
         swot: json.swot ?? {},
         method: json.extractionMethod ?? 'text_extraction',
-        skillsFound: json.skillsFound ?? 0,
+        skillsFound: json.skillsFound ?? (json.data?.skills?.length ?? 0),
         saved: json.saved ?? false
       })
 
-    } catch {
+    } catch (err: any) {
       setState({
         status: 'error',
-        message: 'Network error. Check your connection and try again.'
+        message: err?.message || 'Network error. Check your connection and try again.'
       })
     }
   }, [])
 
   // ── RENDER ──────────────────────────────────────────────────
 
-  // Loading existing resume
-  if (state.status === 'loading_saved') {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <PageHeader />
-        <div className="flex items-center justify-center py-20 gap-3">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <span className="text-muted-foreground text-sm">
-            Loading your resume...
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  // Upload form (idle)
-  if (state.status === 'idle' || state.status === 'error') {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <PageHeader />
-
-        {state.status === 'error' && (
-          <div className="mb-4 flex items-start gap-3 p-4 bg-red-50
-            dark:bg-red-950/20 border border-red-200 dark:border-red-800
-            rounded-xl">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                Upload failed
-              </p>
-              <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
-                {state.message}
-              </p>
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <header className="neu-card rounded-[28px] p-6 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 sm:text-sm">
+              <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
+              <span>AI Career Guidance</span>
             </div>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+              Resume Intelligence
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Extract technical skills, build comprehensive AI SWOT matrices, and unlock personalized career projects.
+            </p>
+          </div>
+
+          {state.status === 'success' && (
             <button
               onClick={() => setState({ status: 'idle' })}
-              className="ml-auto text-red-400 hover:text-red-600">
-              <X className="h-4 w-4" />
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 shrink-0"
+            >
+              <RefreshCw className="h-4 w-4" /> Re-upload Resume
             </button>
-          </div>
-        )}
-
-        {/* Drop zone */}
-        <div
-          className={`border-2 border-dashed rounded-2xl p-12 text-center
-            cursor-pointer transition-all duration-200 ${
-            dragOver
-              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 scale-[1.01]'
-              : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
-          }`}
-          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={e => {
-            e.preventDefault()
-            setDragOver(false)
-            const file = e.dataTransfer.files[0]
-            if (file) processFile(file)
-          }}
-          onClick={() => document.getElementById('resume-input')?.click()}>
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30
-              rounded-2xl flex items-center justify-center">
-              <Upload className="h-8 w-8 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                Drop your resume here
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                or click to browse files
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              PDF, Word (.docx), JPG, PNG · Max 10MB
-            </p>
-          </div>
-
-          <input
-            id="resume-input"
-            type="file"
-            className="hidden"
-            accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) processFile(file)
-              e.target.value = '' // reset so same file can be re-uploaded
-            }}
-          />
-        </div>
-
-        {/* Tips */}
-        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
-          <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">
-            For best results:
-          </p>
-          <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
-            <li>• PDF or Word documents extract most accurately</li>
-            <li>• Scanned PDFs are supported via AI vision</li>
-            <li>• Make sure your skills section is clearly formatted</li>
-          </ul>
-        </div>
-      </div>
-    )
-  }
-
-  // Uploading / extracting
-  if (state.status === 'uploading' || state.status === 'extracting') {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <PageHeader />
-        <div className="border-2 rounded-2xl p-12 text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-lg font-semibold mb-2">
-            {state.status === 'uploading'
-              ? `Reading ${state.filename}...`
-              : 'AI is analysing your resume...'}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {state.status === 'uploading'
-              ? 'Preparing your file'
-              : 'Extracting skills, experience, and building your SWOT analysis (10-20 seconds)'}
-          </p>
-          {/* Progress indicators */}
-          <div className="flex justify-center gap-8 mt-8">
-            {['Reading file', 'AI extraction', 'SWOT analysis', 'Saving'].map((step, i) => (
-              <div key={step} className="flex flex-col items-center gap-2">
-                <div className={`h-2.5 w-2.5 rounded-full transition-all ${
-                  i === 0 ? 'bg-blue-500 scale-125 animate-pulse' :
-                  i === 1 && state.status === 'extracting' ? 'bg-blue-500 scale-125 animate-pulse' :
-                  'bg-gray-200 dark:bg-gray-700'
-                }`} />
-                <span className="text-xs text-muted-foreground">{step}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Success — show extracted data
-  const { data, swot, method, skillsFound, saved } = state
-
-  return (
-    <div className="max-w-4xl mx-auto p-6 space-y-5">
-      {/* Success header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-green-100 dark:bg-green-900/30
-            rounded-xl flex items-center justify-center">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold">Resume Extracted</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {skillsFound} skills found ·{' '}
-              {method === 'vision_pdf' ? 'AI Vision (scanned PDF)' :
-               method === 'vision_image' ? 'AI Vision (image)' :
-               method === 'docx_text' ? 'Word document' :
-               'Text extraction'} ·{' '}
-              {saved
-                ? <span className="text-green-600 font-medium">✓ Saved</span>
-                : <span className="text-yellow-600">⚠ Not saved</span>
-              }
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setState({ status: 'idle' })}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground
-            hover:text-foreground border rounded-lg px-3 py-1.5 transition-colors">
-          <RefreshCw className="h-3.5 w-3.5" /> Re-upload
-        </button>
-      </div>
-
-      {/* Profile card */}
-      <div className="border rounded-xl p-5 flex items-start gap-4">
-        <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl
-          flex items-center justify-center flex-shrink-0">
-          <User className="h-6 w-6 text-blue-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold">
-            {data.name ?? 'Name not detected'}
-          </h2>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm
-            text-muted-foreground">
-            {data.email && <span>✉ {data.email}</span>}
-            {data.phone && <span>📱 {data.phone}</span>}
-            {data.location && <span>📍 {data.location}</span>}
-          </div>
-          {data.summary && (
-            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-              {data.summary}
-            </p>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Skills */}
-      {(data.skills?.length ?? 0) > 0 && (
-        <div className="border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Code className="h-4 w-4 text-purple-500" />
-            <h3 className="font-semibold">
-              Skills
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                ({data.skills!.length} found)
-              </span>
-            </h3>
+      {/* Loading Saved */}
+      {state.status === 'loading_saved' && (
+        <div className="neu-card rounded-[28px] p-12 flex flex-col items-center justify-center text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading your saved resume profile...</p>
+        </div>
+      )}
+
+      {/* Upload Form (Idle / Error) */}
+      {(state.status === 'idle' || state.status === 'error') && (
+        <div className="space-y-6">
+          {state.status === 'error' && (
+            <div className="neu-card rounded-[24px] border border-rose-200 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20 p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-rose-700 dark:text-rose-400">Upload failed</p>
+                <p className="text-xs text-rose-600 dark:text-rose-300 mt-0.5">{state.message}</p>
+              </div>
+              <button onClick={() => setState({ status: 'idle' })} className="text-rose-400 hover:text-rose-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Dropzone */}
+          <div
+            className={`neu-card rounded-[28px] p-10 md:p-14 text-center cursor-pointer transition-all duration-200 border-2 border-dashed ${
+              dragOver
+                ? 'border-cyan-500 bg-cyan-500/5 scale-[1.01]'
+                : 'border-slate-200/80 dark:border-white/10 hover:border-cyan-400'
+            }`}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => {
+              e.preventDefault()
+              setDragOver(false)
+              const file = e.dataTransfer.files[0]
+              if (file) processFile(file)
+            }}
+            onClick={() => document.getElementById('resume-input')?.click()}
+          >
+            <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+              <div className="neu-pill-inset h-16 w-16 rounded-2xl flex items-center justify-center text-cyan-500 dark:text-cyan-400">
+                <Upload className="h-8 w-8" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">
+                  Drop your resume here
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  or click to select file from your device
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-full">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                <span>PDF, DOCX, JPG, PNG (Max 10MB)</span>
+              </div>
+            </div>
+
+            <input
+              id="resume-input"
+              type="file"
+              className="hidden"
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
+              onChange={e => {
+                const file = e.target.files?.[0]
+                if (file) processFile(file)
+                e.target.value = ''
+              }}
+            />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {data.skills!.map(skill => (
-              <span key={skill}
-                className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30
-                  text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
-                {skill}
-              </span>
-            ))}
+
+          {/* Guide Card */}
+          <div className="neu-card rounded-[24px] p-5 grid sm:grid-cols-3 gap-4">
+            <div className="flex items-start gap-3">
+              <div className="neu-pill-inset p-2 rounded-xl text-indigo-500 shrink-0 mt-0.5">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Text & Scanned PDFs</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">AI vision parses scanned documents accurately.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="neu-pill-inset p-2 rounded-xl text-emerald-500 shrink-0 mt-0.5">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Skill Matrix Extraction</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Detects languages, libraries, and frameworks.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="neu-pill-inset p-2 rounded-xl text-amber-500 shrink-0 mt-0.5">
+                <Zap className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Project Foundry Link</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Generates projects to fill detected skill gaps.</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Education */}
-      {(data.education?.length ?? 0) > 0 && (
-        <div className="border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <GraduationCap className="h-4 w-4 text-blue-500" />
-            <h3 className="font-semibold">Education</h3>
+      {/* Uploading & Extracting Progress */}
+      {(state.status === 'uploading' || state.status === 'extracting') && (
+        <div className="neu-card rounded-[28px] p-10 md:p-14 text-center space-y-6">
+          <Loader2 className="h-10 w-10 animate-spin text-cyan-500 mx-auto" />
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              {state.status === 'uploading' ? `Uploading ${state.filename}...` : 'AI Intelligence Analyzing Resume...'}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+              {state.status === 'uploading'
+                ? 'Securing file upload to cloud storage'
+                : 'Extracting skills, parsing career trajectory, and generating SWOT intelligence matrix.'}
+            </p>
           </div>
-          <div className="space-y-3">
-            {data.education!.map((edu, i) => (
-              <div key={i} className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium">{edu.degree}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {edu.institution}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{edu.year}</p>
-                  {edu.cgpa && (
-                    <p className="text-xs font-medium text-green-600">
-                      CGPA: {edu.cgpa}
-                    </p>
-                  )}
-                </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto pt-4">
+            {[
+              { title: 'Reading file', active: true },
+              { title: 'AI extraction', active: state.status === 'extracting' },
+              { title: 'SWOT analysis', active: state.status === 'extracting' },
+              { title: 'Saving profile', active: state.status === 'extracting' }
+            ].map((step, idx) => (
+              <div key={idx} className="neu-inset rounded-2xl p-3 text-center">
+                <div className={`h-2 w-2 rounded-full mx-auto mb-2 ${step.active ? 'bg-cyan-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{step.title}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Experience */}
-      {(data.experience?.length ?? 0) > 0 && (
-        <div className="border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Briefcase className="h-4 w-4 text-orange-500" />
-            <h3 className="font-semibold">Experience</h3>
+      {/* Extracted Resume Intelligence View */}
+      {state.status === 'success' && (
+        <div className="space-y-6">
+          {/* Status Bar */}
+          <div className="neu-card rounded-[24px] p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                Extraction Complete ({state.skillsFound} skills identified)
+              </span>
+              <span className="neu-pill rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                {state.method === 'vision_pdf' ? 'AI Vision (PDF)' : state.method === 'docx_text' ? 'Word Doc' : 'Text Extraction'}
+              </span>
+            </div>
+            {state.saved && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <Check size={14} /> Profile Saved & Synced
+              </span>
+            )}
           </div>
-          <div className="space-y-3">
-            {data.experience!.map((exp, i) => (
-              <div key={i} className="border-l-2 border-orange-200
-                dark:border-orange-800 pl-3">
-                <p className="text-sm font-medium">{exp.role}</p>
-                <p className="text-xs text-muted-foreground">
-                  {exp.company} · {exp.duration}
-                </p>
-                {exp.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {exp.description}
+
+          {/* Profile Overview Card */}
+          <div className="neu-card rounded-[28px] p-6 sm:p-7">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="neu-pill-inset h-14 w-14 rounded-2xl flex items-center justify-center text-cyan-500 dark:text-cyan-400 shrink-0">
+                <User className="h-7 w-7" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-slate-950 dark:text-white">
+                  {state.data.name ?? 'Candidate Profile'}
+                </h2>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {state.data.email && (
+                    <span className="inline-flex items-center gap-1.5"><Mail size={13} className="text-slate-400" /> {state.data.email}</span>
+                  )}
+                  {state.data.phone && (
+                    <span className="inline-flex items-center gap-1.5"><Phone size={13} className="text-slate-400" /> {state.data.phone}</span>
+                  )}
+                  {state.data.location && (
+                    <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-slate-400" /> {state.data.location}</span>
+                  )}
+                </div>
+                {state.data.summary && (
+                  <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-3 pt-3 border-t border-slate-200/60 dark:border-white/10">
+                    {state.data.summary}
                   </p>
                 )}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Projects */}
-      {(data.projects?.length ?? 0) > 0 && (
-        <div className="border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Code className="h-4 w-4 text-green-500" />
-            <h3 className="font-semibold">
-              Projects ({data.projects!.length})
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {data.projects!.map((proj, i) => (
-              <div key={i}
-                className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
-                <p className="text-sm font-medium">{proj.name}</p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {proj.description}
-                </p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {(proj.tech_stack ?? []).slice(0, 4).map(t => (
-                    <span key={t}
-                      className="text-xs px-1.5 py-0.5 bg-white
-                        dark:bg-gray-800 border rounded text-muted-foreground">
-                      {t}
-                    </span>
-                  ))}
+          {/* Skills Matrix Card */}
+          {(state.data.skills?.length ?? 0) > 0 && (
+            <div className="neu-card rounded-[28px] p-6 sm:p-7">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-indigo-500" />
+                  <h3 className="text-base font-bold text-slate-950 dark:text-white">Technical Skills</h3>
                 </div>
+                <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                  {state.data.skills!.length} Detected
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* SWOT */}
-      {(swot.strengths?.length ?? 0) > 0 && (
-        <div className="border rounded-xl p-5">
-          <h3 className="font-semibold mb-4">AI SWOT Analysis</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Strengths', items: swot.strengths,
-                bg: 'bg-green-50 dark:bg-green-950/20',
-                text: 'text-green-700 dark:text-green-300',
-                item: 'text-green-600 dark:text-green-400' },
-              { label: 'Weaknesses', items: swot.weaknesses,
-                bg: 'bg-red-50 dark:bg-red-950/20',
-                text: 'text-red-700 dark:text-red-300',
-                item: 'text-red-600 dark:text-red-400' },
-              { label: 'Opportunities', items: swot.opportunities,
-                bg: 'bg-blue-50 dark:bg-blue-950/20',
-                text: 'text-blue-700 dark:text-blue-300',
-                item: 'text-blue-600 dark:text-blue-400' },
-              { label: 'Threats', items: swot.threats,
-                bg: 'bg-purple-50 dark:bg-purple-950/20',
-                text: 'text-purple-700 dark:text-purple-300',
-                item: 'text-purple-600 dark:text-purple-400' },
-            ].map(({ label, items, bg, text, item }) => (
-              <div key={label} className={`${bg} p-3 rounded-lg`}>
-                <p className={`text-xs font-semibold ${text} mb-2`}>{label}</p>
-                <ul className="space-y-1">
-                  {(items ?? []).slice(0, 3).map((s, i) => (
-                    <li key={i} className={`text-xs ${item}`}>• {s}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          {(swot.recommended_skills?.length ?? 0) > 0 && (
-            <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg">
-              <p className="text-xs font-semibold text-indigo-700
-                dark:text-indigo-300 mb-2">
-                Recommended skills to learn
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {swot.recommended_skills!.map(s => (
-                  <span key={s}
-                    className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40
-                      text-indigo-600 dark:text-indigo-300 rounded-full text-xs">
-                    + {s}
+              <div className="flex flex-wrap gap-2">
+                {state.data.skills!.map(skill => (
+                  <span key={skill} className="neu-pill rounded-xl px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                    {skill}
                   </span>
                 ))}
               </div>
             </div>
           )}
+
+          {/* AI SWOT Analysis Matrix */}
+          {(state.swot.strengths?.length ?? 0) > 0 && (
+            <div className="neu-card rounded-[28px] p-6 sm:p-7 space-y-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-cyan-500" />
+                <h3 className="text-base font-bold text-slate-950 dark:text-white">AI SWOT Matrix</h3>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { label: 'Strengths', items: state.swot.strengths, border: 'border-emerald-500/20 bg-emerald-500/5', titleColor: 'text-emerald-700 dark:text-emerald-400' },
+                  { label: 'Weaknesses / Gaps', items: state.swot.weaknesses, border: 'border-rose-500/20 bg-rose-500/5', titleColor: 'text-rose-700 dark:text-rose-400' },
+                  { label: 'Opportunities', items: state.swot.opportunities, border: 'border-cyan-500/20 bg-cyan-500/5', titleColor: 'text-cyan-700 dark:text-cyan-400' },
+                  { label: 'Threats / Risks', items: state.swot.threats, border: 'border-amber-500/20 bg-amber-500/5', titleColor: 'text-amber-700 dark:text-amber-400' },
+                ].map(({ label, items, border, titleColor }) => (
+                  <div key={label} className={`rounded-2xl border p-4 ${border}`}>
+                    <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${titleColor}`}>{label}</p>
+                    <ul className="space-y-1.5">
+                      {(items ?? []).slice(0, 4).map((s, i) => (
+                        <li key={i} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
+                          <span className="opacity-50 mt-0.5">•</span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {(state.swot.recommended_skills?.length ?? 0) > 0 && (
+                <div className="neu-inset rounded-2xl p-4 mt-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-2">
+                    Recommended Target Skills to Learn
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {state.swot.recommended_skills!.map(s => (
+                      <span key={s} className="neu-pill rounded-full px-3 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                        + {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Education & Experience Dual Grid */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Education */}
+            {(state.data.education?.length ?? 0) > 0 && (
+              <div className="neu-card rounded-[28px] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <GraduationCap className="h-5 w-5 text-cyan-500" />
+                  <h3 className="text-base font-bold text-slate-950 dark:text-white">Education</h3>
+                </div>
+                <div className="space-y-3">
+                  {state.data.education!.map((edu, i) => (
+                    <div key={i} className="neu-inset rounded-2xl p-3.5 flex justify-between items-start">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{edu.degree}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{edu.institution}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{edu.year}</span>
+                        {edu.cgpa && (
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">CGPA: {edu.cgpa}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Experience */}
+            {(state.data.experience?.length ?? 0) > 0 && (
+              <div className="neu-card rounded-[28px] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Briefcase className="h-5 w-5 text-amber-500" />
+                  <h3 className="text-base font-bold text-slate-950 dark:text-white">Experience</h3>
+                </div>
+                <div className="space-y-3">
+                  {state.data.experience!.map((exp, i) => (
+                    <div key={i} className="neu-inset rounded-2xl p-3.5 space-y-1">
+                      <div className="flex justify-between items-start">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{exp.role}</p>
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{exp.duration}</span>
+                      </div>
+                      <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{exp.company}</p>
+                      {exp.description && (
+                        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2 pt-1">
+                          {exp.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Pathways CTA Card */}
+          <div className="neu-card rounded-[28px] p-6 sm:p-7">
+            <h3 className="text-base font-bold text-slate-950 dark:text-white mb-1">Recommended Next Actions</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+              Leverage your parsed skills to generate projects and find matching job openings.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/career/foundry/dashboard"
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              >
+                <span>Generate Projects</span>
+                <ArrowRight size={14} />
+              </Link>
+              <Link
+                href="/career/market/jobs"
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              >
+                <span>Match Jobs</span>
+              </Link>
+              <Link
+                href="/feed"
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-slate-600 dark:text-slate-300"
+              >
+                <span>Back to Dashboard Feed</span>
+              </Link>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* CTAs */}
-      <div className="border rounded-xl p-5
-        bg-gradient-to-r from-blue-50 to-purple-50
-        dark:from-blue-950/20 dark:to-purple-950/20">
-        <p className="font-medium mb-3">What's next?</p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/career/foundry/dashboard"
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm
-              font-medium hover:bg-blue-600 transition-colors">
-            Generate Projects →
-          </Link>
-          <Link href="/career/market"
-            className="px-4 py-2 border rounded-lg text-sm font-medium
-              hover:bg-white dark:hover:bg-gray-800 transition-colors">
-            Match Jobs →
-          </Link>
-          <Link href="/priority"
-            className="px-4 py-2 border rounded-lg text-sm font-medium
-              hover:bg-white dark:hover:bg-gray-800 transition-colors">
-            View Priority Plan →
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PageHeader() {
-  return (
-    <div className="flex items-center gap-3 mb-6">
-      <FileText className="h-6 w-6 text-blue-500" />
-      <div>
-        <h1 className="text-2xl font-semibold">Resume Intelligence</h1>
-        <p className="text-sm text-muted-foreground">
-          Upload your resume to extract skills, generate SWOT analysis,
-          and unlock personalised projects
-        </p>
-      </div>
     </div>
   )
 }

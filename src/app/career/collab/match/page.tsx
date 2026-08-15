@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Users, Copy, Check, AlertCircle, CheckCircle, Clock,
   Loader2, Bell, Trophy, X, Swords, Flame, Star,
@@ -99,12 +100,8 @@ function getLevelTitle(level: number) {
   return ['', 'Newcomer', 'Apprentice', 'Coder', 'Developer',
     'Engineer', 'Senior Dev', 'Tech Lead', 'Architect', 'Principal', 'Legend'][level] ?? 'Legend'
 }
-function challengeIcon(type: string) {
-  const icons: Record<string, string> = {
-    leetcode_duel: '⚔️', streak_war: '🔥', badge_race: '🏅',
-    solve_count: '📊', project_phase: '🚀'
-  }
-  return icons[type] ?? '🎯'
+function challengeIcon(_type: string) {
+  return ''
 }
 function challengeLabel(type: string) {
   return {
@@ -128,11 +125,11 @@ function ChallengeModal({
   const [sending, setSending] = useState(false)
 
   const types = [
-    { id: 'leetcode_duel', label: '⚔️ LeetCode Duel', placeholder: 'Problem slug (e.g. two-sum)' },
-    { id: 'streak_war', label: '🔥 Streak War', placeholder: 'Days (e.g. 7)' },
-    { id: 'badge_race', label: '🏅 Badge Race', placeholder: 'Badge name (e.g. Problem Solving)' },
-    { id: 'solve_count', label: '📊 Solve Count', placeholder: 'Count:days (e.g. 10:7)' },
-    { id: 'project_phase', label: '🚀 Project Phase', placeholder: 'Phase number (e.g. 3)' },
+    { id: 'leetcode_duel', label: 'LeetCode Duel', placeholder: 'Problem slug (e.g. two-sum)' },
+    { id: 'streak_war', label: 'Streak War', placeholder: 'Days (e.g. 7)' },
+    { id: 'badge_race', label: 'Badge Race', placeholder: 'Badge name (e.g. Problem Solving)' },
+    { id: 'solve_count', label: 'Solve Count', placeholder: 'Count:days (e.g. 10:7)' },
+    { id: 'project_phase', label: 'Project Phase', placeholder: 'Phase number (e.g. 3)' },
   ]
 
   async function handle() {
@@ -143,25 +140,25 @@ function ChallengeModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b">
-          <h3 className="font-bold text-lg">Challenge {friend.profile?.display_name ?? 'Peer'}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-            <X className="h-5 w-5" />
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="neu-card rounded-[28px] w-full max-w-md shadow-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
+          <h3 className="font-bold text-lg text-slate-950 dark:text-white">Challenge {friend.profile?.display_name ?? 'Peer'}</h3>
+          <button onClick={onClose} className="neu-btn p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white">
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="space-y-4">
           {/* Type */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">Challenge Type</label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Challenge Type</label>
             <div className="grid grid-cols-1 gap-1.5">
               {types.map(t => (
                 <button key={t.id} onClick={() => setType(t.id)}
-                  className={`text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  className={`text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
                     type === t.id
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300'
-                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'neu-inset text-purple-700 dark:text-purple-300'
+                      : 'hover:bg-slate-500/5 text-slate-600 dark:text-slate-400'
                   }`}>
                   {t.label}
                 </button>
@@ -170,27 +167,27 @@ function ChallengeModal({
           </div>
           {/* Title */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Challenge Title</label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Challenge Title</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Who solves Two Sum faster?"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 dark:bg-gray-800" />
+              className="neu-inset w-full rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none" />
           </div>
           {/* Target */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Target</label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Target</label>
             <input value={targetValue} onChange={e => setTargetValue(e.target.value)}
               placeholder={types.find(t => t.id === type)?.placeholder ?? ''}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 dark:bg-gray-800" />
+              className="neu-inset w-full rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none" />
           </div>
           {/* Deadline */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Deadline</label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Deadline</label>
             <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 dark:bg-gray-800" />
+              className="neu-inset w-full rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none" />
           </div>
           <button onClick={handle} disabled={sending || !title || !targetValue || !deadline}
-            className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-            {sending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <>⚔️ Send Challenge</>}
+            className="neu-btn w-full py-3 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 disabled:opacity-50 text-white dark:text-slate-950 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2">
+            {sending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <><Swords className="h-4 w-4" /> Send Challenge</>}
           </button>
         </div>
       </div>
@@ -204,37 +201,38 @@ function SubmitResultModal({
 }: {
   challenge: Challenge
   onClose: () => void
-  onSubmit: (value: string) => void
+  onSubmit: (resultValue: string) => void
 }) {
-  const [value, setValue] = useState('')
+  const [resultValue, setResultValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   async function handle() {
-    if (!value.trim()) return
+    if (!resultValue) return
     setSubmitting(true)
-    await onSubmit(value)
+    await onSubmit(resultValue)
     setSubmitting(false)
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b">
-          <h3 className="font-bold">Submit Result</h3>
-          <button onClick={onClose}><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="neu-card rounded-[28px] w-full max-w-sm shadow-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
+          <h3 className="font-bold text-base text-slate-950 dark:text-white">Submit Result</h3>
+          <button onClick={onClose} className="neu-btn p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm text-muted-foreground">{challenge.title}</p>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 block">Your Result</label>
-            <input value={value} onChange={e => setValue(e.target.value)}
-              placeholder="e.g. Solved in 18 minutes, 5/7 days streak..."
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 dark:bg-gray-800" />
-          </div>
-          <button onClick={handle} disabled={submitting || !value.trim()}
-            className="w-full py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl font-medium flex items-center justify-center gap-2">
-            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</> : <><CheckCircle className="h-4 w-4" /> Submit Result</>}
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Enter your result for <strong>&quot;{challenge.title}&quot;</strong> (e.g. runtime, solve count, proof URL):
+          </p>
+          <input value={resultValue} onChange={e => setResultValue(e.target.value)}
+            placeholder="Result or proof..."
+            className="neu-inset w-full rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none" />
+          <button onClick={handle} disabled={submitting || !resultValue}
+            className="neu-btn w-full py-3 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 disabled:opacity-50 text-white dark:text-slate-950 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2">
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</> : <><Check className="h-4 w-4" /> Submit Result</>}
           </button>
         </div>
       </div>
@@ -242,19 +240,12 @@ function SubmitResultModal({
   )
 }
 
-// ── Empty State ───────────────────────────────────────────────────
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
-      <div className="text-gray-300 dark:text-gray-600 mx-auto mb-3 flex justify-center">{icon}</div>
-      <h3 className="font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-sm mx-auto">{description}</p>
-    </div>
-  )
-}
-
-// ── Main Component ────────────────────────────────────────────────
-export default function CollabMatchPage() {
+function CollabContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const tabFromQuery = (searchParams?.get('tab') as ActiveTab) || 'friends'
+  
+  const [activeTab, setActiveTab] = useState<ActiveTab>(tabFromQuery)
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null)
   const [myXp, setMyXp] = useState<MyXp | null>(null)
   const [friends, setFriends] = useState<Friend[]>([])
@@ -263,138 +254,154 @@ export default function CollabMatchPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [leaderboard, setLeaderboard] = useState<Array<{ name: string; xp: number; won: number; streak: number; isMe: boolean }>>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('friends')
+
+  // Sync state with URL query parameter
+  useEffect(() => {
+    const q = searchParams?.get('tab') as ActiveTab
+    if (q && ['friends', 'requests', 'challenges', 'leaderboard'].includes(q)) {
+      setActiveTab(q)
+    }
+  }, [searchParams])
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab)
+    router.push(`/career/collab/match?tab=${tab}`, { scroll: false })
+  }
+
+  // Modals & form state
   const [connectCode, setConnectCode] = useState('')
   const [connectState, setConnectState] = useState<ConnectState>({ status: 'idle' })
-  const [copied, setCopied] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
   const [challengeModal, setChallengeModal] = useState<Friend | null>(null)
   const [submitModal, setSubmitModal] = useState<Challenge | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
+  // ── Load All Data ───────────────────────────────────────────────
+  const loadData = useCallback(async () => {
     try {
-      const [profileRes, friendsRes, inboxRes, challengesRes, notifRes, xpRes] =
-        await Promise.allSettled([
-          fetch('/api/career/collab/ensure-profile', { method: 'POST' }).then(r => r.json()),
-          fetch('/api/career/collab/friends').then(r => r.json()),
-          fetch('/api/career/collab/inbox').then(r => r.json()),
-          fetch('/api/career/collab/challenges').then(r => r.json()),
-          fetch('/api/career/collab/notifications').then(r => r.json()),
-          fetch('/api/career/collab/my-xp').then(r => r.json()),
-        ])
-
-      if (profileRes.status === 'fulfilled') setMyProfile(profileRes.value.profile)
-      if (friendsRes.status === 'fulfilled') setFriends(friendsRes.value.friends ?? [])
-      if (inboxRes.status === 'fulfilled') {
-        setInbox(inboxRes.value.incoming ?? [])
-        setOutgoing(inboxRes.value.outgoing ?? [])
+      const [fRes, cRes, nRes] = await Promise.all([
+        fetch('/api/career/collab/friends'),
+        fetch('/api/career/collab/challenges'),
+        fetch('/api/career/collab/notifications'),
+      ])
+      if (fRes.ok) {
+        const d = await fRes.json()
+        setMyProfile(d.myProfile)
+        setMyXp(d.myXp)
+        setFriends(d.friends ?? [])
+        setInbox(d.inbox ?? [])
+        setOutgoing(d.outgoing ?? [])
+        setLeaderboard(d.leaderboard ?? [])
       }
-      if (challengesRes.status === 'fulfilled') setChallenges(challengesRes.value.challenges ?? [])
-      if (notifRes.status === 'fulfilled') {
-        setNotifications(notifRes.value.notifications ?? [])
-        setUnreadCount(notifRes.value.unreadCount ?? 0)
+      if (cRes.ok) {
+        const d = await cRes.json()
+        setChallenges(d.challenges ?? [])
       }
-      if (xpRes.status === 'fulfilled') setMyXp(xpRes.value)
+      if (nRes.ok) {
+        const d = await nRes.json()
+        setNotifications(d.notifications ?? [])
+        setUnreadCount(d.unreadCount ?? 0)
+      }
+    } catch {
+      // ignore
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => { loadData() }, [loadData])
 
+  // ── Connect via Code ────────────────────────────────────────────
   async function handleConnect() {
-    const code = connectCode.trim().toUpperCase()
-    if (!code || code.length < 4) {
-      setConnectState({ status: 'error', message: 'Enter a valid 6-character code.' })
-      return
-    }
-    if (myProfile && code === myProfile.connect_code) {
-      setConnectState({ status: 'error', message: "That's your own code!" })
-      return
-    }
+    if (!connectCode.trim() || connectCode.length < 4) return
     setConnectState({ status: 'loading' })
     try {
       const res = await fetch('/api/career/collab/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ connectCode: connectCode.trim() }),
       })
-      const json = await res.json()
-      if (res.status === 409) { setConnectState({ status: 'already_pending' }); return }
-      if (!res.ok || json.error) { setConnectState({ status: 'error', message: json.error ?? 'Failed' }); return }
-      setConnectState({ status: 'success', peerName: json.peer?.displayName ?? 'Peer' })
-      setConnectCode('')
-      loadAll()
+      const d = await res.json()
+      if (!res.ok) {
+        setConnectState({ status: 'error', message: d.error ?? 'Connection failed' })
+      } else if (d.status === 'already_pending') {
+        setConnectState({ status: 'already_pending' })
+      } else {
+        setConnectState({ status: 'success', peerName: d.peerName ?? connectCode })
+        setConnectCode('')
+        loadData()
+      }
     } catch {
       setConnectState({ status: 'error', message: 'Network error. Try again.' })
     }
   }
 
+  // ── Respond to Friend Request ───────────────────────────────────
   async function respondToRequest(connectionId: string, action: 'accept' | 'decline') {
-    await fetch(`/api/career/collab/connections/${connectionId}/respond`, {
+    await fetch('/api/career/collab/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action })
+      body: JSON.stringify({ connectionId, action }),
     })
-    loadAll()
+    loadData()
   }
 
-  async function sendChallenge(type: string, config: { title: string; targetValue: string; deadline: string }) {
+  // ── Send Challenge ──────────────────────────────────────────────
+  async function sendChallenge(challengeType: string, config: { title: string; targetValue: string; deadline: string }) {
     if (!challengeModal) return
     await fetch('/api/career/collab/challenges', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ opponentId: challengeModal.userId, challengeType: type, ...config, stake: 'Bragging rights + XP' })
+      body: JSON.stringify({
+        opponentId: challengeModal.userId,
+        challengeType,
+        title: config.title,
+        targetValue: config.targetValue,
+        deadline: config.deadline || null,
+        xpReward: 50,
+      }),
     })
     setChallengeModal(null)
-    loadAll()
+    loadData()
   }
 
+  // ── Respond to Challenge ────────────────────────────────────────
   async function respondToChallenge(challengeId: string, action: 'accept' | 'decline') {
     await fetch(`/api/career/collab/challenges/${challengeId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action })
+      body: JSON.stringify({ action }),
     })
-    loadAll()
+    loadData()
   }
 
+  // ── Submit Result ───────────────────────────────────────────────
   async function submitResult(challengeId: string, resultValue: string) {
     await fetch(`/api/career/collab/challenges/${challengeId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submit_result', resultValue })
+      body: JSON.stringify({ action: 'submit_result', resultValue }),
     })
-    loadAll()
+    loadData()
   }
 
   function copyCode() {
-    navigator.clipboard.writeText(myProfile?.connect_code ?? '')
+    if (!myProfile?.connect_code) return
+    navigator.clipboard.writeText(myProfile.connect_code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const myLevel = getLevel(myXp?.total_xp ?? 0)
-
-  // Categorize challenges
   const pendingChallenges = challenges.filter(c => c.status === 'pending' && !c.isCreator)
-  const activeChallenges = challenges.filter(c => c.status === 'in_progress')
-  const completedChallenges = challenges.filter(c => ['completed', 'declined', 'expired'].includes(c.status))
-
-  // Leaderboard: merge me + friends XP
-  const leaderboard = [
-    myXp ? { name: myProfile?.display_name ?? 'You', xp: myXp.total_xp, won: myXp.challenges_won, streak: myXp.win_streak, isMe: true } : null,
-    ...friends.filter(f => f.xp).map(f => ({
-      name: f.profile?.display_name ?? 'Friend', xp: f.xp!.totalXp, won: f.xp!.challengesWon,
-      streak: f.xp!.winStreak, isMe: false
-    }))
-  ].filter(Boolean).sort((a, b) => (b?.xp ?? 0) - (a?.xp ?? 0))
+  const activeChallenges = challenges.filter(c => c.status === 'active')
+  const completedChallenges = challenges.filter(c => c.status === 'completed' || c.status === 'declined')
+  const myLevel = myXp ? getLevel(myXp.total_xp) : 1
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Modals */}
+    <div className="space-y-6">
+      {/* Challenge Modal */}
       {challengeModal && (
         <ChallengeModal
           friend={challengeModal}
@@ -411,144 +418,163 @@ export default function CollabMatchPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <Users className="h-6 w-6 text-purple-500" />
+      <header className="neu-card rounded-[28px] p-6 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Peer Collaboration</h1>
-            <p className="text-sm text-muted-foreground">Connect, compete, and grow together</p>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 sm:text-sm">
+              <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
+              <span>Peer Collab Portal</span>
+            </div>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+              Peer Collab Portal
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Connect with classmates, compete in DSA duels, and rise on the XP leaderboard.
+            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {myXp && (
-            <div className="flex items-center gap-2 border rounded-xl px-3 py-1.5 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-              <Star className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-bold">{myXp.total_xp} XP</span>
-              <span className="text-xs text-muted-foreground">Lv.{myLevel} {getLevelTitle(myLevel)}</span>
-              {myXp.win_streak > 1 && (
-                <span className="flex items-center gap-0.5 text-xs text-orange-500 font-semibold">
-                  <Flame className="h-3.5 w-3.5" />{myXp.win_streak}
-                </span>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {myXp && (
+              <div className="neu-pill rounded-full px-4 py-1.5 flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
+                <Star className="h-3.5 w-3.5 text-amber-500" />
+                <span>{myXp.total_xp} XP</span>
+                <span className="opacity-60">•</span>
+                <span>Lv.{myLevel} {getLevelTitle(myLevel)}</span>
+                {myXp.win_streak > 1 && (
+                  <span className="flex items-center gap-0.5 text-orange-500 font-semibold">
+                    <Flame className="h-3 w-3" />{myXp.win_streak} streak
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications(!showNotifications)
+                  if (!showNotifications && unreadCount > 0) {
+                    fetch('/api/career/collab/notifications', { method: 'PATCH' })
+                    setUnreadCount(0)
+                  }
+                }}
+                className="neu-btn relative p-2.5 rounded-2xl text-slate-600 dark:text-slate-300"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="neu-card absolute right-0 top-12 w-80 rounded-[24px] shadow-2xl z-50 overflow-hidden p-4 space-y-2">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-white/10">
+                    <span className="font-bold text-xs text-slate-900 dark:text-white">Notifications</span>
+                    <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-700">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    {notifications.length === 0 ? (
+                      <p className="py-6 text-xs text-slate-400 text-center">No notifications yet</p>
+                    ) : notifications.map(n => (
+                      <div key={n.id} className="neu-inset rounded-xl p-2.5 text-xs space-y-0.5">
+                        <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
+                        {n.body && <p className="text-[11px] text-slate-500 dark:text-slate-400">{n.body}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          )}
-          {/* Notifications Bell */}
-          <div className="relative">
+          </div>
+        </div>
+      </header>
+
+      {/* Connect Code & Peer Add Dual Grid */}
+      <div className="grid md:grid-cols-2 gap-5">
+        {/* My Connect Code */}
+        <div className="neu-card rounded-[28px] p-6 flex flex-col justify-between space-y-3">
+          <div>
+            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">Your Connect Code</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Share with classmates so they can challenge you</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="neu-inset rounded-2xl px-5 py-2.5 font-mono text-2xl font-black tracking-[0.2em] text-purple-700 dark:text-purple-300">
+              {myProfile?.connect_code ?? '------'}
+            </div>
             <button
-              onClick={() => {
-                setShowNotifications(!showNotifications)
-                if (!showNotifications && unreadCount > 0) {
-                  fetch('/api/career/collab/notifications', { method: 'PATCH' })
-                  setUnreadCount(0)
-                }
-              }}
-              className="relative p-2 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{unreadCount}</span>
-              )}
+              onClick={copyCode}
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white"
+            >
+              {copied ? <><Check className="h-4 w-4 text-emerald-500" /> Copied</> : <><Copy className="h-4 w-4" /> Copy Code</>}
             </button>
-            {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 bg-white dark:bg-gray-900 border rounded-xl shadow-2xl z-50 overflow-hidden">
-                <div className="p-3 border-b flex justify-between items-center">
-                  <span className="font-semibold text-sm">Notifications</span>
-                  <button onClick={() => setShowNotifications(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="p-4 text-sm text-muted-foreground text-center">No notifications yet</p>
-                  ) : notifications.map(n => (
-                    <a key={n.id} href={n.action_url || '#'}
-                      className={`block p-3 border-b hover:bg-gray-50 dark:hover:bg-gray-800 ${!n.read ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''}`}>
-                      <p className="text-sm font-medium">{n.title}</p>
-                      {n.body && <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>}
-                      <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
-                    </a>
-                  ))}
-                </div>
-              </div>
+          </div>
+        </div>
+
+        {/* Connect with Peer */}
+        <div className="neu-card rounded-[28px] p-6 flex flex-col justify-between space-y-3">
+          <div>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Connect with Peer</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Enter a peer's 6-character connect code</p>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <div className="flex gap-2">
+              <input
+                value={connectCode}
+                onChange={e => {
+                  setConnectCode(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6))
+                  if (connectState.status !== 'idle') setConnectState({ status: 'idle' })
+                }}
+                onKeyDown={e => e.key === 'Enter' && connectCode.length >= 4 && handleConnect()}
+                placeholder="PEER CODE (e.g. YUG4K2)"
+                maxLength={6}
+                className="neu-inset flex-1 rounded-2xl px-4 py-2 text-xs font-mono tracking-[0.15em] uppercase outline-none text-slate-900 dark:text-white placeholder-slate-400"
+              />
+              <button
+                onClick={handleConnect}
+                disabled={connectState.status === 'loading' || connectCode.length < 4}
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              >
+                {connectState.status === 'loading' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Connect'}
+              </button>
+            </div>
+
+            {connectState.status === 'error' && (
+              <p className="text-xs text-rose-500 font-semibold">{connectState.message}</p>
+            )}
+            {connectState.status === 'success' && (
+              <p className="text-xs text-emerald-500 font-semibold">Request sent to {connectState.peerName}!</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Connect Code Card */}
-      <div className="border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/20 rounded-xl p-5 mb-4">
-        {loading ? (
-          <div className="animate-pulse h-8 bg-purple-200 dark:bg-purple-800 rounded w-1/3" />
-        ) : (
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">Your Connect Code</p>
-              <p className="text-3xl font-bold font-mono tracking-[0.2em] text-purple-900 dark:text-purple-100">{myProfile?.connect_code ?? '------'}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">Share with classmates to connect</p>
-            </div>
-            <button onClick={copyCode}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${copied ? 'bg-green-500 text-white' : 'bg-purple-500 hover:bg-purple-600 text-white'}`}>
-              {copied ? <><Check className="h-4 w-4" /> Copied!</> : <><Copy className="h-4 w-4" /> Copy Code</>}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Connect Input */}
-      <div className="border rounded-xl p-5 mb-6">
-        <h2 className="font-semibold mb-3">Connect with a Peer</h2>
-        <div className="flex gap-2">
-          <input
-            value={connectCode}
-            onChange={e => {
-              setConnectCode(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6))
-              if (connectState.status !== 'idle') setConnectState({ status: 'idle' })
-            }}
-            onKeyDown={e => e.key === 'Enter' && connectCode.length >= 4 && handleConnect()}
-            placeholder="Enter peer code (e.g. YUG4K2)"
-            maxLength={6}
-            className="flex-1 border-2 rounded-xl px-4 py-2.5 text-sm font-mono tracking-[0.15em] uppercase placeholder:normal-case placeholder:tracking-normal focus:outline-none focus:border-purple-500 dark:bg-gray-900 transition-colors"
-          />
-          <button onClick={handleConnect}
-            disabled={connectState.status === 'loading' || connectCode.length < 4}
-            className="px-5 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
-            {connectState.status === 'loading' ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : 'Connect'}
-          </button>
-        </div>
-        <p className={`text-xs mt-1 ${connectCode.length === 6 ? 'text-green-600' : 'text-muted-foreground'}`}>{connectCode.length}/6 characters</p>
-        {connectState.status === 'error' && (
-          <div className="mt-3 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-            <p className="text-sm text-red-600">{connectState.message}</p>
-          </div>
-        )}
-        {connectState.status === 'already_pending' && (
-          <div className="mt-3 flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 rounded-lg">
-            <Clock className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-            <p className="text-sm text-yellow-700">Request already pending — waiting for them to accept.</p>
-          </div>
-        )}
-        {connectState.status === 'success' && (
-          <div className="mt-3 flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 rounded-lg">
-            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-700">Request sent to {connectState.peerName}! They need to accept.</p>
-          </div>
-        )}
-      </div>
-
       {/* Tabs */}
-      <div className="flex border-b mb-6 overflow-x-auto">
+      <div className="neu-card rounded-[24px] p-2 flex items-center gap-2 overflow-x-auto">
         {([
           { id: 'friends' as const, label: `Friends (${friends.length})`, icon: Users },
+          { id: 'challenges' as const, label: `Duels & Challenges (${challenges.length})`, icon: Swords, badge: pendingChallenges.length },
           { id: 'requests' as const, label: `Requests`, icon: Bell, badge: inbox.length },
-          { id: 'challenges' as const, label: `Challenges (${challenges.length})`, icon: Swords, badge: pendingChallenges.length },
-          { id: 'leaderboard' as const, label: 'Leaderboard', icon: Trophy },
+          { id: 'leaderboard' as const, label: 'XP Leaderboard', icon: Trophy },
         ]).map(({ id, label, icon: Icon, badge }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === id ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
-            }`}>
-            <Icon className="h-4 w-4" />
-            {label}
+          <button
+            key={id}
+            onClick={() => handleTabChange(id)}
+            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+              activeTab === id
+                ? "neu-inset text-purple-700 dark:text-purple-300 bg-purple-500/10"
+                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            <span>{label}</span>
             {badge && badge > 0 ? (
-              <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">{badge}</span>
+              <span className="bg-rose-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">{badge}</span>
             ) : null}
           </button>
         ))}
@@ -557,75 +583,47 @@ export default function CollabMatchPage() {
       {/* ── FRIENDS TAB ── */}
       {activeTab === 'friends' && (
         <div className="space-y-3">
-          {loading ? (
-            [1,2].map(i => <div key={i} className="border rounded-xl p-4 animate-pulse h-20 bg-gray-100 dark:bg-gray-800" />)
-          ) : friends.length === 0 ? (
-            <EmptyState
-              icon={<Users className="h-10 w-10" />}
-              title="No friends yet"
-              description="Share your connect code or enter a peer's code above. Once they accept, they'll appear here with their stats."
-            />
+          {friends.length === 0 ? (
+            <div className="neu-card rounded-[28px] p-10 text-center space-y-3 max-w-xl mx-auto">
+              <Users className="h-10 w-10 text-slate-400 mx-auto" />
+              <h3 className="font-bold text-slate-950 dark:text-white text-base">No connected friends yet</h3>
+              <p className="text-xs text-slate-500">Share your connect code above with your peer group to link accounts and duel.</p>
+            </div>
           ) : friends.map(friend => (
-            <div key={friend.connectionId} className="border rounded-xl p-4 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div className="h-11 w-11 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="font-bold text-white text-lg">{friend.profile?.avatar_initial ?? '?'}</span>
+            <div key={friend.connectionId} className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-lg text-purple-600 dark:text-purple-300 shrink-0">
+                  {friend.profile?.avatar_initial ?? '?'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold">{friend.profile?.display_name ?? 'Unknown'}</h3>
+                    <h3 className="font-bold text-sm text-slate-950 dark:text-white">{friend.profile?.display_name ?? 'Peer'}</h3>
                     {friend.xp && (
-                      <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full font-medium">
+                      <span className="neu-pill rounded-full px-2.5 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300">
                         Lv.{friend.xp.level} · {friend.xp.totalXp} XP
                       </span>
                     )}
-                    {friend.xp && friend.xp.winStreak > 1 && (
-                      <span className="flex items-center gap-0.5 text-xs text-orange-500 font-semibold">
-                        <Flame className="h-3 w-3" />{friend.xp.winStreak} streak
-                      </span>
-                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{friend.profile?.stream}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{friend.profile?.stream}</p>
                   {friend.profile?.skills && friend.profile.skills.length > 0 && (
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                    <div className="flex gap-1 mt-2 flex-wrap">
                       {friend.profile.skills.slice(0, 5).map(s => (
-                        <span key={s} className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400">{s}</span>
-                      ))}
-                      {friend.profile.skills.length > 5 && (
-                        <span className="text-xs px-1.5 py-0.5 text-muted-foreground">+{friend.profile.skills.length - 5}</span>
-                      )}
-                    </div>
-                  )}
-                  {friend.profile?.coding_profiles && friend.profile.coding_profiles.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {friend.profile.coding_profiles.map(cp => (
-                        <div key={cp.platform} className="flex items-center gap-2 text-xs">
-                          <span className="font-semibold capitalize text-purple-600 dark:text-purple-400">{cp.platform}:</span>
-                          <span className="text-muted-foreground">{cp.solved_count} solved</span>
-                          {cp.badge_name && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded flex items-center gap-1"><Trophy className="h-3 w-3" /> {cp.badge_name}</span>}
-                        </div>
+                        <span key={s} className="neu-pill rounded-lg px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-300">
+                          {s}
+                        </span>
                       ))}
                     </div>
-                  )}
-                  {friend.profile?.github && (
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">GitHub:</span>
-                      <span className="text-muted-foreground">{friend.profile.github.health_score}% health</span>
-                      <span className="flex items-center gap-0.5 text-orange-500 font-semibold"><Flame className="h-3 w-3" /> {friend.profile.github.streak_days} days</span>
-                    </div>
-                  )}
-                  {friend.activeChallenge && (
-                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-1.5 flex items-center gap-1">
-                      <Swords className="h-3 w-3" /> Active challenge: {friend.activeChallenge.title}
-                    </p>
                   )}
                 </div>
-                <button onClick={() => setChallengeModal(friend)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition-colors flex-shrink-0">
-                  <Swords className="h-3.5 w-3.5" /> Challenge
-                </button>
               </div>
+
+              <button
+                onClick={() => setChallengeModal(friend)}
+                className="neu-btn inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shrink-0"
+              >
+                <Swords className="h-3.5 w-3.5" />
+                <span>Challenge</span>
+              </button>
             </div>
           ))}
         </div>
@@ -635,58 +633,51 @@ export default function CollabMatchPage() {
       {activeTab === 'requests' && (
         <div className="space-y-6">
           {inbox.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Incoming ({inbox.length})</h3>
-              <div className="space-y-3">
-                {inbox.map(req => (
-                  <div key={req.connectionId} className="border rounded-xl p-4 flex items-center gap-3">
-                    <div className="h-10 w-10 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="font-bold text-white">{req.profile?.avatar_initial ?? '?'}</span>
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Incoming Requests ({inbox.length})</h3>
+              {inbox.map(req => (
+                <div key={req.connectionId} className="neu-card rounded-[24px] p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-pill-inset h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-purple-600 shrink-0">
+                      {req.profile?.avatar_initial ?? '?'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{req.profile?.display_name ?? 'Unknown User'}</p>
-                      <p className="text-xs text-muted-foreground">{req.profile?.stream} · {req.profile?.connect_code}</p>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => respondToRequest(req.connectionId, 'accept')}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium">
-                        <UserCheck className="h-3.5 w-3.5" /> Accept
-                      </button>
-                      <button onClick={() => respondToRequest(req.connectionId, 'decline')}
-                        className="flex items-center gap-1 px-3 py-1.5 border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs">
-                        <UserX className="h-3.5 w-3.5" /> Decline
-                      </button>
+                    <div>
+                      <p className="font-bold text-xs text-slate-950 dark:text-white">{req.profile?.display_name ?? 'Classmate'}</p>
+                      <p className="text-[11px] text-slate-400">{req.profile?.stream} · {req.profile?.connect_code}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => respondToRequest(req.connectionId, 'accept')}
+                      className="neu-btn px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      Accept
+                    </button>
+                    <button onClick={() => respondToRequest(req.connectionId, 'decline')}
+                      className="neu-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500">
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
           {outgoing.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Sent — Waiting ({outgoing.length})</h3>
-              <div className="space-y-2">
-                {outgoing.map(req => (
-                  <div key={req.connectionId} className="border rounded-xl p-3 flex items-center gap-3 opacity-70">
-                    <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <p className="text-sm flex-1">
-                      Sent to <strong>{req.profile?.display_name ?? req.receiverId}</strong>
-                      {req.profile?.connect_code ? ` (${req.profile.connect_code})` : ''}
-                    </p>
-                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pending Sent Requests ({outgoing.length})</h3>
+              {outgoing.map(req => (
+                <div key={req.connectionId} className="neu-card rounded-[20px] p-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <span>Sent to <strong>{req.profile?.display_name ?? req.receiverId}</strong></span>
+                  <span className="neu-pill rounded-full px-2 py-0.5 text-[10px] font-bold text-amber-600">Waiting response</span>
+                </div>
+              ))}
             </div>
           )}
 
           {inbox.length === 0 && outgoing.length === 0 && (
-            <EmptyState
-              icon={<Bell className="h-10 w-10" />}
-              title="No pending requests"
-              description="Share your code to get incoming requests, or use the connect input above."
-            />
+            <div className="neu-card rounded-[28px] p-10 text-center space-y-2 max-w-xl mx-auto">
+              <Bell className="h-8 w-8 text-slate-400 mx-auto" />
+              <p className="font-bold text-xs text-slate-900 dark:text-white">No pending requests</p>
+            </div>
           )}
         </div>
       )}
@@ -694,153 +685,137 @@ export default function CollabMatchPage() {
       {/* ── CHALLENGES TAB ── */}
       {activeTab === 'challenges' && (
         <div className="space-y-6">
-          {/* Pending — needs response */}
           {pendingChallenges.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Waiting for your response ({pendingChallenges.length})</h3>
-              <div className="space-y-3">
-                {pendingChallenges.map(c => (
-                  <div key={c.id} className="border-2 border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/10 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">{challengeIcon(c.challenge_type)}</span>
-                      <div className="flex-1">
-                        <p className="font-semibold">{c.title}</p>
-                        <p className="text-xs text-muted-foreground">{challengeLabel(c.challenge_type)} · Target: {c.target_value}</p>
-                        <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                          From {c.peerProfile?.display_name ?? 'Unknown'} · +{c.xp_reward} XP
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => respondToChallenge(c.id, 'accept')}
-                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium">Accept</button>
-                        <button onClick={() => respondToChallenge(c.id, 'decline')}
-                          className="px-3 py-1.5 border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs">Decline</button>
-                      </div>
-                    </div>
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Waiting for Response ({pendingChallenges.length})</h3>
+              {pendingChallenges.map(c => (
+                <div key={c.id} className="neu-card rounded-[24px] p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-sm text-slate-950 dark:text-white">{c.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{challengeLabel(c.challenge_type)} · From {c.peerProfile?.display_name ?? 'Peer'} · +{c.xp_reward} XP</p>
                   </div>
-                ))}
-              </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => respondToChallenge(c.id, 'accept')}
+                      className="neu-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      Accept
+                    </button>
+                    <button onClick={() => respondToChallenge(c.id, 'decline')}
+                      className="neu-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-500">
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Active */}
           {activeChallenges.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">In Progress ({activeChallenges.length})</h3>
-              <div className="space-y-3">
-                {activeChallenges.map(c => {
-                  const myCompleted = c.isCreator ? c.creator_completed : c.opponent_completed
-                  return (
-                    <div key={c.id} className="border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/10 rounded-xl p-4">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">{challengeIcon(c.challenge_type)}</span>
-                        <div className="flex-1">
-                          <p className="font-semibold">{c.title}</p>
-                          <p className="text-xs text-muted-foreground">{challengeLabel(c.challenge_type)} · vs {c.peerProfile?.display_name}</p>
-                          {c.deadline && (
-                            <p className="text-xs text-muted-foreground mt-0.5">⏰ Deadline: {new Date(c.deadline).toLocaleDateString()}</p>
-                          )}
-                          <div className="flex gap-4 mt-2">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${myCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800'}`}>
-                              You: {myCompleted ? '✓ Done' : 'Pending'}
-                            </span>
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800">
-                              Them: {(c.isCreator ? c.opponent_completed : c.creator_completed) ? '✓ Done' : 'Pending'}
-                            </span>
-                          </div>
-                        </div>
-                        {!myCompleted && (
-                          <button onClick={() => setSubmitModal(c)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-medium flex-shrink-0">
-                            <Target className="h-3.5 w-3.5" /> Submit
-                          </button>
-                        )}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active In Progress ({activeChallenges.length})</h3>
+              {activeChallenges.map(c => {
+                const myCompleted = c.isCreator ? c.creator_completed : c.opponent_completed
+                return (
+                  <div key={c.id} className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="font-bold text-sm text-slate-950 dark:text-white">{c.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{challengeLabel(c.challenge_type)} · vs {c.peerProfile?.display_name}</p>
+                      <div className="flex gap-3 mt-2 text-[11px] font-semibold">
+                        <span className="neu-pill rounded-full px-2 py-0.5 text-slate-700 dark:text-slate-300">You: {myCompleted ? 'Done' : 'Pending'}</span>
+                        <span className="neu-pill rounded-full px-2 py-0.5 text-slate-700 dark:text-slate-300">Them: {(c.isCreator ? c.opponent_completed : c.creator_completed) ? 'Done' : 'Pending'}</span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    {!myCompleted && (
+                      <button onClick={() => setSubmitModal(c)}
+                        className="neu-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-950 dark:bg-white dark:text-slate-950">
+                        <Target className="h-3.5 w-3.5" /> Submit Proof
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {/* Completed */}
           {completedChallenges.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Completed ({completedChallenges.length})</h3>
-              <div className="space-y-2">
-                {completedChallenges.map(c => {
-                  const iWon = c.winner_id === (c.isCreator ? c.creator_id : c.opponent_id)
-                  return (
-                    <div key={c.id} className={`border rounded-xl p-3 flex items-center gap-3 ${c.status === 'declined' ? 'opacity-50' : ''}`}>
-                      <span>{challengeIcon(c.challenge_type)}</span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{c.title}</p>
-                        <p className="text-xs text-muted-foreground">vs {c.peerProfile?.display_name}</p>
-                      </div>
-                      {c.status === 'completed' && (
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${iWon ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800'}`}>
-                          {iWon ? '🏆 Won' : 'Lost'}
-                        </span>
-                      )}
-                      {c.status === 'declined' && <span className="text-xs text-muted-foreground">Declined</span>}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Completed Challenges ({completedChallenges.length})</h3>
+              {completedChallenges.map(c => {
+                const iWon = c.winner_id === (c.isCreator ? c.creator_id : c.opponent_id)
+                return (
+                  <div key={c.id} className="neu-card rounded-[20px] p-4 flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-slate-950 dark:text-white">{c.title}</p>
+                      <p className="text-slate-400 text-[11px]">vs {c.peerProfile?.display_name}</p>
                     </div>
-                  )
-                })}
-              </div>
+                    {c.status === 'completed' && (
+                      <span className={`neu-pill rounded-full px-2.5 py-0.5 text-xs font-bold ${iWon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
+                        {iWon ? 'Won' : 'Lost'}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
           {challenges.length === 0 && (
-            <EmptyState
-              icon={<Swords className="h-10 w-10" />}
-              title="No challenges yet"
-              description="Go to the Friends tab and challenge a connected friend to a LeetCode duel, streak war, or badge race!"
-            />
+            <div className="neu-card rounded-[28px] p-10 text-center space-y-2 max-w-xl mx-auto">
+              <Swords className="h-8 w-8 text-slate-400 mx-auto" />
+              <p className="font-bold text-xs text-slate-900 dark:text-white">No challenges yet</p>
+            </div>
           )}
         </div>
       )}
 
       {/* ── LEADERBOARD TAB ── */}
       {activeTab === 'leaderboard' && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            <h2 className="font-semibold">XP Leaderboard (You + Friends)</h2>
+        <div className="neu-card rounded-[28px] p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="h-5 w-5 text-amber-500" />
+            <h2 className="font-bold text-base text-slate-950 dark:text-white">XP Leaderboard</h2>
           </div>
-          {leaderboard.length <= 1 && !myXp ? (
-            <EmptyState
-              icon={<Trophy className="h-10 w-10" />}
-              title="No leaderboard yet"
-              description="Connect with friends and complete challenges to see who ranks highest!"
-            />
-          ) : (
-            <div className="space-y-2">
-              {(leaderboard as NonNullable<typeof leaderboard[0]>[]).map((entry, i) => (
-                <div key={i} className={`border rounded-xl p-4 flex items-center gap-4 ${entry.isMe ? 'border-purple-300 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
-                    i === 0 ? 'bg-yellow-100 text-yellow-700' : i === 1 ? 'bg-gray-200 text-gray-700' : i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+
+          <div className="space-y-2.5">
+            {(leaderboard as NonNullable<typeof leaderboard[0]>[]).map((entry, i) => (
+              <div
+                key={i}
+                className={`neu-inset rounded-2xl p-4 flex items-center justify-between gap-4 ${entry.isMe ? 'border border-purple-500/30 bg-purple-500/5' : ''}`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="neu-pill-inset h-8 w-8 rounded-full flex items-center justify-center font-black text-xs text-purple-700 dark:text-purple-300 shrink-0">
+                    #{i + 1}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">{entry.name}{entry.isMe ? ' (You)' : ''}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-muted-foreground">Lv.{getLevel(entry.xp)} {getLevelTitle(getLevel(entry.xp))}</span>
-                      <span className="text-xs text-muted-foreground">🏆 {entry.won} wins</span>
-                      {entry.streak > 1 && <span className="text-xs text-orange-500">🔥 {entry.streak} streak</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    <span className="font-bold">{entry.xp}</span>
-                    <span className="text-xs text-muted-foreground">XP</span>
+                  <div>
+                    <p className="font-bold text-xs text-slate-950 dark:text-white">
+                      {entry.name}{entry.isMe ? ' (You)' : ''}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Lv.{getLevel(entry.xp)} {getLevelTitle(getLevel(entry.xp))} · {entry.won} wins {entry.streak > 1 ? `· ${entry.streak} streak` : ''}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div className="neu-pill rounded-full px-3 py-1 text-xs font-bold text-purple-700 dark:text-purple-300 shrink-0">
+                  {entry.xp} XP
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
+  )
+}
+
+export default function PeerMatchPage() {
+  return (
+    <Suspense fallback={
+      <div className="neu-card rounded-[28px] p-12 flex flex-col items-center justify-center text-center space-y-4">
+        <Loader2 size={32} className="animate-spin text-purple-500" />
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading Peer Collab Portal...</p>
+      </div>
+    }>
+      <CollabContent />
+    </Suspense>
   )
 }

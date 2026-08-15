@@ -122,7 +122,7 @@ export async function PATCH(
         db.from('peer_notifications').insert({
           user_id: winnerId,
           type: 'challenge_won',
-          title: `🏆 You won "${challenge.title}"!`,
+          title: `You won "${challenge.title}"!`,
           body: `+${updated.xp_reward ?? 50} XP earned`,
           action_url: '/career/collab/match',
           related_id: params.id,

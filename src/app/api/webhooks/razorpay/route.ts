@@ -221,18 +221,39 @@ export async function POST(request: NextRequest) {
         `Payment ${paymentId} received but Pro NOT activated. ` +
         `Fix: POST /api/admin/activate-pro with the correct account email.`
       );
-      return NextResponse.json({ received: true });
+      // Return 404 so Razorpay knows to retry (if configured) and we don't silently succeed
+      return NextResponse.json({ error: 'User not found', code: 'user_not_found' }, { status: 404 });
     }
 
     const proExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('users')
-      .update({ pro_status: true, pro_expires_at: proExpiresAt })
+      .update({ pro_status: true, pro_expires_at: proExpiresAt, payment_id: paymentId })
       .eq('id', user.id);
 
     if (updateError) {
       console.error('[webhook/razorpay] payment_link.paid — DB update failed for user', user.id, ':', updateError.message, updateError.code);
       return NextResponse.json({ received: true });
+    }
+
+    // Store subscription record for payment_link flow
+    if (paymentLinkId) {
+      try {
+        await supabase.from('subscriptions').upsert(
+          {
+            user_id: user.id,
+            razorpay_subscription_id: paymentLinkId,
+            razorpay_payment_id: paymentId,
+            status: 'active',
+            current_period_end: proExpiresAt,
+            plan_id: 'payment_link',
+            amount_paid: payment?.amount ?? 0,
+          },
+          { onConflict: 'user_id' }
+        );
+      } catch (err: any) {
+        console.warn('[webhook/razorpay] subscriptions upsert failed:', err?.message);
+      }
     }
 
     console.log(`[webhook/razorpay] Pro activated via payment link — user ${user.id} (${normalizedEmail}), payment ${paymentId}, expires ${proExpiresAt}`);

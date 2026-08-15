@@ -5,8 +5,9 @@ import { withFallback, redis } from '@/lib/redis';
 export const runtime = 'nodejs';
 
 // Fields the user is allowed to edit on a task
-const EDITABLE_FIELDS = new Set(['title', 'subject', 'due_at', 'weightage', 'type']);
+const EDITABLE_FIELDS = new Set(['title', 'subject', 'due_at', 'deadline', 'priority', 'weightage', 'type']);
 const VALID_TYPES = ['exam', 'assignment', 'job', 'manual'];
+const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
 export async function PATCH(
   request: NextRequest,
@@ -60,6 +61,21 @@ export async function PATCH(
         return NextResponse.json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` }, { status: 400 });
       }
       updates.type = val;
+    } else if (key === 'deadline') {
+      if (val !== null) {
+        const d = new Date(val as string);
+        if (isNaN(d.getTime())) {
+          return NextResponse.json({ error: 'deadline must be a valid ISO 8601 date or null' }, { status: 400 });
+        }
+        updates.deadline = d.toISOString();
+      } else {
+        updates.deadline = null;
+      }
+    } else if (key === 'priority') {
+      if (!VALID_PRIORITIES.includes(val as string)) {
+        return NextResponse.json({ error: `priority must be one of: ${VALID_PRIORITIES.join(', ')}` }, { status: 400 });
+      }
+      updates.priority = val;
     }
   }
 

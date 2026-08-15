@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, Bot, CalendarClock, CheckCircle2, Clock3, Command, Copy, ExternalLink, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, Sparkles, UserRound, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Bell, Bot, Briefcase, CalendarClock, Check, CheckCircle2, Clock3, Command, Copy, ExternalLink, GraduationCap, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, UserRound, X } from "lucide-react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
 import { PricingModal } from "@/components/pricing-modal";
@@ -10,10 +10,17 @@ import { ProfilePage } from "@/components/profile-page";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
 import { CareerSheet } from "@/components/mobile-nav";
+import { FeedPageContent } from "@/components/youtube/FeedPageContent";
+import WavesBackground from "@/components/ui/waves-background";
+import { SimpleSkeleton } from "@/components/ui/skeleton";
+
+import { getCurrentWeekDays, recordDailyActivity, toggleDailyActivity } from "@/lib/streak-tracker";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   assistant: "Assistant",
+  learning: "Learning",
+  career: "Career",
   profile: "Profile",
   settings: "Settings",
 };
@@ -21,6 +28,8 @@ const pageTitles: Record<string, string> = {
 const pageSubtitles: Record<string, string> = {
   dashboard: "Keep the next important step visible and let everything else stay quiet.",
   assistant: "Use context from your tasks to turn a busy day into a simple plan.",
+  learning: "AI-curated learning videos based on your profile and goals.",
+  career: "Build projects, match jobs, and grow your professional profile.",
   profile: "Present projects and proof points in a sharper, calmer format.",
   settings: "Tune how the workspace behaves without adding extra noise.",
 };
@@ -28,6 +37,8 @@ const pageSubtitles: Record<string, string> = {
 const viewToPath: Record<string, string> = {
   dashboard: "/feed",
   assistant: "/assistant",
+  learning: "/learning",
+  career: "/career/resume/upload",
   profile: "/profile",
   settings: "/settings",
 };
@@ -35,6 +46,102 @@ const viewToPath: Record<string, string> = {
 interface AppShellProps {
   username: string;
   initialView?: string;
+}
+
+function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
+  const [weekData, setWeekData] = useState(() => getCurrentWeekDays(stats));
+
+  const refreshWeek = useCallback(() => {
+    setWeekData(getCurrentWeekDays(stats));
+  }, [stats]);
+
+  useEffect(() => {
+    refreshWeek();
+  }, [refreshWeek]);
+
+  useEffect(() => {
+    function handleActivityUpdate() {
+      refreshWeek();
+    }
+    window.addEventListener("prioryx_activity_updated", handleActivityUpdate);
+    window.addEventListener("storage", handleActivityUpdate);
+    return () => {
+      window.removeEventListener("prioryx_activity_updated", handleActivityUpdate);
+      window.removeEventListener("storage", handleActivityUpdate);
+    };
+  }, [refreshWeek]);
+
+  const { days, completedCount, weekRange } = weekData;
+
+  const handleDayClick = (dateStr: string, isFuture: boolean) => {
+    if (isFuture) return;
+    toggleDailyActivity(dateStr);
+  };
+
+  return (
+    <div
+      className="hidden md:flex items-center gap-1.5 rounded-[24px] neu-inset px-4 py-2 transition-all"
+      title={`Weekly Streak: ${completedCount} / 7 days completed (${weekRange}) · Resets after Saturday (Sunday)`}
+    >
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {days.map((item) => {
+          const { day, dateStr, isToday, isCompleted, isPast, isFuture } = item;
+
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => handleDayClick(dateStr, isFuture)}
+              disabled={isFuture}
+              className={`group flex flex-col items-center gap-1 min-w-[28px] focus:outline-none transition-transform ${
+                isFuture ? "cursor-default" : "cursor-pointer active:scale-95"
+              }`}
+              title={
+                isFuture
+                  ? `${day}: Upcoming`
+                  : isCompleted
+                  ? `${day}: Completed (Click to toggle)`
+                  : isToday
+                  ? `${day}: Today - Click to mark completed`
+                  : `${day}: Click to mark completed`
+              }
+            >
+              <div
+                className={`flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full transition-all duration-200 ${
+                  isCompleted
+                    ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 scale-100 group-hover:opacity-90"
+                    : isToday
+                    ? "neu-inset border-2 border-cyan-500/50 text-cyan-600 dark:border-cyan-400/60 dark:text-cyan-300 font-bold group-hover:scale-105"
+                    : isPast
+                    ? "neu-raised-sm opacity-40 hover:opacity-80 text-slate-400 group-hover:border group-hover:border-slate-400/40"
+                    : "neu-raised-sm opacity-25 text-transparent"
+                }`}
+              >
+                {isCompleted ? (
+                  <Check size={13} className="stroke-[3]" />
+                ) : isToday ? (
+                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-pulse" />
+                ) : isPast ? (
+                  <span className="h-1 w-1 rounded-full bg-slate-400/40" />
+                ) : null}
+              </div>
+              <span
+                className={`text-[10px] tracking-wider transition-colors ${
+                  isToday
+                    ? "font-bold text-slate-950 dark:text-white"
+                    : isCompleted
+                    ? "font-bold text-slate-800 dark:text-slate-200"
+                    : "font-semibold text-slate-400 dark:text-slate-400"
+                }`}
+              >
+                {day}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function AppShell({ username, initialView = "dashboard" }: AppShellProps) {
@@ -128,9 +235,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   }, []);
 
   useEffect(() => {
-    fetchFeed();
-    fetchStats();
-    fetchStatus();
+    recordDailyActivity();
+    Promise.allSettled([fetchFeed(), fetchStats(), fetchStatus()]);
   }, [fetchFeed, fetchStats, fetchStatus]);
 
   // Track previous isPro to detect the moment it flips true → show activation banner
@@ -316,6 +422,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   async function handleCompleteTask(id: string) {
     try {
+      recordDailyActivity();
       await fetch(`/api/tasks/${id}/complete`, { method: "PATCH" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
       fetchStats();
@@ -408,6 +515,14 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         onOpenPricing={() => setPricingOpen(true)}
       />
     ),
+    learning: <FeedPageContent />,
+    career: (
+      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-slate-500">Career view - use /career/resume/upload route</p>
+        </div>
+      </div>
+    ),
     profile: <ProfilePage username={username} />,
     settings: (
       <SettingsPanel
@@ -424,6 +539,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   return (
     <main className="app-background min-h-screen overflow-x-hidden text-slate-900">
+      <WavesBackground />
       <Sidebar
         activeView={activeView}
         collapsed={collapsed}
@@ -439,112 +555,36 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         }`}
       >
         {/* Sticky header */}
-        <header className="glass sticky top-4 z-30 mx-auto mb-6 max-w-7xl rounded-[28px] px-4 py-4 sm:px-6">
+        <header className="neu-card sticky top-4 z-30 mx-auto mb-6 max-w-7xl rounded-[28px] px-5 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3 lg:gap-5">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-xs text-slate-500 sm:text-sm">
-                <Command size={13} className="sm:w-[15px] sm:h-[15px]" />
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 sm:text-sm">
+                <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
                 <span>PrioryxAI workspace</span>
               </div>
-              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl lg:text-4xl">
+              <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:mt-2 sm:text-3xl lg:text-4xl">
                 {pageTitles[activeView]}
               </h1>
-              <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:mt-2 sm:block sm:text-[15px]">
+              <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:mt-2 sm:block sm:text-[15px]">
                 {pageSubtitles[activeView]}
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600 md:inline-flex">
-                <CalendarClock size={16} />
-                <span>This week</span>
-              </div>
-
-              {/* Profile dropdown */}
-              <div ref={profileMenuRef} className="relative hidden md:block">
-                <button
-                  type="button"
-                  onClick={() => { setProfileMenuOpen((o) => !o); setNotifOpen(false); }}
-                  className={`inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm transition ${
-                    profileMenuOpen
-                      ? "border-slate-300 bg-slate-100 text-slate-950"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  <UserRound size={16} />
-                  <span>@{username}</span>
-                </button>
-
-                <AnimatePresence>
-                  {profileMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
-                    >
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="text-sm font-semibold text-slate-950">@{username}</p>
-                        <p className="mt-1 text-xs text-slate-500">Open, share, or edit your recruiter-facing profile.</p>
-                      </div>
-                      <div className="p-2">
-                        <button
-                          type="button"
-                          onClick={() => { navigateToView("profile"); setProfileMenuOpen(false); }}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <UserRound size={15} className="text-slate-400" />
-                          <span>Open in-app profile</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleOpenPublicProfile}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <ExternalLink size={15} className="text-slate-400" />
-                          <span>Open public profile</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCopyProfileLink}
-                          className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <span className="inline-flex items-center gap-3">
-                            <Copy size={15} className="text-slate-400" />
-                            <span>Copy public profile link</span>
-                          </span>
-                          {profileLinkCopied && <span className="text-xs text-emerald-600">Copied</span>}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { navigateToView("settings"); setProfileMenuOpen(false); }}
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <Settings size={15} className="text-slate-400" />
-                          <span>Edit profile settings</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+              {/* 7-day Streak Calendar */}
+              <StreakCalendar stats={stats} isPro={isPro} />
 
               {/* Notification bell */}
               <div ref={notifRef} className="relative">
                 <button
                   type="button"
                   onClick={() => { setNotifOpen((o) => !o); setProfileMenuOpen(false); }}
-                  className={`relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
-                    notifOpen
-                      ? "border-slate-300 bg-slate-100 text-slate-900"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                  }`}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl neu-btn text-slate-700 dark:text-slate-200"
                   aria-label="Notifications"
                 >
                   <Bell size={18} />
                   {notificationCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white ring-2 ring-white">
+                    <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-950">
                       {notificationCount}
                     </span>
                   )}
@@ -557,10 +597,10 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.12)] z-50 overflow-hidden"
+                      className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-[28px] neu-card sm:w-96"
                     >
-                      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                      <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/10 px-4 py-3">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
                           <Bell size={14} className="text-slate-400" /> Notifications
                         </div>
                         <button
@@ -596,18 +636,18 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                           return (
                             <div
                               key={task.id}
-                              className="flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
+                              className="flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-white/5"
                               onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
                             >
                               <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-slate-900">{task.title}</p>
+                                <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{task.title}</p>
                                 <div className="mt-0.5 flex items-center gap-2">
-                                  <Clock3 size={11} className="shrink-0 text-slate-400" />
-                                  <span className={`text-xs ${isOverdue ? "text-red-500" : isUrgent ? "text-red-400" : isWarning ? "text-amber-500" : "text-slate-500"}`}>
+                                  <Clock3 size={11} className="shrink-0 text-slate-400 dark:text-slate-400" />
+                                  <span className={`text-xs ${isOverdue ? "text-red-500" : isUrgent ? "text-red-400" : isWarning ? "text-amber-500" : "text-slate-500 dark:text-slate-400"}`}>
                                     {timeLabel}
                                   </span>
-                                  {task.type && <span className="text-xs text-slate-400">· {task.type}</span>}
+                                  {task.type && <span className="text-xs text-slate-400 dark:text-slate-400">· {task.type}</span>}
                                 </div>
                               </div>
                             </div>
@@ -615,8 +655,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                         })}
 
                         {reminderNotifications.length > 0 && (
-                          <div className="border-b border-t border-slate-100 px-4 py-2.5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reminders</p>
+                          <div className="border-b border-t border-slate-100 px-4 py-2.5 dark:border-white/10">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400">Reminders</p>
                           </div>
                         )}
                         {reminderNotifications.map((item) => (
@@ -624,11 +664,11 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                             type="button"
                             key={item.id}
                             onClick={() => handleNotificationAction(item)}
-                            className="block w-full px-4 py-3 text-left transition hover:bg-slate-50"
+                            className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
                           >
-                            <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">{item.reason}</p>
-                            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{item.title}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{item.reason}</p>
+                            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
                               {item.action_label ?? "Open"}
                               <ExternalLink size={12} />
                             </span>
@@ -638,33 +678,33 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                         {deadlineNotifications.length === 0 && reminderNotifications.length === 0 && (
                           <div className="px-4 py-8 text-center">
                             <CheckCircle2 size={24} className="mx-auto mb-2 text-emerald-500" />
-                            <p className="text-sm font-medium text-slate-900">All clear!</p>
-                            <p className="mt-1 text-xs text-slate-500">No urgent deadlines or setup reminders right now.</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">All clear!</p>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">No urgent deadlines or setup reminders right now.</p>
                           </div>
                         )}
 
                         {pendingTasks.filter((t) => !t.due_at).length > 0 && (
                           <div className="px-4 py-2.5">
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-400 dark:text-slate-400">
                               +{pendingTasks.filter((t) => !t.due_at).length} task{pendingTasks.filter((t) => !t.due_at).length > 1 ? "s" : ""} with no deadline
                             </p>
                           </div>
                         )}
                       </div>
 
-                      <div className="border-t border-slate-100 px-4 py-2.5">
+                      <div className="border-t border-slate-100 px-4 py-2.5 dark:border-white/10">
                         <div className="flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={() => { navigateToView("dashboard"); setNotifOpen(false); }}
-                            className="text-xs font-medium text-slate-700 transition hover:underline underline-offset-2"
+                            className="text-xs font-medium text-slate-700 transition hover:underline underline-offset-2 dark:text-slate-300"
                           >
                             View all in feed →
                           </button>
                           <button
                             type="button"
                             onClick={() => handleNotificationAction({ action_view: "settings" })}
-                            className="text-xs text-slate-400 transition hover:text-slate-700"
+                            className="text-xs text-slate-400 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                           >
                             Open settings
                           </button>
@@ -677,18 +717,16 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
               {/* Pro badge / Upgrade button */}
               {isPro ? (
-                <div className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 sm:gap-2 sm:px-4">
-                  <Sparkles size={14} />
-                  <span className="hidden sm:inline">Pro ✓</span>
+                <div className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 sm:gap-2 sm:px-4 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                  <span>Pro</span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => setPricingOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:gap-2 sm:px-4"
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:gap-2 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
                 >
-                  <Sparkles size={16} />
-                  <span className="hidden sm:inline">Pro</span>
+                  <span>Upgrade to Pro</span>
                 </button>
               )}
             </div>
@@ -738,7 +776,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                   disabled={manualActivating}
                   className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
                 >
-                  {manualActivating ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                  {manualActivating && <Loader2 size={11} className="animate-spin" />}
                   Activate now
                 </button>
                 <button
@@ -779,7 +817,9 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
             initial={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            {view[activeView]}
+            <Suspense fallback={<SimpleSkeleton />}>
+              {view[activeView]}
+            </Suspense>
           </motion.section>
         </AnimatePresence>
       </div>
@@ -790,16 +830,17 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           {[
             { id: "dashboard", label: "Home", icon: LayoutDashboard },
             { id: "assistant", label: "AI", icon: Bot },
-            { id: "career", label: "Career", icon: Menu },
+            { id: "learning", label: "Learn", icon: GraduationCap },
             { id: "profile", label: "Profile", icon: UserRound },
             { id: "settings", label: "Settings", icon: Settings },
+            { id: "career", label: "Career", icon: Briefcase },
           ].map(({ id, label, icon: Icon }) => {
-            const active = id === "career" ? careerSheetOpen : activeView === id;
+            const active = activeView === id;
             return (
               <button
                 key={id}
                 type="button"
-                onClick={() => (id === "career" ? setCareerSheetOpen(true) : navigateToView(id))}
+                onClick={() => navigateToView(id)}
                 className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition ${
                   active ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
                 }`}

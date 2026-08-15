@@ -1,8 +1,18 @@
 import { Pool } from 'pg';
 
 const MIGRATIONS = [
-  `ALTER TABLE users ADD COLUMN IF NOT EXISTS cgpa NUMERIC(4,2)`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT DEFAULT ''`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS college TEXT DEFAULT ''`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS semester INTEGER CHECK (semester >= 1 AND semester <= 12)`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS subjects TEXT[] DEFAULT '{}'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS cgpa NUMERIC(4,2) CHECK (cgpa >= 0 AND cgpa <= 10)`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ DEFAULT NOW()`,
   `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS notes TEXT`,
+  `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'users: insert own row') THEN CREATE POLICY "users: insert own row" ON users FOR INSERT WITH CHECK (auth.uid() = id); END IF; END $$;`,
+  `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'users: update own row') THEN CREATE POLICY "users: update own row" ON users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id); END IF; END $$;`,
 ];
 
 let pool: Pool | null = null;
@@ -12,6 +22,7 @@ let migrationsVerified = false;
 function normalizeDatabaseUrl(rawUrl: string): string {
   const trimmed = rawUrl.trim();
 
+  // If it parses as a valid URL with a hostname and no fragment, use as-is.
   try {
     const parsed = new URL(trimmed);
     if (parsed.hostname && !parsed.hash) {
@@ -40,7 +51,8 @@ function normalizeDatabaseUrl(rawUrl: string): string {
   const password = authSegment.slice(firstColonIndex + 1, lastAtIndex);
   const host = authSegment.slice(lastAtIndex + 1);
 
-  return `${trimmed.slice(0, authStart)}${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}${trimmed.slice(pathIndex)}`;
+  // Only encode the password (username is typically simple); preserves already-encoded chars.
+  return `${trimmed.slice(0, authStart)}${username}:${encodeURIComponent(password)}@${host}${trimmed.slice(pathIndex)}`;
 }
 
 function getPool(): Pool {

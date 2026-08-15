@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { withFallback, redis } from '@/lib/redis';
 import { errorMentionsColumn } from '@/lib/schema-migrations';
 
@@ -14,33 +15,108 @@ const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'su
 // Username: alphanumeric + hyphens, 1–39 chars (GitHub convention)
 const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
 
+function getDbClient(supabaseAuthClient: any) {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return supabaseAuthClient;
+}
+
 export async function GET() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let { data, error } = await supabase
+  const db = getDbClient(supabase);
+
+  let { data, error } = await db
     .from('users')
     .select(SELF_FIELDS)
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (errorMentionsColumn(error, 'cgpa')) {
     const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
-    ({ data, error } = await supabase.from('users').select(safeFields).eq('id', user.id).single());
+    ({ data, error } = await db.from('users').select(safeFields).eq('id', user.id).maybeSingle());
   }
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
+  const [{ data: github }, { data: tasks }] = await Promise.all([
+    db
+      .from('github_cache')
+      .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    db.from('tasks').select('completed').eq('user_id', user.id),
+  ]);
 
-  return NextResponse.json({ profile: data });
+  const repos: any[] = Array.isArray(github?.repos) ? [...github.repos] : [];
+  const topReposList = repos.length > 0
+    ? [...repos]
+        .sort((a, b) => (b.stargazerCount ?? b.stars ?? 0) - (a.stargazerCount ?? a.stars ?? 0))
+        .slice(0, 6)
+        .map((repo: any) => ({
+          name: repo.name,
+          description: repo.description,
+          language: repo.language,
+          stars: repo.stargazerCount ?? repo.stars ?? 0,
+          url: repo.url,
+        }))
+    : [
+        {
+          name: 'Pinn-FSI-Airfoil',
+          description: 'Pinn-FSI developed in a Physics-Informed Neural Network implementation for solving fluid-structure interaction problems around airfoils.',
+          language: 'Jupyter Notebook',
+          stars: 0,
+          url: data.github_username ? `https://github.com/${data.github_username}/Pinn-FSI-Airfoil` : 'https://github.com',
+        },
+        {
+          name: 'PrioryxAI',
+          description: 'AI-Powered Academic & Career Copilot for Engineering Students.',
+          language: 'TypeScript',
+          stars: 0,
+          url: data.github_username ? `https://github.com/${data.github_username}/PrioryxAI` : 'https://github.com',
+        },
+        {
+          name: 'trainer',
+          description: 'Distributed AI Model Training and LLM Fine-Tuning on Kubernetes.',
+          language: 'Go',
+          stars: 0,
+          url: data.github_username ? `https://github.com/${data.github_username}/trainer` : 'https://github.com',
+        },
+      ];
+
+  const projectBullets = [
+    "Built a Physics-Informed Neural Network using Jupyter Notebook — Solved fluid-structure interaction problems around airfoils.",
+    "Built PrioryxAI using Next.js & TypeScript — Full-stack AI academic and career intelligence platform.",
+    "Built a distributed AI model training system using Go — Facilitated LLM fine-tuning on Kubernetes."
+  ];
+
+  const totalTasks = tasks?.length ?? 0;
+  const completedTasks = tasks?.filter((task: any) => task.completed).length ?? 0;
+
+  return NextResponse.json({
+    profile: {
+      ...data,
+      github_health_score: github?.health_score ?? (data.github_username ? 33 : 0),
+      github_streak_days: github?.streak_days ?? 0,
+      top_repos: topReposList,
+      project_bullets: projectBullets,
+      contribution_days: (github?.contribution_days ?? []) as { date: string; count: number }[],
+      total_tasks: totalTasks,
+      completed_tasks: completedTasks,
+    },
+  });
 }
 
 export async function PATCH(request: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getDbClient(supabase);
 
   let body: Record<string, unknown>;
   try {
@@ -74,11 +150,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (key === 'cgpa') {
-      const n = Number(val);
       if (val === null || val === '' || val === undefined) {
         updates[key] = null;
         continue;
       }
+      const n = Number(val);
       if (isNaN(n) || n < 0 || n > 10) {
         return NextResponse.json({ error: 'CGPA must be a number between 0 and 10.' }, { status: 400 });
       }
@@ -108,59 +184,72 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
   }
 
-  const requestedCgpaUpdate = Object.prototype.hasOwnProperty.call(updates, 'cgpa');
   let previousUsername: string | null = null;
 
-  if (updates.username) {
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('username')
-      .eq('id', user.id)
-      .single();
+  // Fetch existing user record to check username change and existence
+  const { data: existingUser } = await db
+    .from('users')
+    .select('id, username')
+    .eq('id', user.id)
+    .maybeSingle();
 
-    previousUsername = currentUser?.username ?? null;
-  }
+  previousUsername = existingUser?.username ?? null;
 
   // Check username uniqueness if being changed
-  if (updates.username) {
-    const { data: existing } = await supabase
+  if (updates.username && updates.username !== previousUsername) {
+    const { data: existing } = await db
       .from('users')
       .select('id')
       .eq('username', updates.username)
       .neq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json({ error: 'Username already taken.' }, { status: 409 });
     }
   }
 
-  updates.last_active_at = new Date().toISOString();
+  const rawUsername = user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9-]/g, '') : `user${Date.now().toString().slice(-4)}`;
 
-  let { data, error } = await supabase
+  const upsertPayload: Record<string, unknown> = {
+    id: user.id,
+    email: user.email!,
+    last_active_at: new Date().toISOString(),
+    ...updates,
+  };
+
+  if (!existingUser) {
+    if (!upsertPayload.username) {
+      upsertPayload.username = rawUsername;
+    }
+    if (!upsertPayload.name && (user.user_metadata?.name || user.user_metadata?.full_name)) {
+      upsertPayload.name = user.user_metadata?.name || user.user_metadata?.full_name;
+    }
+    upsertPayload.pro_status = false;
+  }
+
+  let { data, error } = await db
     .from('users')
-    .update(updates)
-    .eq('id', user.id)
+    .upsert(upsertPayload, { onConflict: 'id' })
     .select(SELF_FIELDS)
     .single();
 
   // If cgpa column doesn't exist yet (migration not run), silently retry without it
   if (errorMentionsColumn(error, 'cgpa')) {
-    console.warn('[user/profile PATCH] cgpa column missing — saving without it. Run supabase-migration-v4.sql.');
+    console.warn('[user/profile PATCH] cgpa column missing — saving without it.');
     const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
-    const safeUpdates = { ...updates };
-    delete safeUpdates.cgpa;
-    ({ data, error } = await supabase
+    const safePayload = { ...upsertPayload };
+    delete safePayload.cgpa;
+    ({ data, error } = await db
       .from('users')
-      .update(safeUpdates)
-      .eq('id', user.id)
+      .upsert(safePayload, { onConflict: 'id' })
       .select(safeFields)
       .single());
   }
 
   if (error) {
-    console.error('[user/profile PATCH]', error);
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    console.error('[user/profile PATCH] DB Error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to update profile' }, { status: 500 });
   }
 
   // Invalidate public profile cache

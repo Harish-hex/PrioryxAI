@@ -60,7 +60,7 @@ export async function extractUserSignals(userId: string): Promise<TopicSignal[]>
       { data: multiProfile },
       { data: projects }
     ] = await Promise.all([
-      supabase.from('profiles').select('stream, target_companies').eq('id', userId).single(),
+      supabase.from('users').select('stream, target_companies').eq('id', userId).single(),
       supabase.from('leetcode_profiles').select('ai_analysis').eq('id', userId).single(),
       supabase.from('user_resumes').select('swot').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('multi_platform_profiles').select('missingBadges').eq('id', userId).single(),

@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, AlertTriangle, CheckCircle2, ExternalLink,
   Clock, ChevronRight, X, RotateCcw, Loader2,
-  Code2, GitBranch, BookOpen, Target, Brain, Sparkles
+  Code2, GitBranch, BookOpen, Target, Brain
 } from "lucide-react";
+import { recordDailyActivity } from "@/lib/streak-tracker";
 
 export interface PriorityTaskItem {
   id: string;
@@ -54,9 +55,9 @@ const priorityPill: Record<string, string> = {
 };
 
 const effortLabel: Record<string, string> = {
-  quick: "⚡ Quick win",
-  medium: "🎯 Focus block",
-  deep: "🧠 Deep work",
+  quick: "Quick win",
+  medium: "Focus block",
+  deep: "Deep work",
 };
 
 export function AIDailyPlanPanel() {
@@ -105,6 +106,7 @@ export function AIDailyPlanPanel() {
 
   async function handleComplete(taskId: string) {
     setTasks(prev => prev.filter(t => t.id !== taskId));
+    recordDailyActivity();
     await fetch(`/api/priority/tasks/${taskId}/complete`, { method: "POST" });
   }
 
@@ -153,8 +155,8 @@ export function AIDailyPlanPanel() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50">
-            <Sparkles className="h-4 w-4 text-indigo-600" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-500/10">
+            <Brain className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-slate-950">
@@ -188,7 +190,7 @@ export function AIDailyPlanPanel() {
       {plan?.todaysFocus && (
         <div className="mb-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3">
           <p className="text-sm font-medium text-indigo-800">
-            🎯 {plan.todaysFocus}
+            {plan.todaysFocus}
           </p>
         </div>
       )}
@@ -229,7 +231,7 @@ export function AIDailyPlanPanel() {
               {tasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <CheckCircle2 className="h-10 w-10 text-emerald-400" />
-                  <p className="mt-3 text-sm font-medium text-slate-700">All done for today! 🎉</p>
+                  <p className="mt-3 text-sm font-medium text-slate-700">All done for today!</p>
                   <p className="mt-1 text-xs text-slate-400">
                     Check back tomorrow for a fresh plan
                   </p>
@@ -280,7 +282,7 @@ export function AIDailyPlanPanel() {
                           {/* Row 4: why now */}
                           {task.why_now && (
                             <p className="mt-1.5 text-xs text-indigo-600 font-medium">
-                              💡 {task.why_now}
+                              {task.why_now}
                             </p>
                           )}
 

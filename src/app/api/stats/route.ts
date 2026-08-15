@@ -44,7 +44,7 @@ export async function GET() {
       .from('github_cache')
       .select('streak_days, health_score, last_commit_at')
       .eq('user_id', user.id)
-      .single(),
+      .maybeSingle(),
   ]);
 
   const tasks = allTasks ?? [];

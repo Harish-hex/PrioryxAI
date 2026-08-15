@@ -305,18 +305,29 @@ export async function GET() {
     return NextResponse.json(cached);
   }
 
-  const [{ data: userProfile }, { data: githubCache }] = await Promise.all([
+  const [{ data: userProfile }, { data: githubCache }, { data: tasks, error }] = await Promise.all([
     supabase
       .from('users')
       .select('college, semester, subjects, cgpa, github_username, pro_status, pro_expires_at')
       .eq('id', user.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('github_cache')
       .select('languages, repos')
       .eq('user_id', user.id)
-      .single(),
+      .maybeSingle(),
+    supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('completed', false)
+      .limit(200),
   ]);
+
+  if (error) {
+    console.error('[feed] DB error:', error);
+    return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 });
+  }
 
   const isPro = Boolean(userProfile?.pro_status) &&
     (!userProfile?.pro_expires_at || new Date(userProfile.pro_expires_at) > new Date());
@@ -326,28 +337,13 @@ export async function GET() {
     ((userProfile?.subjects?.length ?? 0) > 0 || Object.keys(githubCache?.languages ?? {}).length > 0);
 
   if (shouldSyncJobs) {
-    await withFallback(
-      () =>
-        syncInternshalaJobsForUser({
-          userId: user.id,
-          subjects: userProfile?.subjects ?? [],
-          college: userProfile?.college ?? null,
-          languages: githubCache?.languages ?? null,
-        }),
-      null
-    );
-  }
-
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('completed', false)
-    .limit(200);
-
-  if (error) {
-    console.error('[feed] DB error:', error);
-    return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 });
+    // Non-blocking fire-and-forget sync to ensure feed returns in milliseconds
+    syncInternshalaJobsForUser({
+      userId: user.id,
+      subjects: userProfile?.subjects ?? [],
+      college: userProfile?.college ?? null,
+      languages: githubCache?.languages ?? null,
+    }).catch(() => null);
   }
 
   const userSubjects: string[] = userProfile?.subjects ?? [];

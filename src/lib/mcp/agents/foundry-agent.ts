@@ -19,21 +19,55 @@ async function generate9TailoredProjects(
   const skills = input.skills as SkillEntity[];
   const swot = input.swot as SWOTAnalysis;
   const targetRoles = (input.targetRoles as string[]) ?? ['Software Engineer'];
+  const codingContext = input.codingContext as {
+    leetcode: { totalSolved: number; easySolved: number; mediumSolved: number; hardSolved: number; contestRating: number; contestsAttended: number; weakTopics: string[] };
+    hackerrank: { totalScore: number; skills: Record<string, number> };
+    placementReadiness: number;
+  } | undefined;
+  const githubContext = input.githubContext as {
+    healthScore: number;
+    languages: Record<string, number>;
+    reposCount: number;
+    reposWithDesc: number;
+    lastCommit: string | null;
+  } | null | undefined;
+  const academicContext = input.academicContext as {
+    semester: number;
+    cgpa: number | null;
+    college: string | null;
+    subjects: string[];
+  } | undefined;
 
   const weaknesses = swot.weaknesses.map((w) => w.title).join(', ');
   const opportunities = swot.opportunities.map((o) => o.title).join(', ');
   const existingSkills = skills.map((s) => s.name).join(', ');
+
+  // Build rich context for personalization
+  const codingSummary = codingContext ? `
+LeetCode: ${codingContext.leetcode.totalSolved} solved (E:${codingContext.leetcode.easySolved} M:${codingContext.leetcode.mediumSolved} H:${codingContext.leetcode.hardSolved}), Rating: ${codingContext.leetcode.contestRating}, Contests: ${codingContext.leetcode.contestsAttended}
+Weak coding topics: ${codingContext.leetcode.weakTopics.join(', ') || 'none'}
+HackerRank: ${codingContext.hackerrank.totalScore} total score
+Placement readiness: ${codingContext.placementReadiness}/100` : 'No coding profile connected';
+
+  const githubSummary = githubContext ? `
+GitHub: Health ${githubContext.healthScore}/100, ${githubContext.reposCount} repos (${githubContext.reposWithDesc} with descriptions)
+Top languages: ${Object.entries(githubContext.languages).slice(0, 5).map(([k, v]) => `${k}:${v}`).join(', ') || 'none'}
+Last commit: ${githubContext.lastCommit || 'never'}` : 'GitHub not connected';
+
+  const academicSummary = academicContext ? `
+Semester: ${academicContext.semester}, CGPA: ${academicContext.cgpa ?? 'not set'}, College: ${academicContext.college ?? 'not set'}
+Subjects: ${academicContext.subjects.join(', ') || 'none'}` : '';
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
       {
         role: 'system',
-        content: `You are a senior engineering mentor. Generate exactly 9 personalized projects for a student to address their skill gaps and strengthen opportunities. Return JSON: { projects: [{ title, description, techStack: string[], skillGapsAddressed: string[], difficulty: "foundation"|"intermediate"|"advanced", estimatedHours: number, successCriteria: string[] }] }. Rules: exactly 3 foundation + 3 intermediate + 3 advanced projects. Each project must target specific skill gaps from the SWOT analysis. Projects should be progressively challenging and portfolio-worthy.`,
+        content: `You are a senior engineering mentor. Generate exactly 9 personalized projects for a student to address their skill gaps and strengthen opportunities. Return JSON: { projects: [{ title, description, techStack: string[], skillGapsAddressed: string[], difficulty: "foundation"|"intermediate"|"advanced", estimatedHours: number, successCriteria: string[] }] }. Rules: exactly 3 foundation + 3 intermediate + 3 advanced projects. Each project must target specific skill gaps from the SWOT analysis. Projects should be progressively challenging and portfolio-worthy. Tailor tech stack to their existing skills + gaps. Consider their coding level, GitHub activity, and academic context.`,
       },
       {
         role: 'user',
-        content: `Existing skills: ${existingSkills}\nWeaknesses to address: ${weaknesses}\nOpportunities: ${opportunities}\nTarget roles: ${targetRoles.join(', ')}`,
+        content: `Existing skills: ${existingSkills}\nWeaknesses to address: ${weaknesses}\nOpportunities: ${opportunities}\nTarget roles: ${targetRoles.join(', ')}\n${codingSummary}\n${githubSummary}\n${academicSummary}`,
       },
     ],
     response_format: { type: 'json_object' },

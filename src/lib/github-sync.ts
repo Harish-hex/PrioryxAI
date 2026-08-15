@@ -60,10 +60,19 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
     if (lang) langMap[lang] = (langMap[lang] ?? 0) + 1;
   }
 
-  const allDays: { date: string; contributionCount: number }[] =
+  interface ContributionDay {
+  date: string;
+  contributionCount: number;
+}
+
+interface ContributionWeek {
+  contributionDays: ContributionDay[];
+}
+
+const allDays: ContributionDay[] =
     ghUser.contributionsCollection.contributionCalendar.weeks
-      .flatMap((week: any) => week.contributionDays)
-      .sort((a: any, b: any) => b.date.localeCompare(a.date));
+      .flatMap((week: ContributionWeek) => week.contributionDays)
+      .sort((a: ContributionDay, b: ContributionDay) => b.date.localeCompare(a.date));
 
   let streak = 0;
   for (const day of allDays) {
@@ -83,7 +92,16 @@ export async function syncGithubForUser(userId: string, githubUsername: string) 
     Math.round(streak * 2 + Math.min(totalCommits / 10, 40) + Math.min(langCount * 5, 20))
   );
 
-  const repos = ghUser.repositories.nodes.map((repo: any) => ({
+  interface GitHubRepo {
+  name: string;
+  description: string | null;
+  url: string;
+  primaryLanguage: { name: string } | null;
+  stargazerCount: number;
+  pushedAt: string | null;
+}
+
+const repos = ghUser.repositories.nodes.map((repo: GitHubRepo) => ({
     name: repo.name,
     description: repo.description,
     url: repo.url,

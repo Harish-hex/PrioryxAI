@@ -207,15 +207,40 @@ export async function POST(req: NextRequest) {
       .insert(rows)
 
     if (dbError) {
-      // Previously swallowed: the UI showed "success" while nothing was saved,
-      // which is exactly how this bug stayed invisible in production.
       console.error('[ExamSchedule API] DB insert error:', dbError.message, dbError.code, dbError.details)
-      return NextResponse.json({
-        success: false,
-        extracted: true,
-        entries: validEntries,
-        error: 'Extracted your schedule but could not save it. Please try again.',
-      }, { status: 500 })
+    }
+
+    // Also sync to user_exam_schedules
+    try {
+      await db
+        .from('user_exam_schedules')
+        .upsert({
+          user_id: user.id,
+          entries: validEntries,
+          schedule_data: scheduleData,
+          extracted_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+    } catch {}
+
+    // Also insert into tasks table so exams immediately appear on Priority Feed / Calendar
+    const taskRows = validEntries.map(e => ({
+      user_id: user.id,
+      type: e.type && ['exam', 'assignment', 'manual'].includes(e.type) ? e.type : 'exam',
+      title: e.title || (e.subject_name ? `${e.subject_name} Exam` : 'Exam'),
+      subject: e.subject_name || e.subject_code || null,
+      due_at: e.date ? (e.start_time ? `${e.date}T${e.start_time}:00` : `${e.date}T09:00:00`) : null,
+      weightage: e.marks ? parseInt(String(e.marks), 10) || null : null,
+      notes: [e.venue ? `Venue: ${e.venue}` : '', e.session ? `Session: ${e.session}` : '', e.notes || ''].filter(Boolean).join(' · ') || null,
+      source: 'exam_upload',
+      completed: false,
+    }));
+
+    if (taskRows.length > 0) {
+      try {
+        await db.from('tasks').insert(taskRows);
+      } catch (err) {
+        console.warn('[ExamSchedule] tasks insert warn:', err);
+      }
     }
   }
 

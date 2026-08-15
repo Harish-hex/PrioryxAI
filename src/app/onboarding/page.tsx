@@ -8,10 +8,10 @@ import {
   GitBranch,
   ImagePlus,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import WavesBackground from "@/components/ui/waves-background";
 
 interface ProfilePayload {
   username: string;
@@ -151,17 +151,19 @@ function OnboardingFlow() {
 
   return (
     <main className="app-background flex min-h-screen flex-col px-4 py-8 sm:px-6">
+      <WavesBackground />
       <div className="mx-auto w-full max-w-2xl">
         {/* Brand mark */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white">
-            <Sparkles size={16} />
-          </div>
-          <span className="text-sm font-semibold text-slate-950">PrioryxAI</span>
+          <img
+            src="/logo.png"
+            alt="PrioryxAI"
+            className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
+          />
+          <span className="text-sm font-semibold text-slate-950 dark:text-white">PrioryxAI</span>
         </div>
 
-        <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">
-          <Sparkles size={13} />
+        <div className="mt-7 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
           First-time setup
         </div>
 

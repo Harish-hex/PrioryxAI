@@ -1,12 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
-import { withFallback, checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
+import { checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 import { assistantRateLimiter, getClientIp } from '@/lib/rate-limiter';
 
 export const runtime = 'nodejs';
 
 const FREE_MESSAGE_LIMIT = 3;
+
+// Canned fallback responses based on student profile context
+function getCannedResponse(userMessage: string, context: {
+  studentProfile: string;
+  tasks: Array<{ type: string; title: string; due_at: string | null }>;
+  semester: number;
+  cgpa: number | null;
+  subjects: string[];
+  healthScore: number;
+  hasGitHub: boolean;
+}): string {
+  const msg = userMessage.toLowerCase();
+
+  // Task-specific fallbacks
+  if (msg.includes('plan') || msg.includes('schedule') || msg.includes('prioritize') || msg.includes('what should i do')) {
+    if (context.tasks.length > 0) {
+      const topTask = context.tasks[0];
+      return `Focus on: ${topTask.type.toUpperCase()} — "${topTask.title}"${topTask.due_at ? ` (due ${new Date(topTask.due_at).toLocaleDateString('en-IN')})` : ''}. Block 90 min now. Next: ${context.tasks[1]?.title ?? 'nothing urgent'}.`;
+    }
+    return 'No tasks in feed. Add a task from the dashboard, then ask again for a concrete plan.';
+  }
+
+  // Exam-specific fallbacks
+  if (msg.includes('exam') || msg.includes('test') || msg.includes('study')) {
+    return `Study plan for exams: 1) List all exam topics from syllabus. 2) Rank by weight × weakness. 3) Do 3 Pomodoros (25/5) on top topic today. 4) Active recall — no re-reading. 5) Solve 5 past-paper questions.`;
+  }
+
+  // Project/career fallbacks
+  if (msg.includes('project') || msg.includes('resume') || msg.includes('job') || msg.includes('internship')) {
+    if (context.hasGitHub) {
+      return `Your GitHub shows activity. Pick ONE project, finish a shippable feature this week, add a 3-line README + demo link, then put it on your resume. That beats 5 half-done repos.`;
+    }
+    return `Start a tiny project this weekend: clone a tutorial, change 3 things, deploy to Vercel. Add to GitHub with a real README. One shipped project > ten tutorials.`;
+  }
+
+  // Coding/DSA fallbacks
+  if (msg.includes('leetcode') || msg.includes('coding') || msg.includes('dsa') || msg.includes('algorithm')) {
+    return `DSA routine: 1 Easy + 2 Medium daily. Pattern focus this week: sliding window / two pointers. Use NeetCode 150. Track in a sheet. Rating comes from consistency, not intensity.`;
+  }
+
+  // General motivation/productivity fallbacks
+  if (msg.includes('motivat') || msg.includes('focus') || msg.includes('procrastinat') || msg.includes('burnout') || msg.includes('tired')) {
+    return `Low motivation = unclear next step. Break the task until the first step takes <5 min. Do that step only. Momentum beats motivation.`;
+  }
+
+  // Profile-aware generic fallback
+  const profileHints: Record<string, string> = {
+    no_foundation: 'Pick ONE thing: resume, GitHub, or LeetCode. Do 30 min daily. Ignore everything else until that habit sticks.',
+    academics_first: 'Semester priority: attend lectures, finish assignments, hit 7+ CGPA. Side projects wait. Foundation > flash.',
+    skills_no_projects: 'You have skills. Ship one project this week. Tutorial → modify → deploy → README. That\'s the portfolio.',
+    job_ready: 'Apply to 5 roles daily. Tailor resume per JD. LeetCode 2 mediums/day. Mock interview weekly. Consistency closes offers.',
+  };
+
+  return profileHints[context.studentProfile] || 'Ask me about: today\'s plan, exam prep, project ideas, LeetCode routine, or job applications. Be specific.';
+}
 
 export async function POST(request: NextRequest) {
   const supabase = createClient();
@@ -48,11 +103,25 @@ export async function POST(request: NextRequest) {
     userData?.pro_status &&
     (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  // Free user daily message limit (resets at midnight IST)
+  // Free user daily message limit (resets at midnight IST) — atomic increment
   const msgCountKey = `msg_count:${user.id}`;
   if (!isPro) {
-    const count = await withFallback(() => redis.get<number>(msgCountKey), 0);
-    if ((count ?? 0) >= FREE_MESSAGE_LIMIT) {
+    // Atomically increment and get new count; TTL resets at midnight IST
+    // If Redis fails, fail closed (block) to prevent abuse
+    let count: number;
+    try {
+      count = await redis.incr(msgCountKey);
+      if (count === 1) {
+        // First request today — set TTL to midnight IST
+        await redis.expire(msgCountKey, midnightISTttl());
+      }
+    } catch {
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable. Try again shortly.' },
+        { status: 503 }
+      );
+    }
+    if (count > FREE_MESSAGE_LIMIT) {
       return NextResponse.json(
         { error: 'Free message limit reached', upgrade: true },
         { status: 403 }
@@ -166,40 +235,71 @@ ${context}`,
     content: userMessage,
   });
 
-  // Stream response
-  const stream = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages,
-    max_tokens: 800,
-    stream: true,
-  });
+  // Build context for potential fallback
+  const fallbackContext = {
+    studentProfile,
+    tasks: tasks ?? [],
+    semester,
+    cgpa,
+    subjects,
+    healthScore,
+    hasGitHub: repos.length > 0,
+  };
 
+  // Stream response with fallback
   const encoder = new TextEncoder();
-  let fullResponse = '';
 
-  const readable = new ReadableStream({
-    async start(controller) {
+  async function* streamWithFallback() {
+    let fullResponse = '';
+
+    try {
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages,
+        max_tokens: 800,
+        stream: true,
+      });
+
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? '';
         if (text) {
           fullResponse += text;
-          controller.enqueue(encoder.encode(text));
+          yield encoder.encode(text);
         }
       }
+    } catch (err) {
+      console.error('[assistant] OpenAI error, using fallback:', err);
+      fullResponse = getCannedResponse(userMessage, fallbackContext);
+      yield encoder.encode(fullResponse);
+    }
 
-      // Save assistant reply and increment message count after stream completes
-      await Promise.all([
-        supabase.from('assistant_messages').insert({
+    // Save assistant reply (counter already incremented atomically at start)
+    if (user?.id) {
+      await supabase.from('assistant_messages').insert({
+        user_id: user.id,
+        role: 'assistant',
+        content: fullResponse,
+      });
+    }
+  }
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of streamWithFallback()) {
+          controller.enqueue(chunk);
+        }
+      } catch (err) {
+        console.error('[assistant] Stream error:', err);
+        // Final safety net
+        const fallback = getCannedResponse(userMessage, fallbackContext);
+        controller.enqueue(encoder.encode(fallback));
+        await supabase.from('assistant_messages').insert({
           user_id: user.id,
           role: 'assistant',
-          content: fullResponse,
-        }),
-        withFallback(async () => {
-          const current = (await redis.get<number>(msgCountKey)) ?? 0;
-          await redis.set(msgCountKey, current + 1, { ex: midnightISTttl() });
-        }, undefined),
-      ]);
-
+          content: fallback,
+        });
+      }
       controller.close();
     },
   });

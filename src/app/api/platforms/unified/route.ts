@@ -19,53 +19,53 @@ export async function GET(_req: NextRequest) {
     // production, which is why the UI kept asking users to reconnect.
     const db = createServiceRoleClient();
 
-    // NOTE ON COLUMNS: PostgREST fails the *whole* query with 42703 if any
-    // selected column is unknown, which would null the result and reproduce
-    // the very "please reconnect" bug this route exists to fix. Neither table
-    // has `rating` or `updated_at` — the freshness column is `last_synced_at`
-    // on both (see supabase-migration-v6/v7). Do not add columns here without
-    // checking the migration first.
-    const [lcResult, hrResult] = await Promise.allSettled([
-      db
-        .from('leetcode_profiles')
-        .select(
-          'user_id, leetcode_username, placement_readiness_score, solved_data, skill_stats, contest_info, ai_analysis, last_synced_at'
-        )
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      db
-        .from('multi_platform_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-    ]);
+    // NOTE: The research agent writes to `coding_profiles` (one row per user),
+    // which has leetcode_stats and hackerrank_stats as JSONB columns.
+    // We read from that single table instead of the non-existent leetcode_profiles
+    // and multi_platform_profiles tables.
+    const { data: profile, error: profileError } = await db
+      .from('coding_profiles')
+      .select(
+        'user_id, leetcode_username, leetcode_stats, hackerrank_username, hackerrank_stats, placement_readiness_score, last_synced'
+      )
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    console.log(
-      '[Unified] LC:',
-      lcResult.status,
-      lcResult.status === 'fulfilled'
-        ? lcResult.value.data?.leetcode_username ?? 'NULL'
-        : lcResult.reason
-    );
-    console.log(
-      '[Unified] HR:',
-      hrResult.status,
-      hrResult.status === 'fulfilled'
-        ? hrResult.value.data?.hackerrank_username ?? 'NULL'
-        : hrResult.reason
-    );
-
-    if (lcResult.status === 'fulfilled' && lcResult.value.error) {
-      console.error('[Unified] LeetCode query error:', lcResult.value.error.message);
-    }
-    if (hrResult.status === 'fulfilled' && hrResult.value.error) {
-      console.error('[Unified] HackerRank query error:', hrResult.value.error.message);
+    if (profileError) {
+      console.error('[Unified] Profile query error:', profileError.message);
     }
 
-    let lcData: any =
-      lcResult.status === 'fulfilled' ? lcResult.value.data ?? null : null;
-    let hrData: any =
-      hrResult.status === 'fulfilled' ? hrResult.value.data ?? null : null;
+    console.log(
+      '[Unified] Profile:',
+      profile ? 'found' : 'none',
+      '| LC:', profile?.leetcode_username ?? 'none',
+      '| HR:', profile?.hackerrank_username ?? 'none'
+    );
+
+    // Extract LeetCode data from JSONB
+    const lcStats = (profile?.leetcode_stats ?? {}) as Record<string, unknown>;
+    const hrStats = (profile?.hackerrank_stats ?? {}) as Record<string, unknown>;
+
+    let lcData: any = profile ? {
+      leetcode_username: profile.leetcode_username,
+      placement_readiness_score: profile.placement_readiness_score,
+      solved_data: lcStats.totalSolved ?? null,
+      skill_stats: lcStats.topicBreakdown ?? null,
+      contest_info: {
+        rating: lcStats.contestRating ?? null,
+        contests_attended: lcStats.contestsAttended ?? null,
+      },
+      ai_analysis: lcStats.aiAnalysis ?? null,
+      last_synced_at: profile.last_synced,
+    } : null;
+
+    let hrData: any = profile?.hackerrank_username ? {
+      hackerrank_username: profile.hackerrank_username,
+      hackerrank_score: hrStats.totalScore ?? 0,
+      codechef_data: hrStats.codechef ?? null,
+      gfg_data: hrStats.gfg ?? null,
+      codeforces_data: hrStats.codeforces ?? null,
+    } : null;
 
     // The mock-db fallback is file-backed and cannot work on Vercel's
     // read-only filesystem — keep it for local dev only.
@@ -80,6 +80,7 @@ export async function GET(_req: NextRequest) {
           solved_data: mockLc.solved ?? null,
           skill_stats: mockLc.skillStats ?? null,
           contest_info: mockLc.contestInfo ?? mockLc.contest_info ?? null,
+          last_synced_at: new Date().toISOString(),
         };
       }
     }
@@ -89,49 +90,27 @@ export async function GET(_req: NextRequest) {
       if (mockHr) hrData = mockHr;
     }
 
-    console.log(
-      '[Unified] user:', user.id,
-      '| LC:', lcData?.leetcode_username ?? 'none',
-      '| HR:', hrData?.hackerrank_username ?? 'none'
-    );
+    const hasLC = !!profile?.leetcode_username;
+    const hasHR = !!profile?.hackerrank_username;
 
-    const hasLC =
-      lcResult.status === 'fulfilled' && !!lcResult.value.data?.leetcode_username;
-    const hasHR =
-      hrResult.status === 'fulfilled' && !!hrResult.value.data?.hackerrank_username;
+    let lcScore = Number(lcData?.placement_readiness_score ?? 0);
+    let hrScore = Number(hrData?.hackerrank_score ?? 0);
 
-    let combinedScore = 0;
-    let maxScore = 0;
-
-    let lcScore = 0;
-    if (lcData?.placement_readiness_score) {
-      lcScore = lcData.placement_readiness_score;
-      maxScore += 100;
-      combinedScore += lcScore;
-    }
-
-    let hrScore = 0;
     let bonusScore = 0;
     let bonusCount = 0;
 
     if (hrData) {
-      hrScore = hrData.hackerrank_score || 0;
-      if (hrScore > 0) {
-        maxScore += 100;
-        combinedScore += hrScore;
-      }
-
       // Very simple bonus score averaging from rating logic
       if (hrData.codechef_data?.rating) {
-        bonusScore += Math.min((hrData.codechef_data.rating / 2500) * 100, 100);
+        bonusScore += Math.min((Number(hrData.codechef_data.rating) / 2500) * 100, 100);
         bonusCount++;
       }
       if (hrData.gfg_data?.totalSolved) {
-        bonusScore += Math.min((hrData.gfg_data.totalSolved / 500) * 100, 100);
+        bonusScore += Math.min((Number(hrData.gfg_data.totalSolved) / 500) * 100, 100);
         bonusCount++;
       }
       if (hrData.codeforces_data?.rating) {
-        bonusScore += Math.min((hrData.codeforces_data.rating / 2500) * 100, 100);
+        bonusScore += Math.min((Number(hrData.codeforces_data.rating) / 2500) * 100, 100);
         bonusCount++;
       }
     }
@@ -152,8 +131,6 @@ export async function GET(_req: NextRequest) {
       // Explicit connection flags so the UI never has to infer "connected"
       // from the presence of a nested field.
       connected: {
-        // hasLC/hasHR come straight off the query; the `||` keeps the dev-only
-        // mock fallback above working without weakening the production signal.
         leetcode: hasLC || !!lcData?.leetcode_username,
         hackerrank: hasHR || !!hrData?.hackerrank_username,
       },

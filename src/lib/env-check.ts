@@ -20,7 +20,7 @@ export function checkRequiredEnvVars(): void {
     key => !process.env[key]
   )
   if (missing.length > 0) {
-    console.error('❌ MISSING REQUIRED ENV VARS:', missing)
+    console.error('[ENV ERROR] MISSING REQUIRED ENV VARS:', missing)
     // Don't throw in production — log and continue
     // But this will cause API failures
   }
@@ -29,7 +29,7 @@ export function checkRequiredEnvVars(): void {
     key => !process.env[key]
   )
   if (missingOptional.length > 0) {
-    console.warn('⚠️ Missing optional env vars:', missingOptional)
+    console.warn('[ENV WARN] Missing optional env vars:', missingOptional)
   }
 }
 

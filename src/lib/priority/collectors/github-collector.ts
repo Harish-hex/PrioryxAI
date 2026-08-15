@@ -27,7 +27,6 @@ export async function collectGitHubSignals(
     .select('*')
     .eq('user_id', userId)
     .eq('completed', false)
-    .eq('dismissed', false)
     .order('impact_score', { ascending: false })
     .limit(8)
 
@@ -49,9 +48,9 @@ export async function collectGitHubSignals(
     }))
   }
 
-  // Fallback: repos with low health scores
+  // Fallback: repos with low scores from github_analysis
   const { data: repos } = await db
-    .from('github_repo_scores')
+    .from('github_analysis')
     .select('*')
     .eq('user_id', userId)
     .lte('total_score', 65)
