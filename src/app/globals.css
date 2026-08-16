@@ -34,16 +34,20 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   scroll-behavior: smooth;
+  overscroll-behavior-y: none;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-touch-callout: none;
   background: transparent;
   color: var(--text);
   font-family: "Avenir Next", Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -51,6 +55,23 @@ body {
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Mobile Touch & Momentum Scrolling */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Mobile Safe Area Insets */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+.safe-bottom-nav {
+  padding-bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), 0.5rem));
 }
 
 button,

@@ -391,7 +391,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
               <button
                 type="submit"
                 disabled={loading || !draft.trim() || (!isPro && msgsLeft === 0)}
-                className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#38bdf8] via-[#00d2ff] to-[#38bdf8] bg-[length:200%_auto] px-7 py-3 text-xs font-black italic tracking-widest text-white shadow-[0_0_24px_rgba(56,189,248,0.7),0_2px_8px_rgba(14,165,233,0.4)] transition-all duration-300 hover:scale-[1.03] hover:bg-right hover:shadow-[0_0_36px_rgba(56,189,248,0.95)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                className="group relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#38bdf8] via-[#00d2ff] to-[#38bdf8] bg-[length:200%_auto] px-4 sm:px-7 py-2.5 sm:py-3 text-xs font-black italic tracking-widest text-white shadow-[0_0_24px_rgba(56,189,248,0.7),0_2px_8px_rgba(14,165,233,0.4)] transition-all duration-300 hover:scale-[1.03] hover:bg-right hover:shadow-[0_0_36px_rgba(56,189,248,0.95)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                 aria-label="Send prompt"
               >
                 <span className="relative z-10 flex items-center gap-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { CookieBanner } from "@/components/cookie-banner";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -18,12 +19,33 @@ const geistMono = localFont({
   preload: true,
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#070e1c" },
+  ],
+};
+
 export const metadata: Metadata = {
-  title: "PrioryxAI",
-  description: "Your academic and career command center",
+  title: "PrioryxAI - Student Command OS",
+  description: "Your academic and career command center with AI priority scoring, resume intelligence, and peer collab.",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo-square.png",
+    apple: "/logo-square.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "PrioryxAI",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -70,6 +92,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <PwaInstallPrompt />
         <CookieBanner />
       </body>
     </html>

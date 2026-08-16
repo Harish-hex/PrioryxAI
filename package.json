@@ -6,9 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p $PORT",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mobile:sync": "cap sync",
+    "mobile:copy": "cap copy",
+    "mobile:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@monaco-editor/react": "^4.7.0",
     "@react-pdf/renderer": "^4.4.1",
     "@supabase/ssr": "^0.10.2",
@@ -36,6 +44,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@types/dotenv": "^6.1.1",
     "@types/node": "^20",
     "@types/react": "^18",

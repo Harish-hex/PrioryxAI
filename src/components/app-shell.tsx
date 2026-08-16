@@ -9,7 +9,8 @@ import { PricingModal } from "@/components/pricing-modal";
 import { ProfilePage } from "@/components/profile-page";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
-import { CareerSheet } from "@/components/mobile-nav";
+import { CareerSheet, MobileNav } from "@/components/mobile-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { FeedPageContent } from "@/components/youtube/FeedPageContent";
 import WavesBackground from "@/components/ui/waves-background";
 import { SimpleSkeleton } from "@/components/ui/skeleton";
@@ -79,68 +80,85 @@ function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
   };
 
   return (
-    <div
-      className="hidden md:flex items-center gap-1.5 rounded-[24px] neu-inset px-4 py-2 transition-all"
-      title={`Weekly Streak: ${completedCount} / 7 days completed (${weekRange}) · Resets after Saturday (Sunday)`}
-    >
-      <div className="flex items-center gap-2 sm:gap-2.5">
-        {days.map((item) => {
-          const { day, dateStr, isToday, isCompleted, isPast, isFuture } = item;
+    <>
+      {/* Desktop 7-Day Interactive Row */}
+      <div
+        className="hidden md:flex items-center gap-1.5 rounded-[24px] neu-inset px-4 py-2 transition-all"
+        title={`Weekly Streak: ${completedCount} / 7 days completed (${weekRange}) · Resets after Saturday (Sunday)`}
+      >
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {days.map((item) => {
+            const { day, dateStr, isToday, isCompleted, isPast, isFuture } = item;
 
-          return (
-            <button
-              key={day}
-              type="button"
-              onClick={() => handleDayClick(dateStr, isFuture)}
-              disabled={isFuture}
-              className={`group flex flex-col items-center gap-1 min-w-[28px] focus:outline-none transition-transform ${
-                isFuture ? "cursor-default" : "cursor-pointer active:scale-95"
-              }`}
-              title={
-                isFuture
-                  ? `${day}: Upcoming`
-                  : isCompleted
-                  ? `${day}: Completed (Click to toggle)`
-                  : isToday
-                  ? `${day}: Today - Click to mark completed`
-                  : `${day}: Click to mark completed`
-              }
-            >
-              <div
-                className={`flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full transition-all duration-200 ${
-                  isCompleted
-                    ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 scale-100 group-hover:opacity-90"
-                    : isToday
-                    ? "neu-inset border-2 border-cyan-500/50 text-cyan-600 dark:border-cyan-400/60 dark:text-cyan-300 font-bold group-hover:scale-105"
-                    : isPast
-                    ? "neu-raised-sm opacity-40 hover:opacity-80 text-slate-400 group-hover:border group-hover:border-slate-400/40"
-                    : "neu-raised-sm opacity-25 text-transparent"
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => handleDayClick(dateStr, isFuture)}
+                disabled={isFuture}
+                className={`group flex flex-col items-center gap-1 min-w-[28px] focus:outline-none transition-transform ${
+                  isFuture ? "cursor-default" : "cursor-pointer active:scale-95"
                 }`}
-              >
-                {isCompleted ? (
-                  <Check size={13} className="stroke-[3]" />
-                ) : isToday ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-pulse" />
-                ) : isPast ? (
-                  <span className="h-1 w-1 rounded-full bg-slate-400/40" />
-                ) : null}
-              </div>
-              <span
-                className={`text-[10px] tracking-wider transition-colors ${
-                  isToday
-                    ? "font-bold text-slate-950 dark:text-white"
+                title={
+                  isFuture
+                    ? `${day}: Upcoming`
                     : isCompleted
-                    ? "font-bold text-slate-800 dark:text-slate-200"
-                    : "font-semibold text-slate-400 dark:text-slate-400"
-                }`}
+                    ? `${day}: Completed (Click to toggle)`
+                    : isToday
+                    ? `${day}: Today - Click to mark completed`
+                    : `${day}: Click to mark completed`
+                }
               >
-                {day}
-              </span>
-            </button>
-          );
-        })}
+                <div
+                  className={`flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full transition-all duration-200 ${
+                    isCompleted
+                      ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 scale-100 group-hover:opacity-90"
+                      : isToday
+                      ? "neu-inset border-2 border-cyan-500/50 text-cyan-600 dark:border-cyan-400/60 dark:text-cyan-300 font-bold group-hover:scale-105"
+                      : isPast
+                      ? "neu-raised-sm opacity-40 hover:opacity-80 text-slate-400 group-hover:border group-hover:border-slate-400/40"
+                      : "neu-raised-sm opacity-25 text-transparent"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check size={13} className="stroke-[3]" />
+                  ) : isToday ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-pulse" />
+                  ) : isPast ? (
+                    <span className="h-1 w-1 rounded-full bg-slate-400/40" />
+                  ) : null}
+                </div>
+                <span
+                  className={`text-[10px] tracking-wider transition-colors ${
+                    isToday
+                      ? "font-bold text-slate-950 dark:text-white"
+                      : isCompleted
+                      ? "font-bold text-slate-800 dark:text-slate-200"
+                      : "font-semibold text-slate-400 dark:text-slate-400"
+                  }`}
+                >
+                  {day}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Mobile Streak Badge */}
+      <button
+        type="button"
+        onClick={() => {
+          const today = new Date().toISOString().split("T")[0];
+          toggleDailyActivity(today);
+        }}
+        className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 active:scale-95 transition"
+        title="Weekly Streak (Tap to toggle today)"
+      >
+        <span className="text-cyan-500 font-extrabold text-sm">⚡</span>
+        <span>{completedCount}/7</span>
+      </button>
+    </>
   );
 }
 
@@ -824,36 +842,8 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         </AnimatePresence>
       </div>
 
-      {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/92 pb-safe backdrop-blur-xl lg:hidden" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}>
-        <div className="flex items-center justify-around px-2 pt-2">
-          {[
-            { id: "dashboard", label: "Home", icon: LayoutDashboard },
-            { id: "assistant", label: "AI", icon: Bot },
-            { id: "learning", label: "Learn", icon: GraduationCap },
-            { id: "profile", label: "Profile", icon: UserRound },
-            { id: "settings", label: "Settings", icon: Settings },
-            { id: "career", label: "Career", icon: Briefcase },
-          ].map(({ id, label, icon: Icon }) => {
-            const active = activeView === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => navigateToView(id)}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium transition ${
-                  active ? "text-slate-950" : "text-slate-400 hover:text-slate-700"
-                }`}
-              >
-                <div className={`flex h-8 w-8 items-center justify-center rounded-2xl transition ${active ? "bg-slate-950 text-white" : ""}`}>
-                  <Icon size={18} />
-                </div>
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Native-Grade Mobile Bottom Navigation */}
+      <MobileNav />
 
       <CareerSheet open={careerSheetOpen} onClose={() => setCareerSheetOpen(false)} />
 

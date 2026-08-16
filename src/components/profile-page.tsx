@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, BriefcaseBusiness, Code2, GitFork, MapPin, Star, Trophy } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Check, Code2, GitFork, MapPin, Share2, Star, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LoadingLine } from "@/components/loading-skeletons";
 
@@ -250,6 +250,28 @@ export function ProfilePage({ username }: ProfilePageProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile?.name || profile?.username || "Student"}'s Profile | PrioryxAI`,
+          text: `Check out ${profile?.name || profile?.username || "my"} engineering profile on PrioryxAI!`,
+          url,
+        });
+        return;
+      } catch (err) {
+        // Fallback to clipboard
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -429,17 +451,28 @@ export function ProfilePage({ username }: ProfilePageProps) {
             </div>
           </div>
 
-          {profile.github_username && (
-            <a
-              href={`https://github.com/${profile.github_username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="neu-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 sm:w-auto"
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="neu-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 sm:w-auto"
             >
-              View GitHub
-              <ArrowUpRight size={16} />
-            </a>
-          )}
+              {copied ? <Check size={16} className="text-emerald-500" /> : <Share2 size={16} />}
+              <span>{copied ? "Link Copied!" : "Share Profile"}</span>
+            </button>
+
+            {profile.github_username && (
+              <a
+                href={`https://github.com/${profile.github_username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="neu-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 sm:w-auto"
+              >
+                View GitHub
+                <ArrowUpRight size={16} />
+              </a>
+            )}
+          </div>
         </div>
       </section>
 

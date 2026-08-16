@@ -1,0 +1,53 @@
+{
+  "name": "PrioryxAI - Student Command OS",
+  "short_name": "PrioryxAI",
+  "description": "Your academic and career command center with AI priority scoring, resume intelligence, and peer collab.",
+  "start_url": "/feed",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1329",
+  "theme_color": "#0b1329",
+  "icons": [
+    {
+      "src": "/logo-square.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-square.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/feed",
+      "description": "Open your priority dashboard"
+    },
+    {
+      "name": "AI Assistant",
+      "url": "/assistant",
+      "description": "Open your AI study assistant"
+    },
+    {
+      "name": "Resume Intelligence",
+      "url": "/career/resume/upload",
+      "description": "Upload and analyze your resume"
+    },
+    {
+      "name": "Peer Collab",
+      "url": "/career/collab/match",
+      "description": "Connect and duel with peers"
+    }
+  ],
+  "categories": ["education", "productivity", "utilities"]
+}
