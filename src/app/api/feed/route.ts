@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
@@ -290,7 +290,7 @@ function buildJobReason(task: any, userSubjects: string[]): string {
   return `${skillText}${stipendText}${urgencyText}`;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -372,10 +372,18 @@ export async function GET() {
   // Setup items: what the user still needs to configure (shown as a strip, not the hero card)
   const setup = buildSetupTasks({ userProfile, githubCache, existingTasks: tasks ?? [] });
 
+  const { searchParams } = new URL(request.url);
+  const pageParam = searchParams.get('page');
+  const limitParam = searchParams.get('limit');
+  const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+  const limit = limitParam ? Math.min(50, Math.max(1, parseInt(limitParam, 10))) : 20;
+
   const FREE_LIMIT = 5;
   const totalCount = realFeed.length;
   const hasMore = !isPro && totalCount > FREE_LIMIT;
-  const feed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
+  const baseFeed = isPro ? realFeed : realFeed.slice(0, FREE_LIMIT);
+  const offset = (page - 1) * limit;
+  const feed = limitParam ? baseFeed.slice(offset, offset + limit) : baseFeed;
 
   // Build hiddenPreview so the blur wall can show a specific tease (job title, breakdown)
   let hiddenPreview: { count: number; topJobTitle: string | null; breakdown: string | null } | null = null;
@@ -400,7 +408,23 @@ export async function GET() {
     ? { task: feed[0], reason: feed[0].reason ?? getNextMoveReason(feed[0]) }
     : null;
 
-  const result = { feed, setup, nextMove, hasMore, hiddenPreview, totalCount };
+  const result = {
+    feed,
+    setup,
+    nextMove,
+    hasMore,
+    hiddenPreview,
+    totalCount,
+    ...(limitParam ? {
+      pagination: {
+        page,
+        limit,
+        total: baseFeed.length,
+        totalPages: Math.ceil(baseFeed.length / limit),
+        hasMore: offset + limit < baseFeed.length,
+      }
+    } : {})
+  };
 
   // Cache for 1 minute
   await withFallback(() => redis.set(cacheKey, result, { ex: FEED_CACHE_TTL }), undefined);

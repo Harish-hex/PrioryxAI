@@ -2,18 +2,46 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bell, Bot, Briefcase, CalendarClock, Check, CheckCircle2, Clock3, Command, Copy, ExternalLink, GraduationCap, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, UserRound, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { AssistantPanel } from "@/components/assistant-panel";
 import { DashboardView, type Task } from "@/components/dashboard-view";
-import { PricingModal } from "@/components/pricing-modal";
-import { ProfilePage } from "@/components/profile-page";
-import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
-import { CareerSheet, MobileNav } from "@/components/mobile-nav";
+import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { FeedPageContent } from "@/components/youtube/FeedPageContent";
-import WavesBackground from "@/components/ui/waves-background";
 import { SimpleSkeleton } from "@/components/ui/skeleton";
+
+// Lazy-load subviews and heavy modals on-demand
+const AssistantPanel = dynamic(() => import("@/components/assistant-panel").then((m) => m.AssistantPanel), {
+  loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
+  ssr: false,
+});
+
+const ProfilePage = dynamic(() => import("@/components/profile-page").then((m) => m.ProfilePage), {
+  loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
+  ssr: false,
+});
+
+const SettingsPanel = dynamic(() => import("@/components/settings-panel").then((m) => m.SettingsPanel), {
+  loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
+  ssr: false,
+});
+
+const PricingModal = dynamic(() => import("@/components/pricing-modal").then((m) => m.PricingModal), {
+  ssr: false,
+});
+
+const FeedPageContent = dynamic(() => import("@/components/youtube/FeedPageContent").then((m) => m.FeedPageContent), {
+  loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
+  ssr: false,
+});
+
+const CareerSheet = dynamic(() => import("@/components/mobile-nav").then((m) => m.CareerSheet), {
+  ssr: false,
+});
+
+const WavesBackground = dynamic(() => import("@/components/ui/waves-background"), {
+  ssr: false,
+});
 
 import { getCurrentWeekDays, recordDailyActivity, toggleDailyActivity } from "@/lib/streak-tracker";
 

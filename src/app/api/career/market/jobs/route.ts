@@ -122,7 +122,7 @@ function isTechJob(job: { title: string; tags?: string[] }): boolean {
   return TECH_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw));
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -215,10 +215,25 @@ export async function GET() {
   // Sort by match score desc
   jobsWithScores.sort((a, b) => b.matchScore - a.matchScore);
 
-  console.log(`[Jobs] Returning ${jobsWithScores.length} tech jobs`);
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
+  const offset = (page - 1) * limit;
+
+  const total = jobsWithScores.length;
+  const paginatedJobs = jobsWithScores.slice(offset, offset + limit);
+
+  console.log(`[Jobs] Returning ${paginatedJobs.length} of ${total} tech jobs (page ${page}/${Math.ceil(total / limit)})`);
 
   return NextResponse.json({ 
-    jobs: jobsWithScores,
+    jobs: paginatedJobs,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: offset + limit < total,
+    },
     debugSkillCount: userSkillsArray.length 
   });
 }

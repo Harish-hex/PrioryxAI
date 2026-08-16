@@ -107,6 +107,8 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
     }
   }, [showQuickPrompts]);
 
+  const [streamingId, setStreamingId] = useState<number | null>(null);
+
   async function send(text: string, currentMessages: Message[]) {
     if (!text.trim() || loading) return;
 
@@ -148,6 +150,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
         const assistantId = Date.now() + 1;
         let accumulated = "";
         let started = false;
+        setStreamingId(assistantId);
 
         while (true) {
           const { done, value } = await reader.read();
@@ -155,15 +158,18 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
           accumulated += decoder.decode(value, { stream: true });
           if (!started) {
             started = true;
+            setLoading(false);
             setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: accumulated }]);
           } else {
             setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, text: accumulated } : m)));
           }
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         }
 
         if (!started) {
           setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "No response generated." }]);
         }
+        setStreamingId(null);
       }
 
       onMessageSent();
@@ -171,6 +177,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
       setMessages((prev) => [...prev, { id: Date.now() + 1, role: "assistant", text: `Error: ${err.message}` }]);
     } finally {
       setLoading(false);
+      setStreamingId(null);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }
@@ -278,6 +285,9 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                     }`}
                   >
                     {message.text}
+                    {streamingId === message.id && (
+                      <span className="inline-block h-4 w-1.5 ml-1 animate-pulse rounded-sm bg-cyan-500 align-middle shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                    )}
                   </div>
                 )}
                 {message.role === "user" && (

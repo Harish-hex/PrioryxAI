@@ -72,14 +72,36 @@ export default function AssistantScreen() {
         response?.text ||
         `Here is my prioritized plan for you:\n\n1. **Focus on high-leverage deliverables**: Complete immediate assignment deadlines first.\n2. **Targeted DSA Practice**: Solve 2 LeetCode Mediums on Trees/Graphs.\n3. **Portfolio**: Push 1 clean commit with tests for your current project.`;
 
-      const aiMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: replyContent,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+      const aiMsgId = (Date.now() + 1).toString();
+      const aiTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      setMessages((prev) => [...prev, aiMsg]);
+      // Create placeholder message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          role: 'assistant',
+          content: '',
+          timestamp: aiTimestamp,
+        },
+      ]);
+      setLoading(false);
+
+      // Stream words progressively
+      const words = replyContent.split(' ');
+      let currentText = '';
+      for (let i = 0; i < words.length; i++) {
+        currentText += (i === 0 ? '' : ' ') + words[i];
+        const snapshot = currentText;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === aiMsgId ? { ...m, content: snapshot } : m))
+        );
+        if (i % 3 === 0) {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+
       AppHaptics.success();
     } catch {
       Toast.show({

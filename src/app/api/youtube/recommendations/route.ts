@@ -110,11 +110,26 @@ export async function GET(req: Request) {
       });
     }
 
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam ? Math.min(50, Math.max(1, parseInt(limitParam, 10))) : recommendations.length;
+    const offset = (page - 1) * limit;
+    const paginated = limitParam ? recommendations.slice(offset, offset + limit) : recommendations;
+
     return NextResponse.json({
-      recommendations,
+      recommendations: paginated,
       groupedBy,
       generatedAt: new Date().toISOString(),
-      totalCount: recommendations.length
+      totalCount: recommendations.length,
+      ...(limitParam ? {
+        pagination: {
+          page,
+          limit,
+          total: recommendations.length,
+          totalPages: Math.ceil(recommendations.length / limit),
+          hasMore: offset + limit < recommendations.length,
+        }
+      } : {})
     });
 
   } catch (error: any) {

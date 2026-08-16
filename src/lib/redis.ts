@@ -19,9 +19,12 @@ export const visionRatelimitPro = new Ratelimit({
 });
 
 // Redis failure must never crash the product — safe for caches and non-critical operations
-export async function withFallback<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+export async function withFallback<T>(fn: () => Promise<T>, fallback: T, timeoutMs = 800): Promise<T> {
   try {
-    return await fn();
+    const timeoutPromise = new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Redis timeout')), timeoutMs)
+    );
+    return await Promise.race([fn(), timeoutPromise]);
   } catch {
     return fallback;
   }
