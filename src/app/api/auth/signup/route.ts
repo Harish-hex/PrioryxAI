@@ -81,72 +81,147 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
+  let user: any = null;
+
+  // Try creating confirmed user via Admin API to bypass email confirmation delays
+  const { data: adminData, error: adminError } = await serviceSupabase.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: { name: name || null },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-    },
+    email_confirm: true,
+    user_metadata: { name: name || null },
   });
 
-  if (signUpError) {
-    console.error('[auth/signup]', signUpError.message);
-    if (
-      signUpError.message.toLowerCase().includes('already registered') ||
-      signUpError.message.toLowerCase().includes('already been registered')
-    ) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists. Please sign in instead.' },
-        { status: 409 }
-      );
+  if (adminError) {
+    const isAlreadyRegistered =
+      adminError.message.toLowerCase().includes('already registered') ||
+      adminError.message.toLowerCase().includes('already been registered') ||
+      adminError.message.toLowerCase().includes('duplicate') ||
+      adminError.message.toLowerCase().includes('exists');
+
+    if (isAlreadyRegistered) {
+      // Find existing user in auth.users and update password / confirmation
+      try {
+        const { data: userList } = await serviceSupabase.auth.admin.listUsers();
+        const existingUser = userList?.users?.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+
+        if (existingUser) {
+          const { data: updatedUserData, error: updateErr } = await serviceSupabase.auth.admin.updateUserById(
+            existingUser.id,
+            {
+              password,
+              email_confirm: true,
+              user_metadata: {
+                ...(existingUser.user_metadata || {}),
+                ...(name ? { name } : {}),
+              },
+            }
+          );
+          if (!updateErr && updatedUserData?.user) {
+            user = updatedUserData.user;
+          } else {
+            user = existingUser;
+          }
+        }
+      } catch (err: any) {
+        console.error('[auth/signup] Existing user recovery error:', err?.message);
+      }
     }
-    return NextResponse.json({ error: signUpError.message }, { status: 400 });
+
+    if (!user) {
+      // Fallback to standard signUp if admin API is restricted
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name: name || null },
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+        },
+      });
+
+      if (signUpError) {
+        console.error('[auth/signup]', signUpError.message);
+        // Attempt direct sign in with password in case account exists
+        const { data: directSignIn } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (directSignIn?.session) {
+          return new NextResponse(JSON.stringify({ redirect: '/feed' }), {
+            status: 200,
+            headers: response.headers,
+          });
+        }
+
+        if (
+          signUpError.message.toLowerCase().includes('already registered') ||
+          signUpError.message.toLowerCase().includes('already been registered')
+        ) {
+          return NextResponse.json(
+            { error: 'An account with this email already exists. Please sign in instead.' },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json({ error: signUpError.message }, { status: 400 });
+      }
+
+      user = authData.user;
+    }
+  } else {
+    user = adminData.user;
   }
 
-  const user = authData.user;
-
   if (!user) {
-    // Should not happen, but guard anyway
     return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 });
   }
 
-  // Insert user row using service role to bypass RLS on first insert
-  const { error: upsertError } = await serviceSupabase.from('users').upsert(
-    {
-      id: user.id,
-      email: user.email!,
-      name: name || null,
-      username: finalUsername,
-      pro_status: false,
-      last_active_at: new Date().toISOString(),
-    },
-    { onConflict: 'id', ignoreDuplicates: false }
-  );
-
-  if (upsertError) {
-    console.error('[auth/signup] users upsert failed:', upsertError.message);
+  // Insert user row into users and profiles tables using service role
+  try {
+    await serviceSupabase.from('users').upsert(
+      {
+        id: user.id,
+        email: user.email!,
+        name: name || null,
+        username: finalUsername,
+        pro_status: false,
+        last_active_at: new Date().toISOString(),
+      },
+      { onConflict: 'id', ignoreDuplicates: false }
+    );
+  } catch (err: any) {
+    console.error('[auth/signup] users upsert:', err?.message);
   }
 
-  // Log auth event (non-fatal — table may not exist yet)
   try {
-    await serviceSupabase.from('email_auth_log').insert({
-      user_id: user.id,
-      event: 'signup',
-      ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
-      user_agent: request.headers.get('user-agent') ?? null,
-    });
+    await serviceSupabase.from('profiles').upsert(
+      {
+        id: user.id,
+        email: user.email!,
+        full_name: name || null,
+        subscription_status: 'free',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id', ignoreDuplicates: false }
+    );
   } catch {}
 
-  // If no session was created (email confirmation required), tell the user
-  if (!authData.session) {
+  // Automatically sign in the user to establish real session cookies
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError || !signInData.session) {
+    // If session could not be established immediately, redirect to login
     return NextResponse.json(
-      { message: 'Check your email to confirm your account, then sign in.' },
-      { status: 202 }
+      { message: 'Account created! Please sign in with your password.', redirect: '/login' },
+      { status: 200 }
     );
   }
 
-  // Session exists — cookies are already set on `response`, return it with correct body
+  // Session exists — cookies are written onto `response`
   return new NextResponse(JSON.stringify({ redirect: '/onboarding' }), {
     status: 200,
     headers: response.headers,

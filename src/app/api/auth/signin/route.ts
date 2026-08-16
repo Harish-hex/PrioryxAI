@@ -58,12 +58,40 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+  const serviceSupabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  let authData: any = null;
+  let { data: initialAuthData, error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (signInError) {
+  if (signInError && signInError.message.toLowerCase().includes('email not confirmed')) {
+    try {
+      const { data: userList } = await serviceSupabase.auth.admin.listUsers();
+      const existingUser = userList?.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+      if (existingUser) {
+        await serviceSupabase.auth.admin.updateUserById(existingUser.id, {
+          email_confirm: true,
+        });
+        const retry = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        authData = retry.data;
+        signInError = retry.error;
+      }
+    } catch {}
+  } else {
+    authData = initialAuthData;
+  }
+
+  if (signInError || !authData?.user) {
     return NextResponse.json(
       { error: 'Incorrect email or password.' },
       { status: 401 }
@@ -80,11 +108,6 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   const isNew = !userRow;
-
-  const serviceSupabase = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
   if (isNew) {
     const rawUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 39);

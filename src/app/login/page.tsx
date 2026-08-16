@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Bot, Briefcase, Check, Eye, EyeOff, GitBranch, ImagePlus, Lock, Mail, Target } from "lucide-react";
+import { ArrowRight, Bot, Eye, EyeOff, GitBranch, Mail } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import ModernLoginSignup from "@/components/ui/modern-login-signup";
@@ -103,97 +103,32 @@ function LoginForm() {
     }
   }
 
+  const handleOAuth = (provider: "github" | "google") => {
+    const url = `/api/auth/login?provider=${provider}&next=${encodeURIComponent(next)}`;
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.open(url, "_blank");
+    } else {
+      window.location.href = url;
+    }
+  };
+
   return (
     <ModernLoginSignup>
       <div className="flex w-full items-center justify-center px-4 py-8 sm:px-6">
-        <section className="grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
-
-          {/* Left panel — brand + feature list */}
-          <div className="glass-strong flex flex-col rounded-[32px] p-6 sm:p-8">
-          {/* Brand header */}
-          <div className="flex items-center justify-between gap-3">
-            <a href="/" className="flex items-center gap-2.5">
-              <img
-                src="/logo.png"
-                alt="PrioryxAI"
-                className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
-              />
-              <span className="text-sm font-semibold text-slate-950 dark:text-white">PrioryxAI</span>
-            </a>
-          </div>
-
-          {/* Headline */}
-          <h1 className="mt-7 text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-4xl">
-            Your academic &amp; career<br />command center.
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            Connect GitHub, upload your timetable, and let AI rank your highest-leverage move — exam, internship, or project — in one feed.
-          </p>
-
-          {/* Feature list */}
-          <div className="mt-8 space-y-4">
-            {[
-              {
-                icon: Target,
-                bg: "bg-amber-50 border-amber-200 text-amber-700",
-                title: "AI-ranked priority feed",
-                desc: "Every deadline scored by urgency × career impact. Always know what to do next.",
-              },
-              {
-                icon: GitBranch,
-                bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
-                title: "GitHub sync & health score",
-                desc: "Streak, languages, top repos — synced automatically and shown to recruiters.",
-              },
-              {
-                icon: ImagePlus,
-                bg: "bg-violet-50 border-violet-200 text-violet-700",
-                title: "Timetable scanner",
-                desc: "Photograph your printed schedule. GPT-4o Vision extracts every exam date instantly.",
-              },
-              {
-                icon: Briefcase,
-                bg: "bg-blue-50 border-blue-200 text-blue-700",
-                title: "Matched internship openings",
-                desc: "Live Internshala listings matched to your skills, with stipend and apply deadline.",
-              },
-              {
-                icon: Bot,
-                bg: "bg-slate-100 border-slate-200 text-slate-700",
-                title: "Context-aware AI assistant",
-                desc: "Knows your deadlines, GitHub, and load. Ask it to plan your day in one message.",
-              },
-            ].map(({ icon: Icon, bg, title, desc }) => (
-              <div key={title} className="flex items-start gap-3">
-                <div className={`mt-0.5 shrink-0 rounded-xl border p-1.5 ${bg}`}>
-                  <Icon size={14} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{title}</p>
-                  <p className="mt-0.5 text-xs leading-5 text-slate-500">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust strip */}
-          <div className="mt-auto pt-8">
-            <div className="flex flex-wrap items-center gap-4 border-t border-slate-200 pt-5">
-              {[
-                { icon: Lock, label: "SSL secured" },
-                { icon: Check, label: "Razorpay payments" },
-                { icon: Target, label: "Free to start" },
-              ].map(({ icon: Icon, label }) => (
-                <span key={label} className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <Icon size={12} className="text-slate-400" /> {label}
-                </span>
-              ))}
+        <section className="w-full max-w-md mx-auto">
+          {/* Auth Card */}
+          <div className="glass-strong rounded-[32px] p-6 sm:p-8 shadow-2xl">
+            {/* Brand Header */}
+            <div className="flex items-center justify-center mb-6">
+              <a href="/" className="flex items-center gap-2.5">
+                <img
+                  src="/logo.png"
+                  alt="PrioryxAI"
+                  className="h-10 w-10 shrink-0 object-contain drop-shadow-sm"
+                />
+                <span className="text-base font-bold tracking-tight text-slate-950 dark:text-white">PrioryxAI</span>
+              </a>
             </div>
-          </div>
-        </div>
-
-        {/* Right panel — auth form */}
-        <div className="glass-strong rounded-[32px] p-5 sm:p-6">
           {/* Tabs */}
           <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-200 bg-slate-100 p-1">
             {(["signin", "signup"] as const).map((t) => (
@@ -231,8 +166,9 @@ function LoginForm() {
 
               {/* OAuth buttons */}
               <div className="mt-5 space-y-2">
-                <a
-                  href={`/api/auth/login?provider=github&next=${encodeURIComponent(next)}`}
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("github")}
                   className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <span className="flex items-center gap-3">
@@ -240,9 +176,10 @@ function LoginForm() {
                     Continue with GitHub
                   </span>
                   <ArrowRight size={15} className="text-slate-400 transition group-hover:text-slate-700" />
-                </a>
-                <a
-                  href={`/api/auth/login?provider=google&next=${encodeURIComponent(next)}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("google")}
                   className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <span className="flex items-center gap-3">
@@ -250,7 +187,7 @@ function LoginForm() {
                     Continue with Google
                   </span>
                   <ArrowRight size={15} className="text-slate-400 transition group-hover:text-slate-700" />
-                </a>
+                </button>
               </div>
 
               {/* Divider */}

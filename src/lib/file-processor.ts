@@ -232,7 +232,7 @@ export async function parseUploadedFile(req: Request): Promise<{
   error?: string
 } | { error: string }> {
   
-  let formData: FormData
+  let formData: any
   try {
     formData = await req.formData()
   } catch (e) {
