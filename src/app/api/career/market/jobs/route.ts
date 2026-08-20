@@ -136,8 +136,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    db.from('user_coding_profiles')
-      .select('data')
+    db.from('coding_profiles')
+      .select('data, leetcode_stats, weak_topics')
       .eq('user_id', user.id),
     db.from('users')
       .select('subjects')
@@ -149,10 +149,16 @@ export async function GET(request: NextRequest) {
   const codingProfiles = codingRes.data ?? [];
   const profile = profileRes.data;
 
-  // Extract skills from resume
+  // Extract skills from resume — handle both { skills: string[] } and SkillEntity[] formats
   let resumeSkills: string[] = [];
   if (resume) {
-    resumeSkills = (resume.skill_entities as { skills?: string[] })?.skills ?? [];
+    const se = resume.skill_entities;
+    if (Array.isArray(se)) {
+      // SkillEntity[] format: [{name, category, proficiency, evidence}]
+      resumeSkills = se.map((s: any) => (typeof s === 'string' ? s : s?.name)).filter(Boolean) as string[];
+    } else if (se && typeof se === 'object') {
+      resumeSkills = (se as { skills?: string[] }).skills ?? [];
+    }
     if (resumeSkills.length === 0 && resume.parsed_data) {
       resumeSkills = (resume.parsed_data as { skills?: string[] }).skills ?? [];
     }
@@ -161,7 +167,10 @@ export async function GET(request: NextRequest) {
   // Combine all skills
   const userSkillsSet = new Set([
     ...resumeSkills,
-    ...codingProfiles.flatMap((p: any) => p.data?.strongTopics ?? p.data?.skills ?? []),
+    ...codingProfiles.flatMap((p: any) => [
+      ...(p.data?.strongTopics ?? p.data?.skills ?? []),
+      ...(Array.isArray(p.weak_topics) ? p.weak_topics : []),
+    ]),
     ...(profile?.subjects ?? [])
   ].filter(Boolean).map((s: string) => s.toLowerCase().trim()));
   

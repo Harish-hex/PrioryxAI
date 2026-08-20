@@ -1,4 +1,4 @@
-// MCP Tool Registry — maps tool names to agent handlers
+// MCP Tool Registry — maps tool names to agent handlers with alias support and schema validation
 import type { AgentModule, ToolDefinition, ToolResult } from './types';
 import { authAgent } from './agents/auth-agent';
 import { resumeAgent } from './agents/resume-agent';
@@ -25,25 +25,60 @@ for (const agent of agents) {
     toolMap.set(qualifiedName, { agent: agent.name, tool });
     // Also register without prefix for convenience
     toolMap.set(tool.name, { agent: agent.name, tool });
+    // Also register lowercase
+    toolMap.set(qualifiedName.toLowerCase(), { agent: agent.name, tool });
+    toolMap.set(tool.name.toLowerCase(), { agent: agent.name, tool });
   }
 }
+
+// Common aliases mapping
+const ALIASES: Record<string, string> = {
+  'foundry.verifyphase': 'foundry.verifyPhaseCompletion',
+  'verifyphase': 'foundry.verifyPhaseCompletion',
+  'verifyphasecompletion': 'foundry.verifyPhaseCompletion',
+  'mentorchat': 'foundry.projectMentorChat',
+  'foundry.mentorchat': 'foundry.projectMentorChat',
+  'ai.mentorchat': 'foundry.projectMentorChat',
+  'chat': 'ai.chatWithAssistant',
+  'ai.chat': 'ai.chatWithAssistant',
+  'assistant': 'ai.chatWithAssistant',
+  'searchdocs': 'research.searchWebDocumentation',
+  'research.searchdocs': 'research.searchWebDocumentation',
+  'searchweb': 'research.searchWebDocumentation',
+  'roadmap': 'ai.generatePersonalizedRoadmap',
+  'jobs': 'market.fetchLiveJobListings',
+  'leetcode': 'research.fetchLeetCodeProfile',
+};
 
 export function lookupTool(
   name: string
 ): { agent: string; tool: ToolDefinition } | undefined {
-  return toolMap.get(name);
+  if (!name) return undefined;
+  const direct = toolMap.get(name) || toolMap.get(name.toLowerCase());
+  if (direct) return direct;
+
+  const aliasedName = ALIASES[name.toLowerCase()] || ALIASES[name];
+  if (aliasedName) {
+    return toolMap.get(aliasedName) || toolMap.get(aliasedName.toLowerCase());
+  }
+
+  return undefined;
 }
 
 export async function executeTool(
   name: string,
-  input: Record<string, unknown>,
-  userId: string
+  input: Record<string, unknown> = {},
+  userId: string = ''
 ): Promise<{ agent: string; result: ToolResult }> {
   const entry = lookupTool(name);
   if (!entry) {
     return {
       agent: 'unknown',
-      result: { success: false, data: null, error: `Tool '${name}' not found` },
+      result: {
+        success: false,
+        data: null,
+        error: `Tool '${name}' not found. Available tools: ${listTools().map((t) => t.name).join(', ')}`,
+      },
     };
   }
 
@@ -56,7 +91,7 @@ export async function executeTool(
       result: {
         success: false,
         data: null,
-        error: `Tool '${name}' failed: ${(err as Error).message}`,
+        error: `Tool '${name}' execution error: ${(err as Error).message}`,
       },
     };
   }
@@ -66,15 +101,28 @@ export function listTools(): Array<{
   name: string;
   agent: string;
   description: string;
+  inputSchema: Record<string, unknown>;
 }> {
-  const tools: Array<{ name: string; agent: string; description: string }> = [];
+  const tools: Array<{
+    name: string;
+    agent: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+  }> = [];
+  const seen = new Set<string>();
+
   for (const agent of agents) {
     for (const tool of agent.tools) {
-      tools.push({
-        name: `${agent.prefix}.${tool.name}`,
-        agent: agent.name,
-        description: tool.description,
-      });
+      const qualifiedName = `${agent.prefix}.${tool.name}`;
+      if (!seen.has(qualifiedName)) {
+        seen.add(qualifiedName);
+        tools.push({
+          name: qualifiedName,
+          agent: agent.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema || { type: 'object', properties: {} },
+        });
+      }
     }
   }
   return tools;

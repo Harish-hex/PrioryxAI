@@ -152,6 +152,48 @@ export interface PeerMatch {
   placementScore: number;
 }
 
+// ─── Mentor & Assistant Types ───
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface MentorChatResult {
+  reply: string;
+  suggestedActions?: string[];
+  codeSnippets?: Array<{ language: string; code: string; explanation?: string }>;
+}
+
+// ─── Web Search & Doc Types ───
+
+export interface WebDocSearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  source?: string;
+}
+
+// ─── JSON-RPC Protocol Types for MCP ───
+
+export interface MCPJsonRpcRequest {
+  jsonrpc: '2.0';
+  id?: string | number;
+  method: string;
+  params?: Record<string, unknown>;
+}
+
+export interface MCPJsonRpcResponse {
+  jsonrpc: '2.0';
+  id?: string | number | null;
+  result?: Record<string, unknown>;
+  error?: {
+    code: number;
+    message: string;
+    data?: unknown;
+  };
+}
+
 // ─── Orchestration Types ───
 
 export interface CareerAnalysisResult {
@@ -170,3 +212,4 @@ export interface CareerAnalysisResult {
   jobMatches: JobMatchResult[];
   roadmap: string;
 }
+

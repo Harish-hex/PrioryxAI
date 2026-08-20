@@ -12,6 +12,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const cacheKey = `user_status:${user.id}`;
+  const cached = await withFallback(() => redis.get(cacheKey), null);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const [{ data: userData }, messagesToday, visionToday] = await Promise.all([
     supabase
       .from('users')
@@ -25,10 +31,14 @@ export async function GET() {
   const isPro = Boolean(userData?.pro_status) &&
     (!userData?.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
 
-  return NextResponse.json({
+  const result = {
     pro_status: isPro,
     pro_expires_at: userData?.pro_expires_at ?? null,
     messages_today: messagesToday ?? 0,
     vision_uploads_today: visionToday ?? 0,
-  });
+  };
+
+  await withFallback(() => redis.set(cacheKey, result, { ex: 30 }), undefined);
+
+  return NextResponse.json(result);
 }

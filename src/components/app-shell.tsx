@@ -196,16 +196,61 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const [pricingOpen, setPricingOpen] = useState(false);
   const [careerSheetOpen, setCareerSheetOpen] = useState(false);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [setupItems, setSetupItems] = useState<any[]>([]);
-  const [stats, setStats] = useState(null);
-  const [loadingTasks, setLoadingTasks] = useState(true);
+  // Instant hydration from sessionStorage if available
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const cached = sessionStorage.getItem("prioryx_feed");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed.feed ?? [];
+      }
+    } catch {}
+    return [];
+  });
+  const [setupItems, setSetupItems] = useState<any[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const cached = sessionStorage.getItem("prioryx_feed");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed.setup ?? [];
+      }
+    } catch {}
+    return [];
+  });
+  const [stats, setStats] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const cached = sessionStorage.getItem("prioryx_stats");
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  });
+  const [loadingTasks, setLoadingTasks] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return !sessionStorage.getItem("prioryx_feed");
+    } catch {
+      return true;
+    }
+  });
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [hiddenPreview, setHiddenPreview] = useState<{ count: number; topJobTitle: string | null; breakdown: string | null } | null>(null);
 
   // Pro state
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const cached = sessionStorage.getItem("prioryx_status");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return Boolean(parsed.pro_status) && (!parsed.pro_expires_at || new Date(parsed.pro_expires_at) > new Date());
+      }
+    } catch {}
+    return false;
+  });
   const [messagesUsedToday, setMessagesUsedToday] = useState(0);
   const [visionUsedToday, setVisionUsedToday] = useState(0);
 
@@ -245,6 +290,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       const res = await fetch("/api/user/status");
       if (res.ok) {
         const data = await res.json();
+        sessionStorage.setItem("prioryx_status", JSON.stringify(data));
         const effectivePro =
           Boolean(data.pro_status) &&
           (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
@@ -256,11 +302,11 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   }, []);
 
   const fetchFeed = useCallback(async () => {
-    setLoadingTasks(true);
     try {
       const res = await fetch("/api/feed");
       if (res.ok) {
         const data = await res.json();
+        sessionStorage.setItem("prioryx_feed", JSON.stringify(data));
         setTasks(data.feed ?? []);
         setSetupItems(data.setup ?? []);
         setHasMore(data.hasMore ?? false);
@@ -276,7 +322,11 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch("/api/stats");
-      if (res.ok) setStats(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        sessionStorage.setItem("prioryx_stats", JSON.stringify(data));
+        setStats(data);
+      }
     } catch {}
   }, []);
 

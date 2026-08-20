@@ -7,7 +7,7 @@ import { generateRepoNextStep } from '@/lib/repo-next-step';
 
 export const runtime = 'nodejs';
 
-const FEED_CACHE_TTL = 60; // 1 minute
+const FEED_CACHE_TTL = 180; // 3 minutes for sub-50ms instant response
 
 type StudentProfile = 'no_foundation' | 'academics_first' | 'skills_no_projects' | 'job_ready';
 
@@ -214,9 +214,11 @@ function buildSetupTasks({
 }
 
 async function buildRepoGuidanceTask({
+  userId,
   githubCache,
   userProfile,
 }: {
+  userId?: string;
   githubCache: any;
   userProfile: any;
 }) {
@@ -227,13 +229,32 @@ async function buildRepoGuidanceTask({
 
   const repos: any[] = githubCache?.repos ?? [];
 
-  const repoStep = await generateRepoNextStep({
-    repos,
-    subjects: userProfile?.subjects ?? [],
-  });
+  // Fast heuristic step or cached step to prevent blocking GET /api/feed
+  let repoStep: any = null;
+  if (userId) {
+    repoStep = await withFallback(() => redis.get(`repo_guidance:${userId}`), null, 200);
+  }
 
   if (!repoStep) {
-    return null;
+    const firstRepoWithDesc = repos.find((r: any) => r.description?.trim()) || repos[0];
+    if (firstRepoWithDesc) {
+      repoStep = {
+        title: `Ship one visible improvement in ${firstRepoWithDesc.name}`,
+        reason: `${firstRepoWithDesc.name} is connected. Turn that signal into stronger proof of execution with a demo-worthy improvement.`,
+        estimate: '45 min',
+      };
+    } else {
+      const topSkill = userProfile?.subjects?.[0] || 'Web';
+      repoStep = {
+        title: `Build a ${topSkill} project with authentication & live demo`,
+        reason: 'A deployed project with a live URL signals execution ability to recruiters.',
+        estimate: '2–3 weeks',
+      };
+    }
+
+    if (userId) {
+      withFallback(() => redis.set(`repo_guidance:${userId}`, repoStep, { ex: 7200 }), undefined);
+    }
   }
 
   return {
@@ -360,7 +381,7 @@ export async function GET(request: NextRequest) {
     })
     .filter(t => t.score > 0);
 
-  const repoGuidanceTask = await buildRepoGuidanceTask({ githubCache, userProfile });
+  const repoGuidanceTask = await buildRepoGuidanceTask({ userId: user.id, githubCache, userProfile });
 
   // Real feed: only actual work tasks + AI repo guidance.
   // Setup nudges are returned separately so they never displace real next moves.

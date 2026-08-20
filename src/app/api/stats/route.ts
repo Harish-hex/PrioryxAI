@@ -25,20 +25,12 @@ export async function GET() {
 
   const [
     { data: allTasks },
-    { data: completedThisWeek },
     { data: github },
   ] = await Promise.all([
     supabase
       .from('tasks')
       .select('type, completed, due_at')
       .eq('user_id', user.id),
-
-    supabase
-      .from('tasks')
-      .select('id, type')
-      .eq('user_id', user.id)
-      .eq('completed', true)
-      .gte('due_at', weekStart.toISOString()),
 
     supabase
       .from('github_cache')
@@ -48,6 +40,10 @@ export async function GET() {
   ]);
 
   const tasks = allTasks ?? [];
+  const weekStartIso = weekStart.toISOString();
+  const completedThisWeekCount = tasks.filter(
+    t => t.completed && t.due_at && t.due_at >= weekStartIso
+  ).length;
 
   // Tasks by type breakdown
   const byType: Record<string, { total: number; pending: number; completed: number }> = {};
@@ -69,7 +65,7 @@ export async function GET() {
     total_tasks: tasks.length,
     pending_tasks: tasks.filter(t => !t.completed).length,
     completed_tasks: tasks.filter(t => t.completed).length,
-    completed_this_week: completedThisWeek?.length ?? 0,
+    completed_this_week: completedThisWeekCount,
     overdue,
     by_type: byType,
     github: {

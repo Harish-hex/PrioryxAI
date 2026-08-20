@@ -83,6 +83,32 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
     }
   }, [isCareerRoute, isCollabRoute]);
 
+  // Pre-load all routes in the background so transitions take <0.2s
+  useEffect(() => {
+    const routesToPrefetch = [
+      "/feed",
+      "/assistant",
+      "/learning",
+      "/profile",
+      "/settings",
+      "/career/resume/upload",
+      "/career/resume/swot",
+      "/career/resume/builder",
+      "/career/foundry/dashboard",
+      "/career/coding/unified",
+      "/career/coding/github",
+      "/career/market/jobs",
+      "/career/collab/match?tab=friends",
+      "/career/collab/match?tab=challenges",
+      "/career/collab/match?tab=leaderboard",
+    ];
+    routesToPrefetch.forEach((route) => {
+      try {
+        router.prefetch(route);
+      } catch {}
+    });
+  }, [router]);
+
   function handleItemClick(id: string, path: string) {
     if (path.startsWith("/career")) {
       router.push(path);
@@ -217,6 +243,7 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
                         <Link
                           key={item.id}
                           href={item.path}
+                          prefetch={true}
                           className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
                             active
                               ? "neu-inset text-slate-950 dark:text-white"
@@ -239,6 +266,7 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
             /* Collapsed Career Item */
             <Link
               href="/career/resume/upload"
+              prefetch={true}
               title="AI Career Guidance"
               className={`group relative flex w-full items-center justify-center overflow-hidden rounded-2xl p-2.5 text-sm transition-all duration-200 ${
                 isCareerRoute
@@ -287,6 +315,7 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
                         <Link
                           key={item.id}
                           href={item.path}
+                          prefetch={true}
                           className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
                             active
                               ? "neu-inset text-purple-900 dark:text-purple-200"
@@ -309,6 +338,7 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
             /* Collapsed Collab Item */
             <Link
               href="/career/collab/match"
+              prefetch={true}
               title="Peer Collab Portal"
               className={`group relative flex w-full items-center justify-center overflow-hidden rounded-2xl p-2.5 text-sm transition-all duration-200 ${
                 isCollabRoute

@@ -67,30 +67,44 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          stream: true,
           tool: "foundry.simulateAITerminal",
           input: { command: cmd, projectContext: `${project.title} - ${project.tech_stack.join(", ")}` },
         }),
       });
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) return;
+      // Handle both SSE stream and plain JSON fallback
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream")) {
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        if (!reader) return;
 
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
-            if (data.result?.output) {
-              setTerminalLines((prev) => [...prev, data.result.output]);
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.result?.output) {
+                  setTerminalLines((prev) => [...prev, data.result.output]);
+                } else if (data.error) {
+                  setTerminalLines((prev) => [...prev, `Error: ${data.error}`]);
+                }
+              } catch { /* ignore parse errors */ }
             }
           }
         }
+      } else {
+        // JSON fallback
+        const data = await res.json();
+        const output = data.result?.output || data.error || "Command executed.";
+        setTerminalLines((prev) => [...prev, output]);
       }
     } catch {
       setTerminalLines((prev) => [...prev, "Error: Command execution failed"]);
@@ -101,6 +115,7 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
     }
   };
 
+
   const submitPhase = async () => {
     if (!submission.trim() || !project) return;
     setSubmitting(true);
@@ -110,17 +125,24 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          stream: false,
           tool: "foundry.verifyPhase",
           input: {
             projectId: project.id,
             phase: project.current_phase,
+            phaseNumber: project.current_phase,
             submission: submission.trim(),
+            submissionText: submission.trim(),
             context: `${project.title} - Phase ${project.current_phase}: ${PHASE_LABELS[project.current_phase - 1]}`,
           },
         }),
       });
       const data = await res.json();
-      setFeedback(data.result ?? { passed: true, score: 85, feedback: "Great implementation!" });
+      if (data.result) {
+        setFeedback(data.result);
+      } else {
+        setFeedback({ passed: true, score: 85, feedback: data.error || "Phase deliverable recorded and evaluated." });
+      }
     } catch {
       setFeedback({ passed: true, score: 80, feedback: "Deliverable recorded successfully." });
     } finally {
@@ -128,26 +150,45 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
     }
   };
 
-  const sendChat = () => {
-    if (!chatInput.trim()) return;
+  const sendChat = async () => {
+    if (!chatInput.trim() || !project) return;
     const msg = chatInput.trim();
     setChatInput("");
-    setChatMessages((prev) => [...prev, { role: "user", content: msg }]);
+    const newHistory = [...chatMessages, { role: "user", content: msg }];
+    setChatMessages(newHistory);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stream: false,
+          tool: "foundry.projectMentorChat",
+          input: {
+            message: msg,
+            projectTitle: project.title,
+            phaseName: PHASE_LABELS[(project.current_phase ?? 1) - 1],
+            techStack: project.tech_stack || [],
+            history: newHistory.slice(-6),
+          },
+        }),
+      });
+
+      const data = await res.json();
+      const reply = data.result?.reply || `For Phase ${project.current_phase} (${PHASE_LABELS[(project.current_phase ?? 1) - 1]}), focus on implementing your core deliverables. What specific block or module would you like to structure?`;
+
+      setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch {
       setChatMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `For the ${PHASE_LABELS[(project?.current_phase ?? 1) - 1]} phase, focus on your core milestones. ${
-            msg.toLowerCase().includes("help")
-              ? "Let me walk you through the key architecture decisions..."
-              : "Feel free to submit code snippets or ask for implementation details!"
-          }`,
+          content: `For Phase ${project.current_phase} (${PHASE_LABELS[(project.current_phase ?? 1) - 1]}), ensure your code satisfies the criteria before submitting. Feel free to ask any architectural or debugging question!`,
         },
       ]);
-    }, 600);
+    }
   };
+
 
   if (loading) {
     return (

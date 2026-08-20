@@ -310,6 +310,82 @@ async function facilitateRealTimeSession(
   };
 }
 
+async function chatWithAssistant(
+  input: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  const message = String(input.message || input.query || input.prompt || '').trim();
+  const context = (input.context as Record<string, unknown>) ?? {};
+  const history = (input.history as Array<{ role: string; content: string }>) ?? [];
+
+  if (!message) {
+    return { success: false, data: null, error: 'Message is required' };
+  }
+
+  const supabase = createClient();
+  let userContext = '';
+  if (userId) {
+    const { data: user } = await supabase.from('users').select('target_roles, target_companies, college, semester').eq('id', userId).maybeSingle();
+    if (user) {
+      userContext = `Student Profile: ${user.college || 'Engineering'}, Sem ${user.semester || 1}, Targets: ${(user.target_roles || []).join(', ')}`;
+    }
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: `You are PrioryxAI — the intelligent Deadline & Career Operating System copilot. You help engineering students conquer deadlines, master DSA, build portfolio-grade projects, and ace tech placements. Be concise, strategic, motivating, and actionable. ${userContext}`,
+      },
+      ...history.slice(-8).map((h) => ({
+        role: (h.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: h.content,
+      })),
+      {
+        role: 'user',
+        content: `Context: ${JSON.stringify(context)}\nUser message: ${message}`,
+      },
+    ],
+    max_tokens: 1200,
+  });
+
+  const reply = completion.choices[0]?.message?.content ?? 'I am here to help you stay ahead of your deadlines and placement goals.';
+  return { success: true, data: { reply } };
+}
+
+async function analyzeCodeSnippet(
+  input: Record<string, unknown>,
+  _userId: string
+): Promise<ToolResult> {
+  const code = String(input.code || '');
+  const language = String(input.language || 'typescript');
+  const task = String(input.task || 'Review code for performance, edge cases, and best practices');
+
+  if (!code || code.trim().length < 5) {
+    return { success: false, data: null, error: 'Code snippet too short' };
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a senior tech lead. Analyze the given code snippet. Return JSON: { timeComplexity: string, spaceComplexity: string, score: number (0-100), issues: string[], suggestions: string[], refactoredCode: string }`,
+      },
+      {
+        role: 'user',
+        content: `Language: ${language}\nTask: ${task}\n\nCode:\n${code}`,
+      },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 1500,
+  });
+
+  const result = JSON.parse(completion.choices[0]?.message?.content ?? '{}');
+  return { success: true, data: result };
+}
+
 export const aiAgent: AgentModule = {
   name: 'AI Agent',
   prefix: 'ai',
@@ -321,6 +397,10 @@ export const aiAgent: AgentModule = {
     { name: 'generateFeedbackReport', description: 'Generate weekly progress and feedback report', inputSchema: {}, handler: generateFeedbackReport },
     { name: 'matchPeerCollaborators', description: 'Find peer collaborators by skill and score proximity', inputSchema: {}, handler: matchPeerCollaborators },
     { name: 'facilitateRealTimeSession', description: 'Create a real-time collaboration session', inputSchema: { type: 'object', properties: { peerId: { type: 'string' }, sessionType: { type: 'string' }, projectId: { type: 'string' } } }, handler: facilitateRealTimeSession },
+    { name: 'chatWithAssistant', description: 'Conversational assistant for placement & productivity guidance', inputSchema: { type: 'object', properties: { message: { type: 'string' }, context: { type: 'object' } }, required: ['message'] }, handler: chatWithAssistant },
+    { name: 'chat', description: 'Alias for chatWithAssistant', inputSchema: { type: 'object', properties: { message: { type: 'string' } } }, handler: chatWithAssistant },
+    { name: 'analyzeCodeSnippet', description: 'Analyze code for time/space complexity and bugs', inputSchema: { type: 'object', properties: { code: { type: 'string' }, language: { type: 'string' } }, required: ['code'] }, handler: analyzeCodeSnippet },
   ],
 };
+
 

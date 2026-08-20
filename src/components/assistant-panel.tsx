@@ -22,6 +22,108 @@ interface Message {
   text: string;
 }
 
+/** Lightweight markdown renderer — handles **bold**, `code`, bullet lists, numbered lists, code blocks, and line breaks */
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Fenced code block
+    if (line.startsWith("```")) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <pre key={i} className="my-2 overflow-x-auto rounded-xl bg-slate-900/80 p-3 text-[11px] leading-5 text-slate-100 dark:bg-black/40">
+          <code>{codeLines.join("\n")}</code>
+        </pre>
+      );
+      i++; // skip closing ```
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*•]\s/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^[-*•]\s/.test(lines[i])) {
+        items.push(lines[i].replace(/^[-*•]\s/, ""));
+        i++;
+      }
+      elements.push(
+        <ul key={i} className="my-1.5 list-disc space-y-1 pl-5">
+          {items.map((item, j) => <li key={j}><InlineMarkdown text={item} /></li>)}
+        </ul>
+      );
+      continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s/, ""));
+        i++;
+      }
+      elements.push(
+        <ol key={i} className="my-1.5 list-decimal space-y-1 pl-5">
+          {items.map((item, j) => <li key={j}><InlineMarkdown text={item} /></li>)}
+        </ol>
+      );
+      continue;
+    }
+
+    // Headings
+    if (/^#{1,3}\s/.test(line)) {
+      const level = line.match(/^(#+)/)?.[1].length ?? 1;
+      const content = line.replace(/^#+\s/, "");
+      const cls = level === 1 ? "text-base font-bold mt-3 mb-1" : level === 2 ? "text-sm font-bold mt-2 mb-0.5" : "text-xs font-bold mt-1";
+      elements.push(<p key={i} className={cls}><InlineMarkdown text={content} /></p>);
+      i++;
+      continue;
+    }
+
+    // Blank line
+    if (line.trim() === "") {
+      elements.push(<br key={i} />);
+      i++;
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(<p key={i} className="leading-7"><InlineMarkdown text={line} /></p>);
+    i++;
+  }
+
+  return <div className="space-y-0.5 text-sm">{elements}</div>;
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith("`") && part.endsWith("`")) {
+          return <code key={i} className="rounded bg-slate-200/80 px-1 py-0.5 font-mono text-[11px] text-slate-800 dark:bg-white/10 dark:text-slate-200">{part.slice(1, -1)}</code>;
+        }
+        if (part.startsWith("*") && part.endsWith("*")) {
+          return <em key={i}>{part.slice(1, -1)}</em>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+
 interface AssistantPanelProps {
   tasks: Task[];
   isPro: boolean;
@@ -284,7 +386,11 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                         : "border border-slate-200 bg-white/90 text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
                     }`}
                   >
-                    {message.text}
+                    {message.role === "assistant" ? (
+                      <MarkdownText text={message.text} />
+                    ) : (
+                      message.text
+                    )}
                     {streamingId === message.id && (
                       <span className="inline-block h-4 w-1.5 ml-1 animate-pulse rounded-sm bg-cyan-500 align-middle shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                     )}

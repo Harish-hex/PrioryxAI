@@ -11,7 +11,17 @@ import { SimpleSkeleton } from "@/components/ui/skeleton";
 export default function CareerLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const cached = sessionStorage.getItem("prioryx_status");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return Boolean(parsed.pro_status) && (!parsed.pro_expires_at || new Date(parsed.pro_expires_at) > new Date());
+      }
+    } catch {}
+    return false;
+  });
 
   useEffect(() => {
     fetch("/api/user/status")
@@ -20,6 +30,9 @@ export default function CareerLayout({ children }: { children: ReactNode }) {
         return {} as Record<string, unknown>;
       })
       .then((data) => {
+        if (Object.keys(data).length > 0) {
+          sessionStorage.setItem("prioryx_status", JSON.stringify(data));
+        }
         const effectivePro =
           Boolean(data.pro_status) &&
           (!data.pro_expires_at || new Date(data.pro_expires_at as string) > new Date());

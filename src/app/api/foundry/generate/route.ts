@@ -52,7 +52,12 @@ export async function POST() {
 
   let skills: string[] = []
   if (resume) {
-    skills = (resume.skill_entities as { skills?: string[] })?.skills ?? []
+    const se = resume.skill_entities
+    if (Array.isArray(se)) {
+      skills = se.map((s: any) => (typeof s === 'string' ? s : s?.name)).filter(Boolean) as string[]
+    } else if (se && typeof se === 'object') {
+      skills = (se as { skills?: string[] }).skills ?? []
+    }
     if (skills.length === 0 && resume.parsed_data) {
       skills = (resume.parsed_data as { skills?: string[] }).skills ?? []
     }
@@ -169,8 +174,12 @@ export async function GET() {
   }
 
   return NextResponse.json({ 
-    projects: projects ?? [],
+    projects: (projects ?? []).map((p: any) => ({
+      ...p,
+      // Derive completion_pct from current_phase if DB value is missing
+      completion_pct: p.completion_pct > 0 ? p.completion_pct : Math.round(((p.current_phase - 1) / 6) * 100),
+    })),
     resumeUploaded: hasResume,
-    resumeValid: hasResume
+    resumeValid: hasResume && skillsCount > 0,
   })
 }
