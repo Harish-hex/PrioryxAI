@@ -213,13 +213,13 @@ export default function Component({ children }: { children?: React.ReactNode } =
   );
 
   return (
-    <div style={{position:"relative",width:"100%",height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",background:"#000",color:"#fff",fontFamily:"'Inter',-apple-system,sans-serif"}}>
+    <div style={{position:"relative",width:"100%",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",overflowY:"auto",background:"#000",color:"#fff",fontFamily:"'Inter',-apple-system,sans-serif",padding:"2.5rem 1rem"}}>
 
       {/* WebGL Dot canvas */}
-      <canvas ref={canvasRef} style={{position:"absolute",inset:0,zIndex:0}}/>
+      <canvas ref={canvasRef} style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none"}}/>
 
       {/* Vignette */}
-      <div style={{position:"absolute",inset:0,zIndex:1,background:"radial-gradient(circle at center,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)",pointerEvents:"none"}}/>
+      <div style={{position:"fixed",inset:0,zIndex:1,background:"radial-gradient(circle at center,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)",pointerEvents:"none"}}/>
 
       {/* Custom children or standalone Modal card */}
       {children ? (
