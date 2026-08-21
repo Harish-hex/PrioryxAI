@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { redis, withFallback } from '@/lib/redis'
 
 export interface PriorityTask {
   id: string
@@ -36,14 +37,16 @@ export interface PriorityPlan {
   generatedAt: string
 }
 
-let _cached: { plan: PriorityPlan; userId: string; ts: number } | null = null
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const CACHE_TTL_SEC = 5 * 60 // 5 minutes — same TTL as before, but Redis-backed
 
 export async function generatePriorityPlan(userId: string): Promise<PriorityPlan> {
-  // Return cached result if fresh
-  if (_cached && _cached.userId === userId && Date.now() - _cached.ts < CACHE_TTL_MS) {
-    return _cached.plan
-  }
+  // Return Redis-cached result if fresh (safe across serverless instances)
+  const cacheKey = `priority_plan:${userId}`
+  const cached = await withFallback(
+    () => redis.get<PriorityPlan>(cacheKey),
+    null
+  )
+  if (cached) return cached
 
   const supabase = createClient()
   const today = new Date()
@@ -268,7 +271,8 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
     generatedAt: new Date().toISOString(),
   }
 
-  _cached = { plan, userId, ts: Date.now() }
+  // Write to Redis — fire-and-forget; failure must never break the response
+  withFallback(() => redis.set(cacheKey, plan, { ex: CACHE_TTL_SEC }), null).catch(() => {})
   return plan
 }
 
