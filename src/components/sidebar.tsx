@@ -282,58 +282,21 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
         {/* ── Peer Collab Portal Section (Below AI Career Guidance & Above Profile) ── */}
         <div className="space-y-1.5 pt-1">
           {!collapsed ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setCollabOpen(!collabOpen)}
-                className="flex w-full items-center justify-between px-3.5 py-1.5 text-left text-[11px] font-bold uppercase tracking-[0.14em] text-purple-600 transition hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 select-none"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Users size={12} className="text-purple-500" />
-                  <span>Peer Collab Portal</span>
-                </div>
-                <ChevronDown
-                  size={13}
-                  className={`transition-transform duration-200 ${collabOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <AnimatePresence initial={false}>
-                {collabOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden space-y-1.5 pt-0.5"
-                  >
-                    {collabNavItems.map((item) => {
-                      const Icon = item.icon;
-                      const active = isCollabRoute && currentTab === item.tab;
-
-                      return (
-                        <Link
-                          key={item.id}
-                          href={item.path}
-                          prefetch={true}
-                          className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
-                            active
-                              ? "neu-inset text-purple-900 dark:text-purple-200"
-                              : "text-slate-600 hover:text-purple-700 dark:text-slate-400 dark:hover:text-purple-300 hover:translate-x-0.5"
-                          }`}
-                        >
-                          <Icon className={`relative z-10 shrink-0 ${active ? "text-purple-600 dark:text-purple-400 stroke-[2.2]" : ""}`} size={16} />
-                          <span className="relative z-10 truncate text-[13px]">{item.label}</span>
-                          {active && (
-                            <span className="relative z-10 ml-auto h-1.5 w-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
+            <Link
+              href="/career/collab/match"
+              prefetch={true}
+              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
+                isCollabRoute
+                  ? "neu-inset text-purple-900 dark:text-purple-200"
+                  : "text-slate-600 hover:text-purple-700 dark:text-slate-400 dark:hover:text-purple-300 hover:translate-x-0.5"
+              }`}
+            >
+              <Users className={`relative z-10 shrink-0 ${isCollabRoute ? "text-purple-600 dark:text-purple-400" : ""}`} size={17} />
+              <span className="relative z-10 truncate text-[13.5px]">Peer Collab Portal</span>
+              {isCollabRoute && (
+                <span className="relative z-10 ml-auto h-1.5 w-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
+              )}
+            </Link>
           ) : (
             /* Collapsed Collab Item */
             <Link

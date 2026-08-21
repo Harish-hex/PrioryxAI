@@ -6,6 +6,7 @@ import { foundryAgent } from './agents/foundry-agent';
 import { marketAgent } from './agents/market-agent';
 import { researchAgent } from './agents/research-agent';
 import { aiAgent } from './agents/ai-agent';
+import { githubAgent } from './agents/github-agent';
 
 const agents: AgentModule[] = [
   authAgent,
@@ -14,6 +15,7 @@ const agents: AgentModule[] = [
   marketAgent,
   researchAgent,
   aiAgent,
+  githubAgent,
 ];
 
 // Build flat lookup: "resume.parseResumeToJSON" → handler
@@ -48,6 +50,9 @@ const ALIASES: Record<string, string> = {
   'roadmap': 'ai.generatePersonalizedRoadmap',
   'jobs': 'market.fetchLiveJobListings',
   'leetcode': 'research.fetchLeetCodeProfile',
+  'github.analyze': 'github.analyzeRepositoryCommits',
+  'resume.autodraft': 'resume.autodraftFromProfile',
+  'autodraft': 'resume.autodraftFromProfile',
 };
 
 export function lookupTool(

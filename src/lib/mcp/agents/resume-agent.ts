@@ -299,6 +299,70 @@ async function rankResumeStrengths(
   };
 }
 
+async function autodraftFromProfile(
+  _input: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  const supabase = createClient();
+  const [profileRes, resumeRes, lcProfileRes, githubRes, projectsRes] = await Promise.allSettled([
+    supabase.from('users').select('name, display_name, college, semester, target_companies, target_roles, stream').eq('id', userId).maybeSingle(),
+    supabase.from('user_resumes').select('skill_entities, swot, parsed_data').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('leetcode_profiles').select('leetcode_username, placement_readiness_score').eq('user_id', userId).maybeSingle(),
+    supabase.from('github_cache').select('repos, languages, health_score').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_projects').select('title, tech_stack, completion_pct, verified').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
+  ]);
+
+  const profile = profileRes.status === 'fulfilled' ? profileRes.value.data : null;
+  const resume = resumeRes.status === 'fulfilled' ? resumeRes.value.data : null;
+  const lcProfile = lcProfileRes.status === 'fulfilled' ? lcProfileRes.value.data : null;
+  const github = githubRes.status === 'fulfilled' ? githubRes.value.data : null;
+  const projects = projectsRes.status === 'fulfilled' ? (projectsRes.value.data ?? []) : [];
+
+  const skills = (resume?.skill_entities as { skills?: string[] } | null)?.skills ?? [];
+  const repos = (github?.repos as Array<{ name?: string; description?: string; language?: string }>) ?? [];
+
+  const contextForLLM = {
+    name: profile?.name ?? profile?.display_name ?? 'Student',
+    college: profile?.college,
+    semester: profile?.semester,
+    targetRoles: profile?.target_roles ?? ['Software Engineer'],
+    skills: skills.slice(0, 25),
+    lcScore: (lcProfile as { placement_readiness_score?: number } | null)?.placement_readiness_score,
+    githubLanguages: Object.keys((github?.languages as Record<string, number>) ?? {}).slice(0, 8),
+    githubHealthScore: github?.health_score,
+    topRepos: repos.slice(0, 6),
+    projects: projects.slice(0, 5),
+  };
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    response_format: { type: 'json_object' },
+    max_tokens: 2500,
+    temperature: 0.3,
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert resume writer. Generate an ATS-optimized resume draft in JSON:
+{
+  "summary": "3-line professional summary",
+  "skills": { "languages": [], "frameworks": [], "tools": [], "concepts": [] },
+  "projects": [{ "title": "", "techStack": [], "bullets": [] }],
+  "githubHighlights": [],
+  "dsaSection": "",
+  "improvementTips": []
+}`,
+      },
+      {
+        role: 'user',
+        content: `Candidate Context:\n${JSON.stringify(contextForLLM, null, 2)}`,
+      },
+    ],
+  });
+
+  const parsed = JSON.parse(completion.choices[0]?.message?.content ?? '{}');
+  return { success: true, data: { draft: parsed } };
+}
+
 export const resumeAgent: AgentModule = {
   name: 'Resume Agent',
   prefix: 'resume',
@@ -311,5 +375,6 @@ export const resumeAgent: AgentModule = {
     { name: 'generateSTARBullets', description: 'Generate STAR-format resume bullets from verified projects', inputSchema: { type: 'object', properties: { projectTitle: { type: 'string' }, projectDescription: { type: 'string' }, techStack: { type: 'array' }, phaseResults: { type: 'string' } } }, handler: generateSTARBullets },
     { name: 'buildVerifiedResumePDF', description: 'Build resume data from verified projects for PDF export', inputSchema: {}, handler: buildVerifiedResumePDF },
     { name: 'rankResumeStrengths', description: 'Rank skills by proficiency to highlight top strengths', inputSchema: { type: 'object', properties: { skills: { type: 'array' } } }, handler: rankResumeStrengths },
+    { name: 'autodraftFromProfile', description: 'Draft ATS-optimised resume bullets and portfolio summary from user profile data', inputSchema: { type: 'object', properties: {} }, handler: autodraftFromProfile },
   ],
 };

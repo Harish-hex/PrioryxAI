@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
   let user: { id: string; email?: string } | null = null;
 
   try {
+    // ── Auth path 1: Session cookie (browser / same-origin) ──
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
     if (data?.user) {
@@ -44,6 +45,25 @@ export async function POST(request: NextRequest) {
     } else {
       const serverUser = await getAuthUser();
       if (serverUser) user = { id: serverUser.id, email: serverUser.email };
+    }
+
+    // ── Auth path 2: Bearer token (external MCP clients) ──
+    if (!user) {
+      const authHeader = request.headers.get('authorization') ?? '';
+      const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+      if (bearerToken) {
+        // Validate token against mcp_tokens table using service role
+        const { createServiceClient: serviceClient } = await import('@/lib/supabase/server');
+        const admin = serviceClient();
+        const { data: tokenRow } = await admin
+          .from('mcp_tokens')
+          .select('user_id, revoked')
+          .eq('token_hash', bearerToken) // store hashed token; plain for MVP — rotate to hash in prod
+          .single();
+        if (tokenRow && !tokenRow.revoked) {
+          user = { id: tokenRow.user_id };
+        }
+      }
     }
   } catch {}
 

@@ -3,31 +3,28 @@ import type { AgentModule, ToolResult, PeerMatch } from '../types';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 
+/**
+ * @deprecated Use runAgenticOrchestration from '@/lib/mcp/agentic-orchestrator' instead.
+ *
+ * This function previously returned a hardcoded pipeline array with status 'ready'.
+ * The real tool-call loop is now implemented in agentic-orchestrator.ts (Phase 2).
+ * This stub is kept only so the registry binding does not break existing callers.
+ */
 async function runMultiAgentOrchestration(
-  input: Record<string, unknown>,
+  _input: Record<string, unknown>,
   _userId: string
 ): Promise<ToolResult> {
-  // This is a meta-tool that describes the orchestration pipeline
-  const agentSequence = input.agentSequence as string[] ?? [
-    'resume.parseResumeToJSON',
-    'resume.extractSkillEntities',
-    'resume.computeSWOTAnalysis',
-    'research.fetchLeetCodeProfile',
-    'research.computePlacementReadinessScore',
-    'foundry.generate9TailoredProjects',
-    'market.fetchLiveJobListings',
-    'ai.generatePersonalizedRoadmap',
-  ];
-
   return {
     success: true,
     data: {
-      pipeline: agentSequence,
-      status: 'ready',
-      message: 'Use the orchestrator to run this pipeline with SSE streaming',
+      status: 'deprecated',
+      message:
+        'runMultiAgentOrchestration is deprecated. Use runAgenticOrchestration from @/lib/mcp/agentic-orchestrator instead.',
+      migrateTo: 'runAgenticOrchestration',
     },
   };
 }
+
 
 async function generatePersonalizedRoadmap(
   input: Record<string, unknown>,

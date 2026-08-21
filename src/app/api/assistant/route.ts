@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 import { assistantRateLimiter, getClientIp } from '@/lib/rate-limiter';
+import { getUserMemoryContext, extractAndUpsertMemory } from '@/lib/memory/user-memory';
 
 export const runtime = 'nodejs';
 
@@ -179,6 +180,9 @@ export async function POST(request: NextRequest) {
     studentProfile = 'no_foundation';
   }
 
+  // Fetch persistent user memory (non-blocking — empty string on failure)
+  const memoryContext = await getUserMemoryContext(user.id, 8);
+
   const today = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
   const context = `Today: ${today}
 Semester: ${sanitize(userData?.semester?.toString())}
@@ -218,8 +222,10 @@ Non-negotiable rules:
 - Offer one recommendation, not three options. The user needs a decision, not a menu.
 - Keep responses under 250 words unless a detailed breakdown genuinely requires more. Shorter is almost always better.
 - You have live context on this user's tasks, deadlines, and GitHub activity. Reference it when relevant — don't ask for information you already have.
+- You have persistent memory about this student from past sessions. Use it to personalise your advice.
 
-${context}`,
+${context}${memoryContext}`,
+      // memoryContext is injected above — contains persisted facts from past sessions
     },
     ...(history ?? []).reverse().flatMap((m: any) => {
       if (!['user', 'assistant'].includes(m.role)) return [];
@@ -280,6 +286,10 @@ ${context}`,
         role: 'assistant',
         content: fullResponse,
       });
+
+      // Phase 5: Extract and persist memory facts (fire-and-forget — never blocks response)
+      const sessionText = `User: ${userMessage}\nAssistant: ${fullResponse}`;
+      extractAndUpsertMemory(user.id, sessionText).catch(() => {});
     }
   }
 

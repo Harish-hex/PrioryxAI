@@ -280,29 +280,24 @@ export function CareerSheet({ open, onClose }: { open: boolean; onClose: () => v
 
         {/* Peer Collab Portal Group */}
         <div className="space-y-2.5">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-purple-500" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-purple-600 dark:text-purple-400">
-              Peer Collab Portal
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {collabPortals.map(({ label, icon: Icon, path }) => (
-              <Link
-                key={path}
-                href={path}
-                onClick={triggerHaptic}
-                className={`flex flex-col gap-1.5 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
-                  isActive(path)
-                    ? "neu-inset text-purple-900 dark:text-purple-200"
-                    : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
-                }`}
-              >
-                <Icon size={16} className={`shrink-0 ${isActive(path) ? "text-purple-600 dark:text-purple-400 stroke-[2.2]" : "text-purple-500"}`} />
-                <span className="text-[11.5px] font-bold leading-tight">{label}</span>
-              </Link>
-            ))}
-          </div>
+          <Link
+            href="/career/collab/match"
+            onClick={triggerHaptic}
+            className={`flex items-center gap-3 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
+              isActive("/career/collab/match")
+                ? "neu-inset text-purple-900 dark:text-purple-200"
+                : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
+            }`}
+          >
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive("/career/collab/match") ? "bg-purple-500 text-white" : "bg-slate-100 dark:bg-white/5 text-purple-500"}`}>
+              <Users size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold truncate">Peer Collab Portal</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Find study partners & peers</p>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </Link>
         </div>
 
         {/* Primary Pages Links */}

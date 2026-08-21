@@ -15,7 +15,7 @@ export interface ToolResult {
 }
 
 export interface SSEEvent {
-  event: 'tool_start' | 'tool_result' | 'tool_error' | 'progress' | 'done';
+  event: 'tool_start' | 'tool_result' | 'tool_error' | 'progress' | 'done' | 'agent_reasoning';
   data: Record<string, unknown>;
 }
 

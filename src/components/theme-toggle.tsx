@@ -95,18 +95,8 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
 
   const { width, height, knobSize, knobTravel, padding, scale } = dimensions;
 
-  if (!mounted) {
-    return (
-      <div
-        aria-hidden
-        style={{ width: `${width}px`, height: `${height}px` }}
-        className={`rounded-full bg-slate-200 dark:bg-slate-800 opacity-60 ${className}`}
-      />
-    );
-  }
-
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
+    <div className={`inline-flex items-center gap-2 ${className}`} suppressHydrationWarning>
       <button
         type="button"
         role="switch"
@@ -114,6 +104,7 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
         onClick={toggle}
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        suppressHydrationWarning
         style={{
           width: `${width}px`,
           height: `${height}px`,
