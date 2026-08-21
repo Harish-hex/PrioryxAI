@@ -5,6 +5,7 @@ import {
   ReadinessInputs,
   SCORE_VERSION,
 } from '@/lib/scoring/readiness-score';
+import { explainReadinessScore } from '@/lib/scoring/explain-score';
 
 export const runtime = 'nodejs';
 
@@ -162,12 +163,34 @@ export async function GET() {
     });
   }
 
+  // 5. Generate LLM explanation (cached — never blocks on identical score state)
+  const lcProfile = await supabase
+    .from('leetcode_profiles')
+    .select('ai_analysis')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const lcAnalysis = lcProfile.data?.ai_analysis as {
+    priority_topics?: Array<{ topic: string; priority: string }>;
+  } | null;
+  const weakTopics = lcAnalysis?.priority_topics
+    ?.filter((t) => t.priority === 'CRITICAL' || t.priority === 'HIGH')
+    .map((t) => t.topic) ?? [];
+
+  const explanation = await explainReadinessScore(user.id, result, {
+    weakTopics,
+  });
+
   return NextResponse.json({
     score: result.score,
     delta_from_last: deltaFromLast,
     breakdown: result.breakdown,
     score_version: result.scoreVersion,
     computed_at: new Date().toISOString(),
-    inputs_snapshot: inputs, // helpful for debugging; strip in production if desired
+    explanation: {
+      summary: explanation.summary,
+      next_actions: explanation.nextActions,
+      cached: explanation.cached,
+    },
+    inputs_snapshot: inputs,
   });
 }
