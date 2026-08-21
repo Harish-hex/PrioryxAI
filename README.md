@@ -18,10 +18,10 @@ PrioryxAI is a Next.js 14 application for managing academic, project, and career
 │   ├── app/                  # App Router pages and API routes
 │   ├── components/           # Dashboard, sidebar, assistant, profile UI
 │   └── lib/                  # Supabase, AI, GitHub sync, scoring, security
-├── supabase-schema.sql       # Base schema
-├── supabase-migration-v2.sql # Additional migration work
-├── DeadlineOS_PRD.docx       # Product requirement document
-└── priorix_plan_final.md     # Planning and implementation notes
+├── supabase/
+│   └── migrations/           # ALL DB migrations in chronological order (20260801_... → 20260816_...)
+├── docs/db/                  # Reference schema dumps (not migrations — do not run via CLI)
+└── DeadlineOS_PRD.docx       # Product requirement document
 ```
 
 ## Local Setup

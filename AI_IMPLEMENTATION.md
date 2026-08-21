@@ -239,7 +239,7 @@ Run all of these in your Supabase SQL Editor before deploying:
 1. `interview_sessions` — Phase 4
 2. `user_memory` + `vector` extension — Phase 5
 3. `mcp_tokens` — Phase 6
-4. `github_analysis` and `github_priority_actions` (from `supabase-migration-github-intelligence.sql`) — Phase 8
+4. `github_analysis` and `github_priority_actions` (now at `supabase/migrations/20260809_v12_github_analysis_peer.sql`) — Phase 8
 
 ---
 
