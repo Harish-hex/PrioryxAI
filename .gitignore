@@ -42,3 +42,13 @@ priorix_plan_final.md
 
 # certificates and keys
 *.pem
+
+# Android & Gradle build artifacts
+.gradle/
+**/.gradle/
+**/build/
+local.properties
+.cxx/
+*.apk
+*.aab
+*.lock
