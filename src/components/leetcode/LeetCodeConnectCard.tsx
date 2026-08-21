@@ -25,14 +25,20 @@ export function LeetCodeConnectCard({
         
         {/* Profile Info */}
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 relative rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
-            <Image 
-              src={profile.avatar} 
-              alt={profile.username}
-              fill
-              className="object-cover"
-              sizes="96px"
-            />
+          <div className="w-24 h-24 relative rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden bg-slate-800 flex items-center justify-center">
+            {profile.avatar ? (
+              <Image 
+                src={profile.avatar} 
+                alt={profile.username}
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
+            ) : (
+              <span className="text-3xl font-black text-indigo-400">
+                {profile.username?.slice(0, 2).toUpperCase() || 'LC'}
+              </span>
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{profile.name || profile.username}</h2>

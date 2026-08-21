@@ -1,12 +1,13 @@
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
 
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -14,17 +15,22 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId') || user.id;
-  
+
   if (userId !== user.id) {
-     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
-    const { data: profile } = await supabase
+    const db = createServiceRoleClient();
+    const { data: profile, error } = await db
       .from('leetcode_profiles')
       .select('ai_analysis')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      console.error('[leetcode analysis] db error:', error.message);
+    }
 
     let profileData = profile;
     if (!profile) {
@@ -32,15 +38,18 @@ export async function GET(req: Request) {
       if (mock) {
         profileData = { ai_analysis: mock.ai_analysis || null };
       } else {
-        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        return NextResponse.json({ error: 'No profile found' }, { status: 404 });
       }
     }
 
     if (!profileData || !profileData.ai_analysis) {
-      return NextResponse.json({
-        status: 'analyzing',
-        message: 'Analysis in progress, check back in 30s'
-      }, { status: 202 });
+      return NextResponse.json(
+        {
+          status: 'analyzing',
+          message: 'Analysis in progress, check back in 30s',
+        },
+        { status: 202 }
+      );
     }
 
     return NextResponse.json({ data: profileData.ai_analysis });

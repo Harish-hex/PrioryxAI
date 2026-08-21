@@ -8,6 +8,7 @@ import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
 import { priorityStyles, typeStyles } from "@/components/task-styles";
 import { getDailyChallenges, type CodingProblem } from "@/lib/daily-challenges";
 import { recordDailyActivity } from "@/lib/streak-tracker";
+import { ReadinessScoreCard } from "@/components/readiness-score-card";
 
 const dsaDifficultyStyles = {
   Easy: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
@@ -153,6 +154,13 @@ export function DashboardView({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-6">
+        {/* ── Phase 4: Readiness Score Hero (primary surface) ─── */}
+        <ReadinessScoreCard
+          isPro={isPro}
+          onOpenPricing={onOpenPricing}
+          onCompleteTask={onCompleteTask}
+        />
+
         <NextMoveCard
           loading={loading}
           task={nextTask}

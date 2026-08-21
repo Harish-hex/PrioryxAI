@@ -4,12 +4,14 @@ import { openai, sanitize } from '@/lib/openai';
 import { checkRateLimit, redis, assistantRatelimit, midnightISTttl } from '@/lib/redis';
 import { assistantRateLimiter, getClientIp } from '@/lib/rate-limiter';
 import { getUserMemoryContext, extractAndUpsertMemory } from '@/lib/memory/user-memory';
+import { ASSISTANT_TOOLS, executeAssistantTool } from '@/lib/assistant/tools';
 
 export const runtime = 'nodejs';
 
 const FREE_MESSAGE_LIMIT = 3;
+const MAX_TOOL_ITERATIONS = 4;
 
-// Canned fallback responses based on student profile context
+// Contextual fallback response generator (safety net if OpenAI API is completely unreachable)
 function getCannedResponse(userMessage: string, context: {
   studentProfile: string;
   tasks: Array<{ type: string; title: string; due_at: string | null }>;
@@ -72,7 +74,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Global per-IP + per-user rate limit (in-memory LRU) — fail open on error to avoid lockouts
+  const activeUserId = user.id;
+
+  // Global per-IP rate limit (in-memory LRU) — fail open on error
   const ip = getClientIp(request);
   try {
     const ipRl = assistantRateLimiter.check(`ip:${ip}`);
@@ -107,13 +111,10 @@ export async function POST(request: NextRequest) {
   // Free user daily message limit (resets at midnight IST) — atomic increment
   const msgCountKey = `msg_count:${user.id}`;
   if (!isPro) {
-    // Atomically increment and get new count; TTL resets at midnight IST
-    // If Redis fails, fail closed (block) to prevent abuse
     let count: number;
     try {
       count = await redis.incr(msgCountKey);
       if (count === 1) {
-        // First request today — set TTL to midnight IST
         await redis.expire(msgCountKey, midnightISTttl());
       }
     } catch {
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
     studentProfile = 'no_foundation';
   }
 
-  // Fetch persistent user memory (non-blocking — empty string on failure)
+  // Fetch persistent user memory
   const memoryContext = await getUserMemoryContext(user.id, 8);
 
   const today = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
@@ -208,40 +209,45 @@ GitHub repos: ${repos.length} total (${reposWithDescription.length} with descrip
     .order('created_at', { ascending: false })
     .limit(10);
 
-  const messages = [
+  const conversationMessages: any[] = [
     {
-      role: 'system' as const,
+      role: 'system',
       content: `You are a blunt, high-performance strategist embedded inside PrioryxAI. Your only job is to give the user the single highest-leverage action they can take right now.
 
+You have access to interactive workspace tools to:
+- Check the student's live deterministic Readiness Score ('get_readiness_score')
+- Inspect pending tasks and priorities ('get_today_tasks')
+- Create tasks directly on behalf of the user ('create_task')
+- Reschedule or snooze tasks ('snooze_task')
+- Retrieve LeetCode performance and weak topics ('get_leetcode_weak_topics')
+- Check upcoming exam dates ('get_upcoming_exams')
+
 Non-negotiable rules:
+- When a user asks about their tasks, readiness, LeetCode gaps, or exams, USE YOUR TOOLS to fetch live data rather than guessing.
 - Lead with the answer. Never open with "Great question", affirmations, or preamble of any kind.
-- Be specific — not vague. "Study for 2 hours" is useless. "Spend 45 min on dynamic programming — cover coin change and knapsack using NeetCode's DP playlist, then solve 2 LeetCode mediums" is useful.
-- No filler words, no hedging, no "it depends". Pick the best path and commit to it.
+- Be specific — not vague. "Study for 2 hours" is useless. "Spend 45 min on dynamic programming — solve 2 LeetCode mediums" is useful.
+- No filler words, no hedging. Pick the best path and commit to it.
 - If the user's plan is wrong or inefficient, say so directly and explain why in one sentence.
-- When giving a schedule: exact time blocks, exact topics, exact outputs. No approximations.
-- Offer one recommendation, not three options. The user needs a decision, not a menu.
-- Keep responses under 250 words unless a detailed breakdown genuinely requires more. Shorter is almost always better.
-- You have live context on this user's tasks, deadlines, and GitHub activity. Reference it when relevant — don't ask for information you already have.
-- You have persistent memory about this student from past sessions. Use it to personalise your advice.
+- When creating a task, confirm what you created in one crisp sentence.
+- Keep final responses under 250 words unless a detailed schedule genuinely requires more.
+- Reference persistent memory facts when relevant.
 
 ${context}${memoryContext}`,
-      // memoryContext is injected above — contains persisted facts from past sessions
     },
     ...(history ?? []).reverse().flatMap((m: any) => {
       if (!['user', 'assistant'].includes(m.role)) return [];
       return [{ role: m.role as 'user' | 'assistant', content: String(m.content) }];
     }),
-    { role: 'user' as const, content: userMessage },
+    { role: 'user', content: userMessage },
   ];
 
-  // Save user message
+  // Save user message to database
   await supabase.from('assistant_messages').insert({
     user_id: user.id,
     role: 'user',
     content: userMessage,
   });
 
-  // Build context for potential fallback
   const fallbackContext = {
     studentProfile,
     tasks: tasks ?? [],
@@ -252,56 +258,115 @@ ${context}${memoryContext}`,
     hasGitHub: repos.length > 0,
   };
 
-  // Stream response with fallback
   const encoder = new TextEncoder();
 
-  async function* streamWithFallback() {
+  // ── Phase 6: Tool-Calling Agent Loop (up to 4 iterations) ───────────────────
+  async function* runAgentLoop() {
     let fullResponse = '';
 
     try {
-      const stream = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        max_tokens: 800,
-        stream: true,
-      });
+      let currentMessages = [...conversationMessages];
+      let iteration = 0;
+      let finalStreamRequired = true;
 
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content ?? '';
-        if (text) {
-          fullResponse += text;
-          yield encoder.encode(text);
+      while (iteration < MAX_TOOL_ITERATIONS) {
+        iteration++;
+
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: currentMessages,
+          tools: ASSISTANT_TOOLS,
+          tool_choice: 'auto',
+          max_tokens: 800,
+        });
+
+        const choice = response.choices[0];
+        const message = choice?.message;
+
+        // If the model requested tool calls, execute them and feed results back
+        if (message?.tool_calls && message.tool_calls.length > 0) {
+          currentMessages.push(message);
+
+          for (const toolCall of message.tool_calls) {
+            if (toolCall.type !== 'function') continue;
+
+            let parsedArgs = {};
+            try {
+              parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+            } catch {}
+
+            const toolResult = await executeAssistantTool(
+              supabase,
+              activeUserId,
+              toolCall.function.name,
+              parsedArgs
+            );
+
+            currentMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(toolResult),
+            });
+          }
+          // Continue to next iteration so LLM can reason over tool outputs
+          continue;
+        }
+
+        // If no tool calls, this is the final answer! Stream it directly if possible, or yield text
+        if (message?.content) {
+          fullResponse = message.content;
+          yield encoder.encode(fullResponse);
+          finalStreamRequired = false;
+          break;
+        }
+
+        break;
+      }
+
+      // If loop finished with tool calls and needs final stream
+      if (finalStreamRequired) {
+        const stream = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: currentMessages,
+          max_tokens: 800,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? '';
+          if (text) {
+            fullResponse += text;
+            yield encoder.encode(text);
+          }
         }
       }
     } catch (err) {
-      console.error('[assistant] OpenAI error, using fallback:', err);
+      console.error('[assistant tool-loop error] Falling back:', err);
       fullResponse = getCannedResponse(userMessage, fallbackContext);
       yield encoder.encode(fullResponse);
     }
 
-    // Save assistant reply (counter already incremented atomically at start)
-    if (user?.id) {
+    // Save assistant reply & trigger memory extraction
+    if (activeUserId && fullResponse) {
       await supabase.from('assistant_messages').insert({
-        user_id: user.id,
+        user_id: activeUserId,
         role: 'assistant',
         content: fullResponse,
       });
 
-      // Phase 5: Extract and persist memory facts (fire-and-forget — never blocks response)
       const sessionText = `User: ${userMessage}\nAssistant: ${fullResponse}`;
-      extractAndUpsertMemory(user.id, sessionText).catch(() => {});
+      extractAndUpsertMemory(activeUserId, sessionText).catch(() => {});
     }
   }
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of streamWithFallback()) {
+        for await (const chunk of runAgentLoop()) {
           controller.enqueue(chunk);
         }
       } catch (err) {
-        console.error('[assistant] Stream error:', err);
-        // Final safety net
+        console.error('[assistant stream error]:', err);
         const fallback = getCannedResponse(userMessage, fallbackContext);
         controller.enqueue(encoder.encode(fallback));
         await supabase.from('assistant_messages').insert({

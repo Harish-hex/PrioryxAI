@@ -180,10 +180,6 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
-  }
-
   let previousUsername: string | null = null;
 
   // Fetch existing user record to check username change and existence
@@ -194,6 +190,13 @@ export async function PATCH(request: NextRequest) {
     .maybeSingle();
 
   previousUsername = existingUser?.username ?? null;
+
+  if (Object.keys(updates).length === 0) {
+    if (existingUser) {
+      return NextResponse.json({ profile: existingUser });
+    }
+    return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
+  }
 
   // Check username uniqueness if being changed
   if (updates.username && updates.username !== previousUsername) {

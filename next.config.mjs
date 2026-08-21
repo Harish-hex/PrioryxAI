@@ -1,4 +1,4 @@
-﻿/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: true },
@@ -12,6 +12,11 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
+      { protocol: 'https', hostname: 'assets.leetcode.com' },
+      { protocol: 'https', hostname: 'leetcode.com' },
+      { protocol: 'https', hostname: '*.leetcode.com' },
+      { protocol: 'https', hostname: 'hrcdn.net' },
+      { protocol: 'https', hostname: '*.hackerrank.com' },
     ],
     minimumCacheTTL: 86400,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],

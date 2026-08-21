@@ -213,7 +213,7 @@ export default function Component({ children }: { children?: React.ReactNode } =
   );
 
   return (
-    <div style={{position:"relative",width:"100%",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",overflowY:"auto",background:"#000",color:"#fff",fontFamily:"'Inter',-apple-system,sans-serif",padding:"2.5rem 1rem"}}>
+    <div style={{position:"relative",width:"100%",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",overflowY:"auto",background:"#000",color:"#fff",fontFamily:"'Inter',-apple-system,sans-serif",padding:"1rem"}}>
 
       {/* WebGL Dot canvas */}
       <canvas ref={canvasRef} style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none"}}/>

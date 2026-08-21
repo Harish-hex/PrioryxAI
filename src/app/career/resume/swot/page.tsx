@@ -102,15 +102,28 @@ export default function SWOTPage() {
 
   if (error || !swot) {
     return (
-      <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center gap-4">
-        <AlertTriangle size={32} className="text-amber-400" />
-        <p className="text-neutral-500">{error || "No analysis found"}</p>
-        <a
-          href="/career/resume/upload"
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          Upload Resume <ArrowRight size={16} />
-        </a>
+      <div className="max-w-4xl mx-auto py-12 px-4">
+        <div className="neu-card rounded-[32px] p-8 sm:p-10 border border-slate-200 dark:border-white/10 text-center relative overflow-hidden">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-5">
+            <Shield size={32} />
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            No Resume SWOT Generated Yet
+          </h2>
+          <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
+            Upload your resume to extract skills, calculate ATS match, and generate a 4-quadrant SWOT analysis to identify your strengths and critical skill gaps.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <a
+              href="/career/resume/upload"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-lg"
+            >
+              Upload Resume <ArrowRight size={16} />
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
