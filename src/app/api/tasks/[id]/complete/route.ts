@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
+import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const runtime = 'nodejs';
 
@@ -28,6 +29,12 @@ export async function PATCH(
 
   // Invalidate feed cache so next load reflects the change
   await withFallback(() => redis.del(`feed:${user.id}`), 0);
+  await recordFeedbackEvent(supabase, user.id, {
+    eventType: 'task_completed',
+    source: 'tasks_api',
+    entityType: 'task',
+    entityId: params.id,
+  });
 
   return NextResponse.json({ success: true });
 }

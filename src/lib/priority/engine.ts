@@ -69,7 +69,7 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
     supabase.from('github_priority_actions').select('*').eq('user_id', userId).eq('completed', false).order('impact_score', { ascending: false }).limit(5),
   ])
 
-  const profile = profileResult.status === 'fulfilled' ? profileResult.value.data : null
+  const _profile = profileResult.status === 'fulfilled' ? profileResult.value.data : null
   const resume = resumeResult.status === 'fulfilled' ? resumeResult.value.data : null
   const lcProfile = lcProfileResult.status === 'fulfilled' ? lcProfileResult.value.data : null
   const projects = projectsResult.status === 'fulfilled' ? (projectsResult.value.data ?? []) : []
@@ -279,11 +279,11 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
 async function getDSATasksForUser(
   userId: string,
   lcWeakTopics: string[],
-  stream: string
+  _stream: string
 ): Promise<PriorityTask[]> {
   const supabase = createClient()
 
-  let query = supabase
+  const query = supabase
     .from('dsa_questions')
     .select(`*, dsa_progress!left(status)`)
     .eq('is_important', true)

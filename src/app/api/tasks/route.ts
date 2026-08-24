@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
+import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -22,18 +23,20 @@ export async function POST(request: NextRequest) {
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 300) : '';
   if (!title) return NextResponse.json({ error: 'title is required' }, { status: 400 });
 
-  const type = VALID_TYPES.includes(body.type) ? body.type : 'manual';
+  const requestedType = typeof body.type === 'string' ? body.type : '';
+  const type = VALID_TYPES.includes(requestedType) ? requestedType : 'manual';
 
-  const priority = VALID_PRIORITIES.includes(body.priority) ? body.priority : 'medium';
+  const requestedPriority = typeof body.priority === 'string' ? body.priority : '';
+  const priority = VALID_PRIORITIES.includes(requestedPriority) ? requestedPriority : 'medium';
 
   let due_at: string | null = null;
-  if (body.due_at) {
+  if (typeof body.due_at === 'string' || typeof body.due_at === 'number') {
     const d = new Date(body.due_at);
     if (!isNaN(d.getTime())) due_at = d.toISOString();
   }
 
   let deadline: string | null = null;
-  if (body.deadline) {
+  if (typeof body.deadline === 'string' || typeof body.deadline === 'number') {
     const d = new Date(body.deadline);
     if (!isNaN(d.getTime())) deadline = d.toISOString();
   }
@@ -53,6 +56,13 @@ export async function POST(request: NextRequest) {
   }
 
   await withFallback(() => redis.del(`feed:${user.id}`), 0);
+  await recordFeedbackEvent(supabase, user.id, {
+    eventType: 'task_created',
+    source: 'tasks_api',
+    entityType: 'task',
+    entityId: task.id,
+    context: { type, priority, has_due_at: Boolean(due_at), has_deadline: Boolean(deadline) },
+  });
 
   return NextResponse.json({ task }, { status: 201 });
 }

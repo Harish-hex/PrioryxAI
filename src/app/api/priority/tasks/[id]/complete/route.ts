@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server'
+import { recordFeedbackEvent } from '@/lib/feedback/events'
 
 export const maxDuration = 20
 
@@ -19,5 +20,12 @@ export async function POST(
     .eq('user_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await recordFeedbackEvent(db, user.id, {
+    eventType: 'recommendation_accepted',
+    source: 'priority_api',
+    entityType: 'priority_task',
+    entityId: params.id,
+    outcome: 'completed',
+  })
   return NextResponse.json({ success: true })
 }

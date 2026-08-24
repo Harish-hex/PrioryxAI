@@ -23,6 +23,8 @@ import { collectGitHubSignals } from './collectors/github-collector'
 import { collectResumeSignals } from './collectors/resume-collector'
 import { collectProjectSignals } from './collectors/project-collector'
 import { collectSubjectSignals } from './collectors/subject-collector'
+import { buildUserContext } from '@/lib/context/user-context'
+import { buildScopedAIContext } from '@/lib/ai/context-builder'
 
 /** Extended plan that includes LLM reasoning fields */
 export interface LLMPriorityPlan extends PriorityPlan {
@@ -136,6 +138,12 @@ export async function generateLLMPlan(userId: string): Promise<LLMPriorityPlan> 
   const lcScore =
     (lcProfile as { placement_readiness_score?: number } | null)
       ?.placement_readiness_score
+  const unifiedContextSummary = await buildUserContext(supabase, userId, {
+    taskLimit: 10,
+    includeFeedback: true,
+  })
+    .then((ctx) => buildScopedAIContext(ctx, 'priority'))
+    .catch(() => 'Unified context unavailable.')
 
   // Run all signal collectors in parallel
   const [examRes, dsaRes, githubRes, resumeGapsRes, projectRes, subjectRes] =
@@ -220,6 +228,7 @@ export async function generateLLMPlan(userId: string): Promise<LLMPriorityPlan> 
     },
     workloadState: workloadState.summary,
     workloadRiskScore: workloadState.riskScore,
+    regionalContext: unifiedContextSummary,
     date: todayISO,
   }
 
