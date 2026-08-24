@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS schedule_exams (
 ALTER TABLE schedule_timetable ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedule_exams ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users own timetable" ON schedule_timetable;
 CREATE POLICY "Users own timetable" ON schedule_timetable
   FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users own exam schedule" ON schedule_exams;
 CREATE POLICY "Users own exam schedule" ON schedule_exams
   FOR ALL USING (auth.uid() = user_id);

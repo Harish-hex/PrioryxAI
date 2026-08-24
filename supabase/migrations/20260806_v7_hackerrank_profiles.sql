@@ -47,7 +47,9 @@ CREATE TABLE IF NOT EXISTS hr_practice_progress (
 ALTER TABLE multi_platform_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hr_practice_progress ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users own their multi-platform profiles" ON multi_platform_profiles;
 CREATE POLICY "Users own their multi-platform profiles"
   ON multi_platform_profiles FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users own their HR practice progress" ON hr_practice_progress;
 CREATE POLICY "Users own their HR practice progress"
   ON hr_practice_progress FOR ALL USING (auth.uid() = user_id);

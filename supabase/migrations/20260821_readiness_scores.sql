@@ -18,11 +18,13 @@ CREATE INDEX IF NOT EXISTS readiness_scores_user_computed
 -- RLS: users can only read their own scores
 ALTER TABLE readiness_scores ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users read own readiness scores" ON readiness_scores;
 CREATE POLICY "Users read own readiness scores"
   ON readiness_scores FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Service role (server-side) can insert on behalf of any user
+DROP POLICY IF EXISTS "Service role insert readiness scores" ON readiness_scores;
 CREATE POLICY "Service role insert readiness scores"
   ON readiness_scores FOR INSERT
   WITH CHECK (true);

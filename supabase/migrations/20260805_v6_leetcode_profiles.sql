@@ -86,14 +86,18 @@ ALTER TABLE problem_recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coding_streaks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leetcode_ai_analyses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can CRUD own leetcode profile" ON leetcode_profiles;
 CREATE POLICY "Users can CRUD own leetcode profile" ON leetcode_profiles
   FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can CRUD own recommendations" ON problem_recommendations;
 CREATE POLICY "Users can CRUD own recommendations" ON problem_recommendations
   FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can CRUD own streaks" ON coding_streaks;
 CREATE POLICY "Users can CRUD own streaks" ON coding_streaks
   FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can read own analyses" ON leetcode_ai_analyses;
 CREATE POLICY "Users can read own analyses" ON leetcode_ai_analyses
   FOR ALL USING (auth.uid() = user_id);

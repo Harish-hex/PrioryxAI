@@ -28,8 +28,10 @@ CREATE TABLE IF NOT EXISTS dsa_progress (
 
 ALTER TABLE dsa_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dsa_progress ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read DSA questions" ON dsa_questions;
 CREATE POLICY "Anyone can read DSA questions"
   ON dsa_questions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users own their DSA progress" ON dsa_progress;
 CREATE POLICY "Users own their DSA progress"
   ON dsa_progress FOR ALL USING (auth.uid() = user_id);
 

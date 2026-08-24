@@ -43,12 +43,16 @@ ALTER TABLE youtube_recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE youtube_trending_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE youtube_watch_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users own recommendations" ON youtube_recommendations;
 CREATE POLICY "Users own recommendations" ON youtube_recommendations
   FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users own watch history" ON youtube_watch_history;
 CREATE POLICY "Users own watch history" ON youtube_watch_history
   FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Trending cache public read" ON youtube_trending_cache;
 CREATE POLICY "Trending cache public read" ON youtube_trending_cache
   FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Service role inserts trending" ON youtube_trending_cache;
 CREATE POLICY "Service role inserts trending" ON youtube_trending_cache
   FOR INSERT WITH CHECK (true);
 

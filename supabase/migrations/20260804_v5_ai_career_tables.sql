@@ -30,10 +30,13 @@ CREATE TABLE IF NOT EXISTS user_resumes (
 CREATE INDEX IF NOT EXISTS idx_user_resumes_user ON user_resumes(user_id);
 
 ALTER TABLE user_resumes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "user_resumes: own rows" ON user_resumes;
 CREATE POLICY "user_resumes: own rows" ON user_resumes
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_resumes: insert own" ON user_resumes;
 CREATE POLICY "user_resumes: insert own" ON user_resumes
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_resumes: update own" ON user_resumes;
 CREATE POLICY "user_resumes: update own" ON user_resumes
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -59,10 +62,13 @@ CREATE TABLE IF NOT EXISTS user_projects (
 CREATE INDEX IF NOT EXISTS idx_user_projects_user ON user_projects(user_id);
 
 ALTER TABLE user_projects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "user_projects: own rows" ON user_projects;
 CREATE POLICY "user_projects: own rows" ON user_projects
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_projects: insert own" ON user_projects;
 CREATE POLICY "user_projects: insert own" ON user_projects
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "user_projects: update own" ON user_projects;
 CREATE POLICY "user_projects: update own" ON user_projects
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -86,8 +92,10 @@ CREATE INDEX IF NOT EXISTS idx_phase_submissions_project ON phase_submissions(pr
 CREATE INDEX IF NOT EXISTS idx_phase_submissions_user ON phase_submissions(user_id);
 
 ALTER TABLE phase_submissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "phase_submissions: own rows" ON phase_submissions;
 CREATE POLICY "phase_submissions: own rows" ON phase_submissions
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "phase_submissions: insert own" ON phase_submissions;
 CREATE POLICY "phase_submissions: insert own" ON phase_submissions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -112,10 +120,13 @@ CREATE TABLE IF NOT EXISTS coding_profiles (
 CREATE INDEX IF NOT EXISTS idx_coding_profiles_user ON coding_profiles(user_id);
 
 ALTER TABLE coding_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "coding_profiles: own row" ON coding_profiles;
 CREATE POLICY "coding_profiles: own row" ON coding_profiles
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "coding_profiles: insert own" ON coding_profiles;
 CREATE POLICY "coding_profiles: insert own" ON coding_profiles
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "coding_profiles: update own" ON coding_profiles;
 CREATE POLICY "coding_profiles: update own" ON coding_profiles
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -139,10 +150,13 @@ CREATE TABLE IF NOT EXISTS problem_progress (
 CREATE INDEX IF NOT EXISTS idx_problem_progress_user ON problem_progress(user_id, platform);
 
 ALTER TABLE problem_progress ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "problem_progress: own rows" ON problem_progress;
 CREATE POLICY "problem_progress: own rows" ON problem_progress
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "problem_progress: insert own" ON problem_progress;
 CREATE POLICY "problem_progress: insert own" ON problem_progress
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "problem_progress: update own" ON problem_progress;
 CREATE POLICY "problem_progress: update own" ON problem_progress
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -169,10 +183,13 @@ CREATE TABLE IF NOT EXISTS job_applications (
 CREATE INDEX IF NOT EXISTS idx_job_applications_user ON job_applications(user_id, status);
 
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "job_applications: own rows" ON job_applications;
 CREATE POLICY "job_applications: own rows" ON job_applications
   USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "job_applications: insert own" ON job_applications;
 CREATE POLICY "job_applications: insert own" ON job_applications
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "job_applications: update own" ON job_applications;
 CREATE POLICY "job_applications: update own" ON job_applications
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -196,9 +213,12 @@ CREATE INDEX IF NOT EXISTS idx_collab_sessions_peer ON collab_sessions(peer_id);
 
 ALTER TABLE collab_sessions ENABLE ROW LEVEL SECURITY;
 -- Both creator and peer can read/update their sessions
+DROP POLICY IF EXISTS "collab_sessions: participant read" ON collab_sessions;
 CREATE POLICY "collab_sessions: participant read" ON collab_sessions
   USING (auth.uid() = creator_id OR auth.uid() = peer_id);
+DROP POLICY IF EXISTS "collab_sessions: creator insert" ON collab_sessions;
 CREATE POLICY "collab_sessions: creator insert" ON collab_sessions
   FOR INSERT WITH CHECK (auth.uid() = creator_id);
+DROP POLICY IF EXISTS "collab_sessions: participant update" ON collab_sessions;
 CREATE POLICY "collab_sessions: participant update" ON collab_sessions
   FOR UPDATE USING (auth.uid() = creator_id OR auth.uid() = peer_id);

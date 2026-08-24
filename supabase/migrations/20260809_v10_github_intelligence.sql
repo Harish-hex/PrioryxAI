@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS github_intelligence_reports (
 ALTER TABLE github_intelligence_reports ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users manage own github report') THEN
+    DROP POLICY IF EXISTS "Users manage own github report" ON github_intelligence_reports;
     CREATE POLICY "Users manage own github report" ON github_intelligence_reports FOR ALL USING (auth.uid() = user_id);
   END IF;
 END $$;

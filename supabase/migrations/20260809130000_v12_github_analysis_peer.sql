@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS github_analysis (
 ALTER TABLE github_analysis ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users read own github analysis') THEN
+    DROP POLICY IF EXISTS "Users read own github analysis" ON github_analysis;
     CREATE POLICY "Users read own github analysis" ON github_analysis FOR ALL USING (auth.uid() = user_id);
   END IF;
 END $$;
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS github_priority_actions (
 ALTER TABLE github_priority_actions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users manage own github actions') THEN
+    DROP POLICY IF EXISTS "Users manage own github actions" ON github_priority_actions;
     CREATE POLICY "Users manage own github actions" ON github_priority_actions FOR ALL USING (auth.uid() = user_id);
   END IF;
 END $$;
@@ -65,7 +67,9 @@ CREATE TABLE IF NOT EXISTS peer_profiles (
 ALTER TABLE peer_profiles ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public read discoverable peer profiles') THEN
+    DROP POLICY IF EXISTS "Public read discoverable peer profiles" ON peer_profiles;
     CREATE POLICY "Public read discoverable peer profiles" ON peer_profiles FOR SELECT USING (is_discoverable = true);
+    DROP POLICY IF EXISTS "Users manage own peer profile" ON peer_profiles;
     CREATE POLICY "Users manage own peer profile" ON peer_profiles FOR ALL USING (auth.uid() = user_id);
   END IF;
 END $$;
@@ -82,6 +86,7 @@ CREATE TABLE IF NOT EXISTS peer_connections (
 ALTER TABLE peer_connections ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users see their peer connections') THEN
+    DROP POLICY IF EXISTS "Users see their peer connections" ON peer_connections;
     CREATE POLICY "Users see their peer connections" ON peer_connections FOR ALL USING (auth.uid() = requester_id OR auth.uid() = receiver_id);
   END IF;
 END $$;

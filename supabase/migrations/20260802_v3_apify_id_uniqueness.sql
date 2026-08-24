@@ -12,8 +12,15 @@
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_apify_id_key;
 
 -- 2. Add per-user composite unique constraint
-ALTER TABLE tasks
-  ADD CONSTRAINT tasks_user_apify_unique UNIQUE (user_id, apify_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'tasks_user_apify_unique'
+  ) THEN
+    ALTER TABLE tasks
+      ADD CONSTRAINT tasks_user_apify_unique UNIQUE (user_id, apify_id);
+  END IF;
+END $$;
 
 -- 3. Replace the old single-column index (now redundant) with one that matches
 --    the new composite constraint for query performance
