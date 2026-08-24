@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase-server';
-import { fetchFullLeetCodeProfile, fetchSolved, fetchProfile } from '@/lib/leetcode/alfa-api';
+import { fetchFullLeetCodeProfile, fetchSolved } from '@/lib/leetcode/alfa-api';
 import { computePlacementReadinessScore, analyzeProfile } from '@/lib/leetcode/ai-analyzer';
 import { saveMockProfile } from '@/lib/mock-db';
 import { UserStream } from '@/lib/leetcode/types';

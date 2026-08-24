@@ -64,10 +64,11 @@ export async function POST(request: NextRequest) {
   );
 
   let authData: any = null;
-  let { data: initialAuthData, error: signInError } = await supabase.auth.signInWithPassword({
+  const { data: initialAuthData, error: initialSignInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
+  let signInError = initialSignInError;
 
   if (signInError && signInError.message.toLowerCase().includes('email not confirmed')) {
     try {

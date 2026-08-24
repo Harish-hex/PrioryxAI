@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server';
+import { buildUserContext } from '@/lib/context/user-context';
+import { matchOpportunityToUser } from '@/lib/opportunities/matching';
+import { contentHash, normalizeJobOpportunity } from '@/lib/opportunities/normalize';
+import { recordFeedbackEvent } from '@/lib/feedback/events';
+import { NormalizedOpportunity } from '@/lib/opportunities/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -18,6 +23,24 @@ interface RawJob {
   postedAt: string;
   source: string;
 }
+
+type JobWithScore = RawJob & {
+  matchScore: number;
+  matchedSkills: string[];
+  missingSkills?: string[];
+  matchReasons?: string[];
+  recommendedActions?: string[];
+  normalizedOpportunity?: ReturnType<typeof normalizeJobOpportunity>;
+};
+
+type ResumeSkillEntity = string | { name?: string | null };
+type CodingProfileRow = {
+  data?: {
+    strongTopics?: string[];
+    skills?: string[];
+  } | null;
+  weak_topics?: string[] | null;
+};
 
 async function fetchFromRemotive(): Promise<RawJob[]> {
   try {
@@ -155,7 +178,9 @@ export async function GET(request: NextRequest) {
     const se = resume.skill_entities;
     if (Array.isArray(se)) {
       // SkillEntity[] format: [{name, category, proficiency, evidence}]
-      resumeSkills = se.map((s: any) => (typeof s === 'string' ? s : s?.name)).filter(Boolean) as string[];
+      resumeSkills = (se as ResumeSkillEntity[])
+        .map((s) => (typeof s === 'string' ? s : s.name ?? ''))
+        .filter(Boolean);
     } else if (se && typeof se === 'object') {
       resumeSkills = (se as { skills?: string[] }).skills ?? [];
     }
@@ -167,7 +192,7 @@ export async function GET(request: NextRequest) {
   // Combine all skills
   const userSkillsSet = new Set([
     ...resumeSkills,
-    ...codingProfiles.flatMap((p: any) => [
+    ...(codingProfiles as CodingProfileRow[]).flatMap((p) => [
       ...(p.data?.strongTopics ?? p.data?.skills ?? []),
       ...(Array.isArray(p.weak_topics) ? p.weak_topics : []),
     ]),
@@ -216,9 +241,22 @@ export async function GET(request: NextRequest) {
     return { score: Math.min(100, rawScore + titleBoost), matched };
   };
 
-  const jobsWithScores = techJobs.map((job) => {
+  const context = await buildUserContext(db, user.id, { taskLimit: 5 }).catch(() => null);
+
+  const jobsWithScores: JobWithScore[] = techJobs.map((job) => {
     const { score, matched } = scoreJob(job, userSkillsArray);
-    return { ...job, matchScore: score, matchedSkills: matched };
+    if (!context) return { ...job, matchScore: score, matchedSkills: matched };
+    const normalized = normalizeJobOpportunity(job as unknown as Record<string, unknown>, job.source.toLowerCase());
+    const semanticMatch = matchOpportunityToUser(normalized, context);
+    return {
+      ...job,
+      matchScore: Math.max(score, semanticMatch.score),
+      matchedSkills: Array.from(new Set([...matched, ...semanticMatch.strongMatches])),
+      missingSkills: semanticMatch.missingSkills,
+      matchReasons: semanticMatch.reasons,
+      recommendedActions: semanticMatch.recommendedActions,
+      normalizedOpportunity: normalized,
+    };
   });
 
   // Sort by match score desc
@@ -231,6 +269,41 @@ export async function GET(request: NextRequest) {
 
   const total = jobsWithScores.length;
   const paginatedJobs = jobsWithScores.slice(offset, offset + limit);
+
+  const opportunityRows = paginatedJobs
+    .map((job) => job.normalizedOpportunity)
+    .filter((opp): opp is NormalizedOpportunity => Boolean(opp))
+    .map((opp) => ({
+      source_key: opp.sourceKey,
+      external_id: opp.externalId,
+      title: opp.title,
+      company: opp.company,
+      location: opp.location,
+      remote_policy: opp.remotePolicy,
+      country: opp.country,
+      deadline: opp.deadline,
+      salary_min: opp.salaryMin,
+      salary_max: opp.salaryMax,
+      stipend: opp.stipend,
+      currency: opp.currency,
+      eligibility: opp.eligibility,
+      required_skills: opp.requiredSkills,
+      preferred_skills: opp.preferredSkills,
+      description: opp.description,
+      application_url: opp.applicationUrl,
+      freshness_at: opp.freshnessAt,
+      raw_payload: opp.rawPayload ?? {},
+      content_hash: contentHash(opp),
+      updated_at: new Date().toISOString(),
+    }));
+
+  if (opportunityRows.length > 0) {
+    db.from('opportunities')
+      .upsert(opportunityRows, { onConflict: 'source_key,external_id' })
+      .then(({ error }) => {
+        if (error) console.warn('[Jobs] opportunity upsert failed:', error.message);
+      });
+  }
 
   console.log(`[Jobs] Returning ${paginatedJobs.length} of ${total} tech jobs (page ${page}/${Math.ceil(total / limit)})`);
 
@@ -271,5 +344,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await recordFeedbackEvent(supabase, user.id, {
+    eventType: 'opportunity_saved',
+    source: 'job_market',
+    entityType: 'job_application',
+    entityId: body.jdUrl ?? `${body.company}:${body.jobTitle}`,
+    context: { company: body.company, jobTitle: body.jobTitle, matchScore: body.matchScore ?? 0 },
+  });
   return NextResponse.json({ success: true });
 }

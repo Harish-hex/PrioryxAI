@@ -6,14 +6,18 @@
  * DELETE /api/mcp/token — revoke the token
  *
  * DB: mcp_tokens(id, user_id, token_hash, created_at, revoked)
- * Tokens are currently stored plaintext (for MVP). Production: hash with SHA-256.
+ * Tokens are stored as SHA-256 hashes. The plaintext token is returned only once.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 export const runtime = 'nodejs';
+
+function hashMcpToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 export async function GET() {
   const supabase = createClient();
@@ -34,8 +38,8 @@ export async function GET() {
     return NextResponse.json({ hasToken: false });
   }
 
-  // Return masked token — never expose full plaintext
-  const masked = tokenRow.token_hash.slice(0, 8) + '••••••••••••••••';
+  // The original token cannot be recovered from the stored hash.
+  const masked = 'pryx_••••••••••••••••';
   return NextResponse.json({
     hasToken: true,
     maskedToken: masked,
@@ -43,7 +47,7 @@ export async function GET() {
   });
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -62,7 +66,7 @@ export async function POST(_request: NextRequest) {
 
   const { error } = await admin.from('mcp_tokens').insert({
     user_id: user.id,
-    token_hash: token, // MVP: store plaintext. TODO: hash with SHA-256 before storing
+    token_hash: hashMcpToken(token),
     revoked: false,
   });
 

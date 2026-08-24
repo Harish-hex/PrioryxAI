@@ -1,4 +1,3 @@
-import mammoth from 'mammoth';
 import { readFile, extractWithAI, parseAIJson } from '../file-processor';
 
 export type UploadType = 'timetable' | 'exam_schedule';

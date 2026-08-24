@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
+import { errorMentionsColumn } from '@/lib/schema-migrations';
 // pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';
 
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
-const ALLOWED_DOC_MIME = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain',
-];
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
 const YEAR = new Date().getFullYear();

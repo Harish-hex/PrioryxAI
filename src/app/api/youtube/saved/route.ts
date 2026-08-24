@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const maxDuration = 20
 
@@ -33,10 +34,18 @@ export async function POST(
       .eq('user_id', user.id)
       .eq('video_id', videoId);
 
+    await recordFeedbackEvent(supabase, user.id, {
+      eventType: newStatus ? 'recommendation_accepted' : 'recommendation_rejected',
+      source: 'youtube',
+      entityType: 'youtube_video',
+      entityId: videoId,
+      outcome: newStatus ? 'saved_for_later' : 'unsaved',
+    });
+
     return NextResponse.json({ saved: newStatus });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error toggling video save status:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
   }
 }

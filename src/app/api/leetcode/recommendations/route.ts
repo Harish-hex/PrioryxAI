@@ -5,7 +5,7 @@ import { PriorityTopic, UserStream } from '@/lib/leetcode/types';
 
 export const maxDuration = 20
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

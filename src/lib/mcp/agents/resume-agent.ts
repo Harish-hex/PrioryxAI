@@ -85,7 +85,7 @@ Rules:
     try {
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error('[Resume] JSON parse failed. Raw:', rawContent);
+      console.error('[Resume] JSON parse failed. Raw:', rawContent, e);
       return { success: false, data: null, error: 'AI returned malformed response. Please try again.' };
     }
   }

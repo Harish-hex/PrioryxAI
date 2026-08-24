@@ -2,34 +2,7 @@ import { openai } from '../openai';
 import { FullLeetCodeData, UserStream, PriorityTopic, ProblemRecommendation } from './types';
 import { fetchProblems } from './alfa-api';
 
-const STREAM_TOPIC_MAP: Record<UserStream, string[]> = {
-  'SDE': ['arrays', 'strings', 'dynamic-programming', 'trees', 'graphs', 'binary-search', 'two-pointers', 'sliding-window', 'backtracking', 'heap-priority-queue', 'linked-list', 'stack', 'hash-table'],
-  'ML_AI': ['math', 'dynamic-programming', 'matrix', 'probability-and-statistics', 'arrays', 'sorting', 'binary-search', 'hash-table', 'recursion'],
-  'DATA_SCIENCE': ['database', 'math', 'sorting', 'arrays', 'hash-table', 'string', 'dynamic-programming', 'greedy'],
-  'FRONTEND': ['arrays', 'strings', 'hash-table', 'design', 'recursion', 'tree', 'breadth-first-search', 'depth-first-search'],
-  'BACKEND': ['arrays', 'strings', 'database', 'design', 'graphs', 'dynamic-programming', 'binary-search', 'heap-priority-queue'],
-  'FULLSTACK': ['arrays', 'strings', 'hash-table', 'trees', 'database', 'design', 'dynamic-programming', 'binary-search'],
-  'COMPETITIVE': ['dynamic-programming', 'graphs', 'math', 'trees', 'binary-search', 'segment-tree', 'bit-manipulation', 'combinatorics', 'backtracking', 'greedy'],
-  'CS_GENERAL': ['arrays', 'strings', 'hash-table', 'trees', 'graphs', 'dynamic-programming', 'binary-search', 'sorting', 'two-pointers']
-};
-
-const COMPANY_TAGS: Record<string, string[]> = {
-  'Google': ['arrays', 'dynamic-programming', 'graphs', 'trees', 'strings'],
-  'Meta': ['arrays', 'strings', 'trees', 'dynamic-programming', 'binary-search'],
-  'Amazon': ['arrays', 'strings', 'trees', 'graphs', 'dynamic-programming'],
-  'Microsoft': ['arrays', 'strings', 'trees', 'dynamic-programming'],
-  'Apple': ['arrays', 'strings', 'trees', 'dynamic-programming'],
-  'Netflix': ['design', 'arrays', 'hash-table', 'dynamic-programming'],
-  'Stripe': ['arrays', 'strings', 'dynamic-programming', 'design'],
-  'Uber': ['graphs', 'arrays', 'dynamic-programming', 'math'],
-  'Flipkart': ['arrays', 'dynamic-programming', 'trees', 'strings'],
-  'Swiggy': ['arrays', 'dynamic-programming', 'graphs', 'hash-table'],
-  'Zomato': ['arrays', 'dynamic-programming', 'hash-table', 'strings'],
-  'Atlassian': ['arrays', 'strings', 'dynamic-programming', 'trees'],
-  'Adobe': ['arrays', 'strings', 'dynamic-programming', 'math'],
-};
-
-export function computePlacementReadinessScore(data: FullLeetCodeData, stream: UserStream): number {
+export function computePlacementReadinessScore(data: FullLeetCodeData, _stream: UserStream): number {
   if (!data.solved) return 0;
   
   const { easySolved, mediumSolved, hardSolved, solvedProblem: totalSolved } = data.solved;
@@ -60,7 +33,7 @@ export function computePlacementReadinessScore(data: FullLeetCodeData, stream: U
       const parsed = JSON.parse(data.calendar.submissionCalendar);
       const activeDays = Object.keys(parsed).length;
       consistencyScore = Math.min(activeDays / 200, 1) * 15;
-    } catch (e) {
+    } catch (_e) {
       // JSON parse error
     }
   }

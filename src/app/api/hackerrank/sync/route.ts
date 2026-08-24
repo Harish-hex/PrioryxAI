@@ -6,7 +6,7 @@ import { analyzeHackerRankWithAI, generateHRPracticeProblems } from '@/lib/hacke
 
 export const maxDuration = 60
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     const cookieStore = cookies();
     const supabase = createServerClient(

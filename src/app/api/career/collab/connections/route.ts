@@ -4,7 +4,7 @@ import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 20
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       if (c.receiver_id !== user.id) peerIds.add(c.receiver_id)
     })
 
-    let profilesMap: Record<string, any> = {}
+    const profilesMap: Record<string, any> = {}
     
     if (peerIds.size > 0) {
       const { data: profiles, error: profileErr } = await supabase

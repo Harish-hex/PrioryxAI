@@ -95,7 +95,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

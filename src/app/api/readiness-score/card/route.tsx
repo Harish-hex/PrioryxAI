@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   let delta: number | null = paramDelta ? parseInt(paramDelta, 10) : null;
   let studentName = paramName || '';
   let studentCollege = paramCollege || '';
-  let summary = paramSummary || 'Deterministic career & placement readiness benchmark verified across GitHub, LeetCode, Resume & Tasks.';
+  const summary = paramSummary || 'Deterministic career & placement readiness benchmark verified across GitHub, LeetCode, Resume & Tasks.';
 
   // If user is authenticated, fill in live database details if not provided in query
   try {

@@ -1,27 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computePriorityScore, getNextMoveReason } from '@/lib/scoring';
+import type { TaskType } from '@/lib/scoring';
 import { withFallback, redis } from '@/lib/redis';
 import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl } from '@/lib/job-sync';
-import { generateRepoNextStep } from '@/lib/repo-next-step';
+import { buildPriorityContext, computeExplainablePriority } from '@/lib/scoring/explainable-priority';
+import { normalizeCountryCode } from '@/lib/context/global-config';
+import { errorMentionsColumn } from '@/lib/schema-migrations';
 
 export const runtime = 'nodejs';
 
 const FEED_CACHE_TTL = 180; // 3 minutes for sub-50ms instant response
 
 type StudentProfile = 'no_foundation' | 'academics_first' | 'skills_no_projects' | 'job_ready';
+type FeedUserProfile = {
+  college?: string | null;
+  semester?: number | null;
+  subjects?: string[] | null;
+  cgpa?: number | null;
+  github_username?: string | null;
+  pro_status?: boolean | null;
+  pro_expires_at?: string | null;
+  country?: string | null;
+};
+type FeedRepo = {
+  name?: string;
+  description?: string | null;
+};
+type FeedGitHubCache = {
+  repos?: FeedRepo[] | null;
+  languages?: Record<string, number> | null;
+  health_score?: number | null;
+};
+type FeedTask = {
+  id: string;
+  type: TaskType;
+  title: string;
+  due_at: string | null;
+  completed?: boolean;
+  weightage?: number | null;
+  subject?: string | null;
+  stipend?: string | null;
+  score?: number;
+  legacy_score?: number;
+  source?: string;
+  estimate?: string;
+  action_label?: string;
+  action_view?: string;
+  action_pro_only?: boolean;
+  external_url?: string;
+  reason?: string;
+  priority?: string;
+  priority_factors?: unknown;
+  priority_reason?: string;
+};
 
 function classifyStudent({
   userProfile,
   githubCache,
 }: {
-  userProfile: any;
-  githubCache: any;
+  userProfile: FeedUserProfile | null;
+  githubCache: FeedGitHubCache | null;
 }): StudentProfile {
   const semester: number = userProfile?.semester ?? 0;
   const subjects: string[] = userProfile?.subjects ?? [];
   const cgpa: number | null = userProfile?.cgpa ?? null;
-  const repos: any[] = githubCache?.repos ?? [];
+  const repos: FeedRepo[] = githubCache?.repos ?? [];
   const healthScore: number = githubCache?.health_score ?? 0;
   const languages: Record<string, number> = githubCache?.languages ?? {};
 
@@ -60,11 +104,11 @@ function buildSetupTasks({
   githubCache,
   existingTasks,
 }: {
-  userProfile: any;
-  githubCache: any;
-  existingTasks: any[];
+  userProfile: FeedUserProfile | null;
+  githubCache: FeedGitHubCache | null;
+  existingTasks: FeedTask[];
 }) {
-  const setupTasks: any[] = [];
+  const setupTasks: FeedTask[] = [];
   const hasExamDates = existingTasks.some(
     (task) => ['exam', 'assignment'].includes(task.type) && task.due_at
   );
@@ -130,39 +174,44 @@ function buildSetupTasks({
       estimate: '4 min',
       action_label: 'Update skills',
       action_view: 'settings',
-      reason: 'Skill signals are used to monitor Internshala roles and rank career tasks in the feed.',
+      reason: 'Skill signals are used to rank academic, coding, and career tasks in the feed.',
     });
   }
 
-  // Always show Internshala browse card — Pro users go to role-specific search, free users see upgrade modal
+  // Region-aware opportunity setup. India gets Internshala; other regions use the normalized opportunity feed.
   {
     const subjects: string[] = userProfile?.subjects ?? [];
     const languages: Record<string, number> = githubCache?.languages ?? {};
     const primaryRoles = deriveJobRoles(subjects, languages);
     const primaryRole = primaryRoles[0] ?? 'software developer';
-    const internshalaUrl = buildInternshalaSearchUrl(primaryRole);
     const roleLabel = primaryRole.replace(/\b\w/g, (c) => c.toUpperCase());
+    const country = normalizeCountryCode(userProfile?.country) ?? 'IN';
+    const isIndia = country === 'IN';
 
     setupTasks.push({
-      id: 'browse-internshala',
+      id: isIndia ? 'browse-internshala' : 'browse-opportunities',
       type: 'job',
-      title: `Browse ${roleLabel} openings on Internshala matched to your profile`,
+      title: isIndia
+        ? `Browse ${roleLabel} openings on Internshala matched to your profile`
+        : `Review ${roleLabel} opportunities matched to your region and skills`,
       due_at: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 115,
       source: 'system',
       estimate: '5 min',
-      action_label: 'Browse openings',
-      action_view: 'external',
-      action_pro_only: true,
-      external_url: internshalaUrl,
-      reason: 'Direct Internshala search filtered to your skill profile. Pro users get full access.',
+      action_label: isIndia ? 'Browse openings' : 'Update goals',
+      action_view: isIndia ? 'external' : 'settings',
+      action_pro_only: isIndia,
+      external_url: isIndia ? buildInternshalaSearchUrl(primaryRole) : undefined,
+      reason: isIndia
+        ? 'Direct Internshala search filtered to your skill profile. Pro users get full access.'
+        : 'The normalized opportunity feed can rank jobs and internships using your country, skills, and target roles.',
     });
   }
 
   // Profile-based guidance card
   const profile = classifyStudent({ userProfile, githubCache });
-  const profileCards: Record<StudentProfile, any> = {
+  const profileCards: Record<StudentProfile, FeedTask | null> = {
     no_foundation: {
       id: 'profile-guidance',
       type: 'manual',
@@ -219,24 +268,24 @@ async function buildRepoGuidanceTask({
   userProfile,
 }: {
   userId?: string;
-  githubCache: any;
-  userProfile: any;
+  githubCache: FeedGitHubCache | null;
+  userProfile: FeedUserProfile | null;
 }) {
   // Only skip if GitHub isn't connected at all (no username)
   if (!userProfile?.github_username) {
     return null;
   }
 
-  const repos: any[] = githubCache?.repos ?? [];
+  const repos: FeedRepo[] = githubCache?.repos ?? [];
 
   // Fast heuristic step or cached step to prevent blocking GET /api/feed
-  let repoStep: any = null;
+  let repoStep: { title: string; reason: string; estimate: string } | null = null;
   if (userId) {
     repoStep = await withFallback(() => redis.get(`repo_guidance:${userId}`), null, 200);
   }
 
   if (!repoStep) {
-    const firstRepoWithDesc = repos.find((r: any) => r.description?.trim()) || repos[0];
+    const firstRepoWithDesc = repos.find((r) => r.description?.trim()) || repos[0];
     if (firstRepoWithDesc) {
       repoStep = {
         title: `Ship one visible improvement in ${firstRepoWithDesc.name}`,
@@ -272,7 +321,7 @@ async function buildRepoGuidanceTask({
   };
 }
 
-function buildJobReason(task: any, userSubjects: string[]): string {
+function buildJobReason(task: FeedTask, userSubjects: string[]): string {
   const skills: string[] = task.subject
     ? task.subject.split(',').map((s: string) => s.trim()).filter(Boolean)
     : [];
@@ -326,12 +375,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cached);
   }
 
-  const [{ data: userProfile }, { data: githubCache }, { data: tasks, error }] = await Promise.all([
-    supabase
-      .from('users')
-      .select('college, semester, subjects, cgpa, github_username, pro_status, pro_expires_at')
-      .eq('id', user.id)
-      .maybeSingle(),
+  const userProfileQuery = supabase
+    .from('users')
+    .select('college, semester, subjects, cgpa, github_username, pro_status, pro_expires_at, country')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const [userProfileResult, { data: githubCache }, { data: tasks, error }] = await Promise.all([
+    userProfileQuery,
     supabase
       .from('github_cache')
       .select('languages, repos')
@@ -344,6 +395,15 @@ export async function GET(request: NextRequest) {
       .eq('completed', false)
       .limit(200),
   ]);
+  let userProfile = userProfileResult.data as FeedUserProfile | null;
+  if (errorMentionsColumn(userProfileResult.error, 'country')) {
+    const { data } = await supabase
+      .from('users')
+      .select('college, semester, subjects, cgpa, github_username, pro_status, pro_expires_at')
+      .eq('id', user.id)
+      .maybeSingle();
+    userProfile = data as FeedUserProfile | null;
+  }
 
   if (error) {
     console.error('[feed] DB error:', error);
@@ -355,6 +415,7 @@ export async function GET(request: NextRequest) {
 
   const shouldSyncJobs =
     Boolean(process.env.APIFY_TOKEN) &&
+    (normalizeCountryCode(userProfile?.country) ?? 'IN') === 'IN' &&
     ((userProfile?.subjects?.length ?? 0) > 0 || Object.keys(githubCache?.languages ?? {}).length > 0);
 
   if (shouldSyncJobs) {
@@ -368,12 +429,20 @@ export async function GET(request: NextRequest) {
   }
 
   const userSubjects: string[] = userProfile?.subjects ?? [];
+  const priorityContext = await buildPriorityContext(supabase, user.id).catch(() => ({}));
 
   // Enrich job tasks with a specific match reason (skills + stipend + urgency)
   // so the Next Move Card and feed cards show concrete context, not a generic label.
   const scored = (tasks ?? [])
     .map(t => {
-      const enriched = { ...t, score: computePriorityScore(t) };
+      const explainable = computeExplainablePriority(t, priorityContext);
+      const enriched = {
+        ...t,
+        legacy_score: computePriorityScore(t),
+        score: explainable.score,
+        priority_factors: explainable.factors,
+        priority_reason: explainable.summary,
+      };
       if (t.type === 'job' && !t.reason) {
         enriched.reason = buildJobReason(t, userSubjects);
       }

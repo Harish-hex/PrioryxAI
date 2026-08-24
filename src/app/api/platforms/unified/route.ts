@@ -93,8 +93,8 @@ export async function GET(_req: NextRequest) {
     const hasLC = !!profile?.leetcode_username;
     const hasHR = !!profile?.hackerrank_username;
 
-    let lcScore = Number(lcData?.placement_readiness_score ?? 0);
-    let hrScore = Number(hrData?.hackerrank_score ?? 0);
+    const lcScore = Number(lcData?.placement_readiness_score ?? 0);
+    const hrScore = Number(hrData?.hackerrank_score ?? 0);
 
     let bonusScore = 0;
     let bonusCount = 0;

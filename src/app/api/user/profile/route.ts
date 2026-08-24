@@ -1,21 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js';
 import { withFallback, redis } from '@/lib/redis';
 import { errorMentionsColumn } from '@/lib/schema-migrations';
 
 export const runtime = 'nodejs';
 
 // Fields the user can read about themselves (includes private fields)
-const SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, cgpa, pro_status, pro_expires_at, last_active_at';
+const BASE_SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, cgpa, target_roles, target_companies, pro_status, pro_expires_at, last_active_at';
+const GLOBAL_SELF_FIELDS = 'country, region, locale, timezone, preferred_language, currency, academic_system, term_system, grading_system, available_hours_per_week, preferred_work_start, preferred_work_end, career_goals';
+const SELF_FIELDS = `${BASE_SELF_FIELDS}, ${GLOBAL_SELF_FIELDS}`;
+const GLOBAL_PROFILE_COLUMNS = GLOBAL_SELF_FIELDS.split(',').map((field) => field.trim());
 
 // Fields the user is allowed to update
-const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'subjects', 'github_username', 'cgpa']);
+const UPDATABLE_FIELDS = new Set([
+  'name',
+  'username',
+  'college',
+  'semester',
+  'subjects',
+  'github_username',
+  'cgpa',
+  'country',
+  'region',
+  'locale',
+  'timezone',
+  'preferred_language',
+  'currency',
+  'academic_system',
+  'term_system',
+  'grading_system',
+  'available_hours_per_week',
+  'preferred_work_start',
+  'preferred_work_end',
+  'career_goals',
+  'target_roles',
+  'target_companies',
+]);
 
 // Username: alphanumeric + hyphens, 1–39 chars (GitHub convention)
 const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
 
-function getDbClient(supabaseAuthClient: any) {
+type GitHubRepo = {
+  name?: string;
+  description?: string | null;
+  language?: string | null;
+  stargazerCount?: number;
+  stars?: number;
+  url?: string;
+};
+
+type GitHubProfileCache = {
+  repos?: GitHubRepo[] | null;
+  health_score?: number | null;
+  streak_days?: number | null;
+  contribution_days?: { date: string; count: number }[] | null;
+};
+
+type TaskCompletionRow = { completed?: boolean | null };
+type SelfProfileRow = {
+  github_username?: string | null;
+  [key: string]: unknown;
+};
+
+function getDbClient(supabaseAuthClient: SupabaseClient) {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -42,6 +90,11 @@ export async function GET() {
     const safeFields = SELF_FIELDS.replace(/, cgpa/, '');
     ({ data, error } = await db.from('users').select(safeFields).eq('id', user.id).maybeSingle());
   }
+  if (GLOBAL_PROFILE_COLUMNS.some((column) => errorMentionsColumn(error, column))) {
+    ({ data, error } = await db.from('users').select(BASE_SELF_FIELDS).eq('id', user.id).maybeSingle());
+  }
+
+  const profileData = (data ?? {}) as SelfProfileRow;
 
   const [{ data: github }, { data: tasks }] = await Promise.all([
     db
@@ -52,12 +105,13 @@ export async function GET() {
     db.from('tasks').select('completed').eq('user_id', user.id),
   ]);
 
-  const repos: any[] = Array.isArray(github?.repos) ? [...github.repos] : [];
+  const githubCache = github as GitHubProfileCache | null;
+  const repos: GitHubRepo[] = Array.isArray(githubCache?.repos) ? [...githubCache.repos] : [];
   const topReposList = repos.length > 0
     ? [...repos]
         .sort((a, b) => (b.stargazerCount ?? b.stars ?? 0) - (a.stargazerCount ?? a.stars ?? 0))
         .slice(0, 6)
-        .map((repo: any) => ({
+        .map((repo) => ({
           name: repo.name,
           description: repo.description,
           language: repo.language,
@@ -70,21 +124,21 @@ export async function GET() {
           description: 'Pinn-FSI developed in a Physics-Informed Neural Network implementation for solving fluid-structure interaction problems around airfoils.',
           language: 'Jupyter Notebook',
           stars: 0,
-          url: data.github_username ? `https://github.com/${data.github_username}/Pinn-FSI-Airfoil` : 'https://github.com',
+          url: profileData.github_username ? `https://github.com/${profileData.github_username}/Pinn-FSI-Airfoil` : 'https://github.com',
         },
         {
           name: 'PrioryxAI',
           description: 'AI-Powered Academic & Career Copilot for Engineering Students.',
           language: 'TypeScript',
           stars: 0,
-          url: data.github_username ? `https://github.com/${data.github_username}/PrioryxAI` : 'https://github.com',
+          url: profileData.github_username ? `https://github.com/${profileData.github_username}/PrioryxAI` : 'https://github.com',
         },
         {
           name: 'trainer',
           description: 'Distributed AI Model Training and LLM Fine-Tuning on Kubernetes.',
           language: 'Go',
           stars: 0,
-          url: data.github_username ? `https://github.com/${data.github_username}/trainer` : 'https://github.com',
+          url: profileData.github_username ? `https://github.com/${profileData.github_username}/trainer` : 'https://github.com',
         },
       ];
 
@@ -95,16 +149,16 @@ export async function GET() {
   ];
 
   const totalTasks = tasks?.length ?? 0;
-  const completedTasks = tasks?.filter((task: any) => task.completed).length ?? 0;
+  const completedTasks = (tasks as TaskCompletionRow[] | null)?.filter((task) => task.completed).length ?? 0;
 
   return NextResponse.json({
     profile: {
-      ...data,
-      github_health_score: github?.health_score ?? (data.github_username ? 33 : 0),
-      github_streak_days: github?.streak_days ?? 0,
+      ...profileData,
+      github_health_score: githubCache?.health_score ?? (profileData.github_username ? 33 : 0),
+      github_streak_days: githubCache?.streak_days ?? 0,
       top_repos: topReposList,
       project_bullets: projectBullets,
-      contribution_days: (github?.contribution_days ?? []) as { date: string; count: number }[],
+      contribution_days: githubCache?.contribution_days ?? [],
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
     },
@@ -167,6 +221,27 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Subjects must be an array of strings.' }, { status: 400 });
       }
       updates[key] = (val as string[]).slice(0, 10).map(s => String(s).slice(0, 100));
+      continue;
+    }
+
+    if (['career_goals', 'target_roles', 'target_companies'].includes(key)) {
+      if (!Array.isArray(val) || val.some(s => typeof s !== 'string')) {
+        return NextResponse.json({ error: `${key} must be an array of strings.` }, { status: 400 });
+      }
+      updates[key] = (val as string[]).slice(0, 20).map(s => String(s).slice(0, 120));
+      continue;
+    }
+
+    if (key === 'available_hours_per_week') {
+      if (val === null || val === '' || val === undefined) {
+        updates[key] = null;
+        continue;
+      }
+      const n = Number(val);
+      if (isNaN(n) || n < 0 || n > 168) {
+        return NextResponse.json({ error: 'Available hours must be between 0 and 168.' }, { status: 400 });
+      }
+      updates[key] = Math.round(n * 4) / 4;
       continue;
     }
 

@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
     const supabase = createServiceRoleClient();
 
     const body = await req.json();
-    let { hackerrank_username, codechef_username, gfg_username, codeforces_username, stream, targetCompanies } = body;
+    const { codechef_username, gfg_username, codeforces_username, stream, targetCompanies } = body;
+    let { hackerrank_username } = body;
 
     if (!hackerrank_username || !stream || !targetCompanies) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

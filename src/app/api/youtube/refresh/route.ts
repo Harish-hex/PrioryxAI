@@ -5,7 +5,7 @@ import { redis } from '@/lib/redis';
 
 export const maxDuration = 20
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     // I will use Edge Runtime and `waitUntil` if available, or standard execution.
     // Let's just execute it and await it, but return 200. No, let's execute in background:
     
-    const promise = (async () => {
+    (async () => {
        await supabase
         .from('youtube_recommendations')
         .delete()
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         .eq('saved_for_later', false)
         .eq('watched', false)
         .eq('dismissed', false);
-        
+
        await generateRecommendations(user.id);
     })().catch(e => console.error('Background refresh failed', e));
 

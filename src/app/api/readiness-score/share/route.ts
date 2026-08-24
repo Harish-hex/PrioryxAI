@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, platform });
   } catch (error) {
+    console.error('[readiness-score/share] Failed to record share:', error);
     return NextResponse.json({ success: false, error: 'Failed to record share' }, { status: 500 });
   }
 }

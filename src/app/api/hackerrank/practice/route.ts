@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export const maxDuration = 20
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const cookieStore = cookies();
     const supabase = createServerClient(
@@ -39,9 +39,13 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('user_id', user.id);
 
+    if (progressError) {
+      console.error('[hackerrank/practice] Failed to fetch progress:', progressError);
+    }
+
     return NextResponse.json({
       recommendations: recsData.hr_practice_recommendations || [],
-      progress: progressData || [],
+      progress: progressError ? [] : (progressData || []),
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });

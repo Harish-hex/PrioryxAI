@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase-server';
-import { executeTool, listTools, lookupTool } from '@/lib/mcp/registry';
+import { executeTool, listTools } from '@/lib/mcp/registry';
 import { createSSEStream, sseResponse } from '@/lib/mcp/stream';
+import { createHash } from 'crypto';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -13,6 +14,14 @@ const SERVER_INFO = {
   name: 'PrioryxAI Multi-Agent MCP Server',
   version: '1.0.0',
 };
+
+function hashMcpToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 // GET /api/mcp — list available tools and server capabilities
 export async function GET() {
@@ -52,14 +61,25 @@ export async function POST(request: NextRequest) {
       const authHeader = request.headers.get('authorization') ?? '';
       const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
       if (bearerToken) {
-        // Validate token against mcp_tokens table using service role
+        // Validate token against mcp_tokens table using service role.
+        // New tokens are SHA-256 hashed; legacy plaintext tokens are accepted only
+        // for backward compatibility with tokens created before hashing shipped.
         const { createServiceClient: serviceClient } = await import('@/lib/supabase/server');
         const admin = serviceClient();
-        const { data: tokenRow } = await admin
+        const hashedToken = hashMcpToken(bearerToken);
+        let { data: tokenRow } = await admin
           .from('mcp_tokens')
           .select('user_id, revoked')
-          .eq('token_hash', bearerToken) // store hashed token; plain for MVP — rotate to hash in prod
+          .eq('token_hash', hashedToken)
           .single();
+        if (!tokenRow) {
+          const legacyResult = await admin
+            .from('mcp_tokens')
+            .select('user_id, revoked')
+            .eq('token_hash', bearerToken)
+            .single();
+          tokenRow = legacyResult.data;
+        }
         if (tokenRow && !tokenRow.revoked) {
           user = { id: tokenRow.user_id };
         }
@@ -70,7 +90,7 @@ export async function POST(request: NextRequest) {
   // Fallback guest user ID for anonymous tool exploration if session is not active
   const effectiveUserId = user?.id || 'guest_user';
 
-  let body: Record<string, any>;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -80,6 +100,7 @@ export async function POST(request: NextRequest) {
   // ── 1. Handle JSON-RPC 2.0 Standard MCP Protocol ──
   if (body.jsonrpc === '2.0') {
     const requestId = body.id ?? null;
+    const params = isRecord(body.params) ? body.params : {};
 
     if (body.method === 'initialize') {
       return NextResponse.json({
@@ -107,8 +128,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.method === 'tools/call') {
-      const toolName = body.params?.name;
-      const toolArguments = body.params?.arguments || {};
+      const toolName = typeof params.name === 'string' ? params.name : '';
+      const toolArguments = isRecord(params.arguments) ? params.arguments : {};
 
       if (!toolName) {
         return NextResponse.json({
