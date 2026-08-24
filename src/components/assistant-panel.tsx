@@ -350,7 +350,7 @@ export function AssistantPanel({ tasks, isPro, messagesUsedToday, initialTask, o
                   <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
                       <Zap size={15} className="shrink-0 text-amber-500" />
-                      You've used your {FREE_MSG_LIMIT} free messages today
+                      You&apos;ve used your {FREE_MSG_LIMIT} free messages today
                     </div>
                     <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
                       Free plan: {FREE_MSG_LIMIT} AI messages/day. Pro gives you everything below — resets at midnight.

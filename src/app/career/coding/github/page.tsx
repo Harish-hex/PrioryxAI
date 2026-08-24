@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import {
-  GitBranch, Zap, Target, TrendingUp, AlertTriangle,
-  CheckCircle2, Clock, ExternalLink, RefreshCw, Award,
-  Code2, ChevronRight, Loader2, Flame, Terminal, Check, Copy
+  GitBranch, Zap, Target, AlertTriangle,
+  CheckCircle2, ExternalLink, RefreshCw,
+  Code2, ChevronRight, Loader2, Terminal, Check, Copy
 } from 'lucide-react';
 
 interface ProjectScore {

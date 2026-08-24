@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LeetCodeConnectCard } from "@/components/leetcode/LeetCodeConnectCard";
 import { StreamSelector } from "@/components/leetcode/StreamSelector";
 import { UserStream, LeetCodeProfile } from "@/lib/leetcode/types";
-import { Loader2, ArrowRight, Code2, LineChart, Target, Zap } from "lucide-react";
-import Link from "next/link";
+import { Loader2, ArrowRight, LineChart, Target, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { friendlyError } from '@/components/ui/feedback';
 

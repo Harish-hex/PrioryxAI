@@ -8,15 +8,12 @@ import {
   Check,
   CreditCard,
   GitBranch,
-  Gem,
   ImagePlus,
   Lock,
   Mail,
   Target,
   Zap,
-  ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
 import LogoLoop from "./LogoLoop";
 import WavesBackground from "@/components/ui/waves-background";
 
@@ -29,23 +26,6 @@ function fadeUpVariant(i = 0) {
 }
 
 export default function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const faqs = [
-    {
-      q: "Is my data safe?",
-      a: "Yes, absolutely. We use Supabase with Row Level Security (RLS) to ensure your data is encrypted and only accessible by you. We only read the GitHub data you explicitly authorize.",
-    },
-    {
-      q: "Does the timetable scanner work with handwritten notes?",
-      a: "Our scanner works best with printed or digital timetables (PDF/screenshots). While it can read neat handwritten notes using GPT-4o Vision, we recommend verifying the extracted dates for accuracy.",
-    },
-    {
-      q: "How is the 'career impact' score calculated?",
-      a: "The AI evaluates the weightage of the task (e.g., end-semester exam vs. simple assignment) against your stated career goals (e.g., aiming for SDE roles), combining urgency and relevance into a single priority score.",
-    },
-  ];
-
   return (
     <div className="app-background min-h-screen overflow-x-hidden text-slate-950 dark:text-slate-100">
       <WavesBackground />

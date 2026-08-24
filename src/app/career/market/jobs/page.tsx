@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check, Sparkles } from "lucide-react";
+import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check } from "lucide-react";
 
 interface Job {
   id: string;

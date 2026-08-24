@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Code2, ExternalLink, Play, BookOpen, Flame, Plus, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getDailyChallenges, type CodingProblem } from "@/lib/daily-challenges";
 
 interface DailyChallengesCardProps {

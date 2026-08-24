@@ -21,7 +21,6 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className = "", size = "md", showLabel = false }: ThemeToggleProps) {
   const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
@@ -31,7 +30,6 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
     const initial: Theme = isDark ? "dark" : "light";
     setTheme(initial);
     applyTheme(initial);
-    setMounted(true);
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {

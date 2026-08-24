@@ -1,22 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard, GraduationCap, Bot, UserRound, Menu, X,
   FileText, Hammer, Code2, Briefcase, Users, GitBranch, Settings,
-  Swords, Trophy, UserCheck, Plus, Sparkles, Clock3, UploadCloud,
-  ChevronRight, Compass, ShieldAlert, Award, ArrowUpRight
+  Swords, Trophy, UserCheck, Plus, Sparkles, UploadCloud,
+  ChevronRight
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-
-const primaryTabs = [
-  { id: "feed", label: "Dashboard", icon: LayoutDashboard, path: "/feed" },
-  { id: "assistant", label: "Assistant", icon: Bot, path: "/assistant" },
-  { id: "career", label: "Career", icon: Briefcase, path: "/career/resume/upload" },
-  { id: "collab", label: "Collab", icon: Users, path: "/career/collab/match" },
-];
+import { motion } from "framer-motion";
 
 const careerPortals = [
   { label: "Resume Intelligence", desc: "ATS score & AI SWOT analysis", icon: FileText, path: "/career/resume/upload", color: "from-blue-500/20 to-cyan-500/20 text-cyan-400" },
@@ -41,9 +34,17 @@ function triggerHaptic() {
 
 function useIsActive() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   return (p: string) => {
     if (p.includes("?")) {
-      return pathname === p.split("?")[0];
+      const [pPath, pQuery] = p.split("?");
+      if (pathname !== pPath) return false;
+      const targetParams = new URLSearchParams(pQuery);
+      let matches = true;
+      targetParams.forEach((value, key) => {
+        if (searchParams.get(key) !== value) matches = false;
+      });
+      return matches;
     }
     return pathname === p || (pathname?.startsWith(p + "/") ?? false);
   };
@@ -280,24 +281,35 @@ export function CareerSheet({ open, onClose }: { open: boolean; onClose: () => v
 
         {/* Peer Collab Portal Group */}
         <div className="space-y-2.5">
-          <Link
-            href="/career/collab/match"
-            onClick={triggerHaptic}
-            className={`flex items-center gap-3 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
-              isActive("/career/collab/match")
-                ? "neu-inset text-purple-900 dark:text-purple-200"
-                : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
-            }`}
-          >
-            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive("/career/collab/match") ? "bg-purple-500 text-white" : "bg-slate-100 dark:bg-white/5 text-purple-500"}`}>
-              <Users size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold truncate">Peer Collab Portal</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Find study partners & peers</p>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Users size={14} className="text-purple-500" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-300">
+              Peer Collab Portal
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {collabPortals.map(({ label, desc, icon: Icon, path }) => (
+              <Link
+                key={path}
+                href={path}
+                onClick={triggerHaptic}
+                className={`flex items-center gap-3 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
+                  isActive(path)
+                    ? "neu-inset text-purple-900 dark:text-purple-200"
+                    : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
+                }`}
+              >
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive(path) ? "bg-purple-500 text-white" : "bg-slate-100 dark:bg-white/5 text-purple-500"}`}>
+                  <Icon size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold truncate">{label}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{desc}</p>
+                </div>
+                <ChevronRight size={14} className="text-slate-400" />
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Primary Pages Links */}
@@ -336,7 +348,6 @@ export function CareerSheet({ open, onClose }: { open: boolean; onClose: () => v
 
 /* ── Native-Grade Mobile Bottom Navigation Bar ── */
 export function MobileNav() {
-  const pathname = usePathname();
   const isActive = useIsActive();
   const [portalsOpen, setPortalsOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);

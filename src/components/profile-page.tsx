@@ -262,7 +262,7 @@ export function ProfilePage({ username }: ProfilePageProps) {
           url,
         });
         return;
-      } catch (err) {
+      } catch {
         // Fallback to clipboard
       }
     }
@@ -280,11 +280,10 @@ export function ProfilePage({ username }: ProfilePageProps) {
 
     async function load() {
       try {
-        // Fetch both profile endpoints concurrently for instant resolution
-        const [profileRes, userRes] = await Promise.allSettled([
-          username ? fetch(`/api/profile/${encodeURIComponent(username)}`) : Promise.reject(),
-          fetch("/api/user/profile"),
-        ]);
+        const requests: Promise<Response>[] = username
+          ? [fetch(`/api/profile/${encodeURIComponent(username)}`)]
+          : [fetch("/api/user/profile")];
+        const [profileRes, userRes] = await Promise.allSettled(requests);
 
         let resolvedProfile: ProfileData | null = null;
 
@@ -293,7 +292,7 @@ export function ProfilePage({ username }: ProfilePageProps) {
           if (data?.profile) resolvedProfile = data.profile;
         }
 
-        if (!resolvedProfile && userRes.status === "fulfilled" && userRes.value.ok) {
+        if (!resolvedProfile && userRes?.status === "fulfilled" && userRes.value.ok) {
           const data = await userRes.value.json().catch(() => null);
           if (data?.profile) resolvedProfile = data.profile;
         }
@@ -307,9 +306,9 @@ export function ProfilePage({ username }: ProfilePageProps) {
           }
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isMounted) {
-          setError(err?.message || "Failed to load profile");
+          setError(err instanceof Error ? err.message : "Failed to load profile");
           setLoading(false);
         }
       }

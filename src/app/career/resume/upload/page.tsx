@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  FileText, Upload, Loader2, CheckCircle, AlertCircle,
+  FileText, Upload, Loader2, AlertCircle,
   RefreshCw, User, Code, Briefcase, GraduationCap, X,
   Mail, Phone, MapPin, Check, Sparkles, ArrowRight, ShieldCheck, Zap
 } from 'lucide-react'

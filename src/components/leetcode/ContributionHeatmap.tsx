@@ -26,7 +26,7 @@ export function ContributionHeatmap({ calendarString }: { calendarString: string
   oneYearAgo.setHours(0,0,0,0);
 
   const cells = [];
-  let currentDate = new Date(oneYearAgo);
+  const currentDate = new Date(oneYearAgo);
 
   for (let c = 0; c < cols; c++) {
     const colCells = [];

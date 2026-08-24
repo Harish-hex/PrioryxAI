@@ -44,26 +44,28 @@ export default function CareerLayout({ children }: { children: ReactNode }) {
   return (
     <div className="app-background min-h-screen text-slate-900 dark:text-slate-100">
       <WavesBackground />
-      <Sidebar
-        activeView="career"
-        collapsed={collapsed}
-        isPro={isPro}
-        onNavigate={(view) => {
-          // router.push instead of window.location.href — the latter forced a
-          // full document reload for every nav out of the career section.
-          const pathMap: Record<string, string> = {
-            dashboard: "/feed",
-            assistant: "/assistant",
-            learning: "/learning",
-            career: "/career/resume/upload",
-            profile: "/profile",
-            settings: "/settings",
-          };
-          router.push(pathMap[view] ?? `/${view}`);
-        }}
-        onOpenPricing={() => {}} // Could wire this to a global pricing modal if needed
-        onToggle={() => setCollapsed((v) => !v)}
-      />
+      <Suspense fallback={null}>
+        <Sidebar
+          activeView="career"
+          collapsed={collapsed}
+          isPro={isPro}
+          onNavigate={(view) => {
+            // router.push instead of window.location.href — the latter forced a
+            // full document reload for every nav out of the career section.
+            const pathMap: Record<string, string> = {
+              dashboard: "/feed",
+              assistant: "/assistant",
+              learning: "/learning",
+              career: "/career/resume/upload",
+              profile: "/profile",
+              settings: "/settings",
+            };
+            router.push(pathMap[view] ?? `/${view}`);
+          }}
+          onOpenPricing={() => {}} // Could wire this to a global pricing modal if needed
+          onToggle={() => setCollapsed((v) => !v)}
+        />
+      </Suspense>
 
       <div
         className={`min-h-screen px-3 pb-24 pt-3 sm:px-5 sm:pt-4 lg:pb-12 lg:pr-8 lg:pt-6 transition-[padding] duration-300 ${
@@ -79,7 +81,9 @@ export default function CareerLayout({ children }: { children: ReactNode }) {
 
       {/* The desktop sidebar is `hidden lg:flex`, so below 1024px there was no
           navigation at all. This is the mobile counterpart. */}
-      <MobileNav />
+      <Suspense fallback={null}>
+        <MobileNav />
+      </Suspense>
     </div>
   );
 }

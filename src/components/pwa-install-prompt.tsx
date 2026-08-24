@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Share2, Smartphone, X } from "lucide-react";
+import { Download, Share2, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface BeforeInstallPromptEvent extends Event {

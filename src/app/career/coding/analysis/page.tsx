@@ -13,7 +13,6 @@ import {
   Layers,
   ArrowLeft,
   RefreshCw,
-  ExternalLink,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";

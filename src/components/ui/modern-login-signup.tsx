@@ -14,6 +14,7 @@ export default function Component({ children }: { children?: React.ReactNode } =
     let scene: any;
     let camera: any;
     let animationId: number;
+    let innerCleanup: (() => void) | undefined;
 
     const initThree = (THREE: any) => {
       if (!canvasRef.current || !active) return;
@@ -138,22 +139,14 @@ export default function Component({ children }: { children?: React.ReactNode } =
 
     // Dynamically load Three.js via script tag to avoid bundler import errors
     if ((window as any).THREE) {
-      const cleanUp = initThree((window as any).THREE);
-      return () => {
-        active = false;
-        if (cleanUp) cleanUp();
-        if (animationId) cancelAnimationFrame(animationId);
-        if (renderer) renderer.dispose();
-        if (geometry) geometry.dispose();
-        if (material) material.dispose();
-      };
+      innerCleanup = initThree((window as any).THREE);
     } else {
       const script = document.createElement('script');
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
       script.async = true;
       script.onload = () => {
         if ((window as any).THREE) {
-          const cleanUp = initThree((window as any).THREE);
+          innerCleanup = initThree((window as any).THREE);
         }
       };
       document.head.appendChild(script);
@@ -161,6 +154,7 @@ export default function Component({ children }: { children?: React.ReactNode } =
 
     return () => {
       active = false;
+      if (innerCleanup) innerCleanup();
       if (animationId) cancelAnimationFrame(animationId);
       if (renderer) renderer.dispose();
       if (geometry) geometry.dispose();
@@ -246,7 +240,7 @@ export default function Component({ children }: { children?: React.ReactNode } =
               <button style={{...socialBtn,marginBottom:0}}>{AppleIcon}Continue with Apple</button>
 
               <div style={{marginTop:"1.25rem",fontSize:"0.875rem",color:"#888"}}>
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <button onClick={()=>setIsLogin(false)} style={{color:"#fff",fontWeight:500,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",fontSize:"inherit"}}>Sign Up</button>
               </div>
               {Footer}

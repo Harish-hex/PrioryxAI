@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Play, Search, CheckCircle2, Tv, ExternalLink, BookOpen, Code2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ALL_CODING_PROBLEMS, type CodingProblem } from "@/lib/daily-challenges";
+import { motion } from "framer-motion";
+import { ALL_CODING_PROBLEMS } from "@/lib/daily-challenges";
 
 // ── Masterclasses and Full Courses ──
 export const MASTERCLASS_VIDEOS: Record<string, Array<{

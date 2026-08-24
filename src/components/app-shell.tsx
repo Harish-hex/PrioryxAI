@@ -1,13 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, Bot, Briefcase, CalendarClock, Check, CheckCircle2, Clock3, Command, Copy, ExternalLink, GraduationCap, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, Check, CheckCircle2, Clock3, Copy, ExternalLink, Loader2, RefreshCw, UserRound, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { DashboardView, type Task } from "@/components/dashboard-view";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { SimpleSkeleton } from "@/components/ui/skeleton";
 
 // Lazy-load subviews and heavy modals on-demand
@@ -77,8 +76,22 @@ interface AppShellProps {
   initialView?: string;
 }
 
-function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
-  const [weekData, setWeekData] = useState(() => getCurrentWeekDays(stats));
+const EMPTY_WEEK_DATA: ReturnType<typeof getCurrentWeekDays> = {
+  days: [],
+  completedCount: 0,
+  currentDayIndex: 0,
+  weekRange: "",
+};
+
+function StreakCalendar({ stats, isPro: _isPro }: { stats: any; isPro: boolean }) {
+  // `getCurrentWeekDays` reads `new Date()` to decide which day is "today".
+  // The server (UTC) and the client's browser (local timezone) disagree on
+  // the calendar day for part of every day, which would make the server-
+  // rendered icons differ from the client's first render and trigger a
+  // hydration mismatch. Starting from a stable, date-independent placeholder
+  // and only computing the real week client-side (in an effect, after
+  // hydration) keeps the first render identical on both sides.
+  const [weekData, setWeekData] = useState(EMPTY_WEEK_DATA);
 
   const refreshWeek = useCallback(() => {
     setWeekData(getCurrentWeekDays(stats));
@@ -806,6 +819,51 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                           </button>
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Profile menu */}
+              <div ref={profileMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setProfileMenuOpen((o) => !o); setNotifOpen(false); }}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl neu-btn text-slate-700 dark:text-slate-200"
+                  aria-label="Profile menu"
+                >
+                  <UserRound size={18} />
+                </button>
+
+                <AnimatePresence>
+                  {profileMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-[24px] neu-card"
+                    >
+                      <button
+                        type="button"
+                        onClick={handleCopyProfileLink}
+                        className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-white/5"
+                      >
+                        {profileLinkCopied ? (
+                          <Check size={15} className="text-emerald-500" />
+                        ) : (
+                          <Copy size={15} className="text-slate-400" />
+                        )}
+                        {profileLinkCopied ? "Link copied!" : "Copy profile link"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenPublicProfile}
+                        className="flex w-full items-center gap-2.5 border-t border-slate-100 px-4 py-3 text-left text-sm font-medium text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+                      >
+                        <ExternalLink size={15} className="text-slate-400" />
+                        View public profile
+                      </button>
                     </motion.div>
                   )}
                 </AnimatePresence>

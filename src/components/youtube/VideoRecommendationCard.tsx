@@ -24,7 +24,6 @@ export function VideoRecommendationCard({ recommendation, onDismissed }: Props) 
   const { video, priority, category, whyRecommended, relevanceTopic, savedForLater } = recommendation;
   const [isSaved, setIsSaved] = useState(savedForLater);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [dismissReason, setDismissReason] = useState<string | null>(null);
   const [showDismissPopover, setShowDismissPopover] = useState(false);
 
   const formatViewCount = (count: number) => {
@@ -86,7 +85,7 @@ export function VideoRecommendationCard({ recommendation, onDismissed }: Props) 
                 {['Too basic', 'Already know this', 'Not relevant', 'Not interested'].map(r => (
                   <button
                     key={r}
-                    onClick={() => { setDismissReason(r); handleDismiss(r); setShowDismissPopover(false); }}
+                    onClick={() => { handleDismiss(r); setShowDismissPopover(false); }}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
                   >
                     {r}

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, Flame, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FocusSessionModal } from "@/components/focus-session-modal";
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
@@ -773,7 +773,7 @@ function PriorityFeed({
       ) : (
         <div className="mt-6 neu-inset rounded-[28px] px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-            No urgent tasks — you're on track!
+            No urgent tasks — you&apos;re on track!
           </h3>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Capture the next assignment, revision block, or application above.</p>
         </div>

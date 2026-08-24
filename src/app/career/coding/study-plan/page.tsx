@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, RefreshCw, Layers, LayoutGrid, List } from "lucide-react";
+import { Loader2, RefreshCw, Layers } from "lucide-react";
 import { ProblemCard } from "@/components/leetcode/ProblemCard";
 import { ProblemRecommendation } from "@/lib/leetcode/types";
-import { friendlyError } from '@/components/ui/feedback';
+import { friendlyError, ErrorBanner } from '@/components/ui/feedback';
 
 export default function StudyPlan() {
   const [problems, setProblems] = useState<ProblemRecommendation[]>([]);
@@ -82,8 +82,10 @@ export default function StudyPlan() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 flex flex-col md:flex-row gap-8">
-      
+    <div className="max-w-7xl mx-auto py-8 px-4 flex flex-col gap-6">
+      {error && <ErrorBanner error={error} onRetry={fetchRecommendations} />}
+
+      <div className="flex flex-col md:flex-row gap-8">
       {/* LEFT SIDEBAR: Stats & Controls */}
       <div className="w-full md:w-64 flex-shrink-0 space-y-6">
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
@@ -182,7 +184,7 @@ export default function StudyPlan() {
           </div>
         )}
       </div>
-
+      </div>
     </div>
   );
 }

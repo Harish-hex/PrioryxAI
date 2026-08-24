@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Bot, Eye, EyeOff, GitBranch, Mail } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import ModernLoginSignup from "@/components/ui/modern-login-signup";
 
 const ERROR_COPY: Record<string, string> = {
@@ -12,10 +12,17 @@ const ERROR_COPY: Record<string, string> = {
   auth_failed: "We could not finish signing you in. Please try again.",
 };
 
+type OAuthPopupMessage = {
+  type?: string;
+  next?: string;
+  error?: string;
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/feed";
+  const authMode = searchParams.get("mode");
   const urlError = searchParams.get("error");
   const oauthCode = searchParams.get("code");
   const oauthProviderError = searchParams.get("error_description")
@@ -24,7 +31,7 @@ function LoginForm() {
       ? "auth_failed"
       : null;
 
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<"signin" | "signup">(authMode === "signup" ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,12 +42,51 @@ function LoginForm() {
     urlError ? (ERROR_COPY[urlError] ?? "Sign-in failed.") : null
   );
   const [info, setInfo] = useState<string | null>(null);
+  const oauthPopupRef = useRef<Window | null>(null);
+  const popupClosedTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!oauthCode && !oauthProviderError) return;
     const params = new URLSearchParams(searchParams.toString());
     window.location.replace(`/api/auth/callback?${params.toString()}`);
   }, [oauthCode, oauthProviderError, searchParams]);
+
+  useEffect(() => {
+    setTab(authMode === "signup" ? "signup" : "signin");
+    setError(null);
+    setInfo(null);
+  }, [authMode]);
+
+  useEffect(() => {
+    function handleOAuthMessage(event: MessageEvent<OAuthPopupMessage>) {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data?.type === "prioryx-oauth-error") {
+        setError(ERROR_COPY[event.data.error ?? "auth_failed"] ?? "Sign-in failed.");
+        setInfo(null);
+        oauthPopupRef.current?.close();
+        return;
+      }
+
+      if (event.data?.type !== "prioryx-oauth-complete") return;
+
+      const destination =
+        typeof event.data.next === "string" && event.data.next.startsWith("/")
+          ? event.data.next
+          : next;
+
+      oauthPopupRef.current?.close();
+      window.location.assign(destination);
+    }
+
+    window.addEventListener("message", handleOAuthMessage);
+    return () => {
+      window.removeEventListener("message", handleOAuthMessage);
+      if (popupClosedTimerRef.current !== null) {
+        window.clearInterval(popupClosedTimerRef.current);
+      }
+    };
+  }, [next, router]);
 
   if (oauthCode || oauthProviderError) {
     return (
@@ -103,13 +149,62 @@ function LoginForm() {
     }
   }
 
-  const handleOAuth = (provider: "github" | "google") => {
-    const url = `/api/auth/login?provider=${provider}&next=${encodeURIComponent(next)}`;
-    if (typeof window !== "undefined" && window.self !== window.top) {
-      window.open(url, "_blank");
-    } else {
-      window.location.href = url;
+  const getOAuthUrl = (provider: "github" | "google") => {
+    const params = new URLSearchParams({
+      provider,
+      next,
+      popup: "1",
+    });
+
+    return `/api/auth/login?${params.toString()}`;
+  };
+
+  const handleOAuth = (event: React.MouseEvent<HTMLAnchorElement>, provider: "github" | "google") => {
+    if (typeof window === "undefined") return;
+
+    const url = getOAuthUrl(provider);
+    const width = 520;
+    const height = 720;
+    const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+    const popupFeatures = [
+      `width=${width}`,
+      `height=${height}`,
+      `left=${Math.round(left)}`,
+      `top=${Math.round(top)}`,
+      "menubar=no",
+      "toolbar=no",
+      "location=yes",
+      "status=no",
+      "resizable=yes",
+      "scrollbars=yes",
+    ].join(",");
+    const popup = window.open("", "prioryxai-oauth", popupFeatures);
+
+    if (!popup || popup.closed) {
+      return;
     }
+
+    event.preventDefault();
+    oauthPopupRef.current = popup;
+    popup.focus();
+    popup.document.title = "Opening PrioryxAI sign-in…";
+    popup.document.body.innerHTML =
+      '<div style="min-height:100vh;display:grid;place-items:center;background:#0c1222;color:white;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:center;padding:24px"><div><h1 style="font-size:20px;margin:0 0 8px">Opening sign-in…</h1><p style="margin:0;color:#94a3b8;font-size:14px">Continue in this secure provider window.</p></div></div>';
+    popup.location.assign(url);
+    setError(null);
+    setInfo(`Complete ${provider === "google" ? "Google" : "GitHub"} sign-in in the popup window.`);
+
+    if (popupClosedTimerRef.current !== null) {
+      window.clearInterval(popupClosedTimerRef.current);
+    }
+
+    popupClosedTimerRef.current = window.setInterval(() => {
+      if (!oauthPopupRef.current?.closed) return;
+      window.clearInterval(popupClosedTimerRef.current!);
+      popupClosedTimerRef.current = null;
+      setInfo(null);
+    }, 500);
   };
 
   return (
@@ -169,9 +264,10 @@ function LoginForm() {
 
                 {/* OAuth buttons */}
                 <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOAuth("github")}
+                  <a
+                    href={getOAuthUrl("github")}
+                    target="prioryxai-oauth"
+                    onClick={(event) => handleOAuth(event, "github")}
                     className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.1]"
                   >
                     <span className="flex items-center gap-2.5">
@@ -179,10 +275,11 @@ function LoginForm() {
                       Continue with GitHub
                     </span>
                     <ArrowRight size={14} className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-white" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOAuth("google")}
+                  </a>
+                  <a
+                    href={getOAuthUrl("google")}
+                    target="prioryxai-oauth"
+                    onClick={(event) => handleOAuth(event, "google")}
                     className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.1]"
                   >
                     <span className="flex items-center gap-2.5">
@@ -190,7 +287,7 @@ function LoginForm() {
                       Continue with Google
                     </span>
                     <ArrowRight size={14} className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-white" />
-                  </button>
+                  </a>
                 </div>
 
                 {/* Divider */}
@@ -204,8 +301,9 @@ function LoginForm() {
                 <form onSubmit={handleEmailSubmit} className="space-y-2.5">
                   {tab === "signup" && (
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-slate-300">Name (optional)</label>
+                      <label htmlFor="auth-name" className="mb-1 block text-xs font-semibold text-slate-300">Name (optional)</label>
                       <input
+                        id="auth-name"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -217,8 +315,9 @@ function LoginForm() {
                   )}
 
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-300">Email</label>
+                    <label htmlFor="auth-email" className="mb-1 block text-xs font-semibold text-slate-300">Email</label>
                     <input
+                      id="auth-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -230,9 +329,10 @@ function LoginForm() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-300">Password</label>
+                    <label htmlFor="auth-password" className="mb-1 block text-xs font-semibold text-slate-300">Password</label>
                     <div className="relative">
                       <input
+                        id="auth-password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -247,7 +347,7 @@ function LoginForm() {
                         onClick={() => setShowPassword((v) => !v)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
                         tabIndex={-1}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={showPassword ? "Hide typed characters" : "Show typed characters"}
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -256,8 +356,9 @@ function LoginForm() {
 
                   {tab === "signup" && (
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-slate-300">Confirm password</label>
+                      <label htmlFor="auth-confirm-password" className="mb-1 block text-xs font-semibold text-slate-300">Confirm password</label>
                       <input
+                        id="auth-confirm-password"
                         type={showPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}

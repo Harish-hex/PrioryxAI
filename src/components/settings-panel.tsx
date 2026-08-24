@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, Calendar, CalendarCheck, CheckCircle2, ChevronDown, FileText, GitBranch, Loader2, Lock, LogOut, Moon, Save, Shield, Sun, Upload, User } from "lucide-react";
+import { ArrowDownToLine, Calendar, CalendarCheck, CheckCircle2, ChevronDown, FileText, GitBranch, Loader2, Lock, LogOut, Save, Shield, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
@@ -662,6 +662,9 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <Row label="Plan" value={isPro ? "Pro" : "Free"} highlight={isPro} />
               {profile.pro_expires_at && isPro && (
                 <Row label="Renews" value={new Date(profile.pro_expires_at).toLocaleDateString()} />
+              )}
+              {isPro && visionRemaining !== null && (
+                <Row label="Vision credits left today" value={`${visionRemaining} / ${PRO_VISION_LIMIT}`} />
               )}
             </div>
 

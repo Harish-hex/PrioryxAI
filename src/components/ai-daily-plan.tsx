@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Zap, AlertTriangle, CheckCircle2, ExternalLink,
+  AlertTriangle, CheckCircle2, ExternalLink,
   Clock, ChevronRight, X, RotateCcw, Loader2,
   Code2, GitBranch, BookOpen, Target, Brain
 } from "lucide-react";

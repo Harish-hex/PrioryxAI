@@ -13,9 +13,7 @@ import {
   MessageSquare,
   ArrowLeft,
   Hammer,
-  Code,
-  Sparkles,
-  Layers
+  Sparkles
 } from "lucide-react";
 import type { ProjectPhase } from "@/lib/mcp/types";
 

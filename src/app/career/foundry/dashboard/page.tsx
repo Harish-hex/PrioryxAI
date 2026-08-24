@@ -12,9 +12,6 @@ import {
   Hammer,
   FileText,
   AlertCircle,
-  Sparkles,
-  Layers,
-  Check,
   RefreshCw
 } from "lucide-react";
 
@@ -178,7 +175,7 @@ export default function FoundryDashboard() {
           </div>
           <h2 className="text-xl font-bold text-slate-950 dark:text-white">No skills detected in resume</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            We couldn't detect technical skills in your uploaded resume. Please re-upload a resume with clear programming languages and tools.
+            We couldn&apos;t detect technical skills in your uploaded resume. Please re-upload a resume with clear programming languages and tools.
           </p>
           <div className="pt-2">
             <Link
@@ -216,7 +213,7 @@ export default function FoundryDashboard() {
           </div>
           <h2 className="text-xl font-bold text-slate-950 dark:text-white">Ready to generate your projects</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            We've analysed your resume. Click below to generate 9 personalized project architectures across Foundation, Intermediate, and Advanced tiers.
+            We&apos;ve analysed your resume. Click below to generate 9 personalized project architectures across Foundation, Intermediate, and Advanced tiers.
           </p>
 
           {generateError && (

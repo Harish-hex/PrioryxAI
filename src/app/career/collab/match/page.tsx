@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
-  Users, Copy, Check, AlertCircle, CheckCircle, Clock,
+  Users, Copy, Check,
   Loader2, Bell, Trophy, X, Swords, Flame, Star,
-  UserCheck, UserX, Target, Zap, ChevronDown
+  Target
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────────
@@ -99,9 +99,6 @@ function getLevel(xp: number) {
 function getLevelTitle(level: number) {
   return ['', 'Newcomer', 'Apprentice', 'Coder', 'Developer',
     'Engineer', 'Senior Dev', 'Tech Lead', 'Architect', 'Principal', 'Legend'][level] ?? 'Legend'
-}
-function challengeIcon(_type: string) {
-  return ''
 }
 function challengeLabel(type: string) {
   return {
@@ -399,6 +396,15 @@ function CollabContent() {
   const completedChallenges = challenges.filter(c => c.status === 'completed' || c.status === 'declined')
   const myLevel = myXp ? getLevel(myXp.total_xp) : 1
 
+  if (loading) {
+    return (
+      <div className="neu-card rounded-[28px] p-12 flex flex-col items-center justify-center text-center space-y-4">
+        <Loader2 size={32} className="animate-spin text-purple-500" />
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading Peer Collab Portal...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Challenge Modal */}
@@ -519,7 +525,7 @@ function CollabContent() {
         <div className="neu-card rounded-[28px] p-6 flex flex-col justify-between space-y-3">
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Connect with Peer</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Enter a peer's 6-character connect code</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Enter a peer&apos;s 6-character connect code</p>
           </div>
 
           <div className="space-y-2 pt-1">

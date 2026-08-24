@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Code2, ArrowRight, CheckCircle2, Award, Zap, RefreshCw, ExternalLink } from 'lucide-react';
-import { PageSkeleton, EmptyState, ErrorBanner } from '@/components/ui/feedback';
+import { Code2, ArrowRight, RefreshCw } from 'lucide-react';
+import { PageSkeleton, ErrorBanner } from '@/components/ui/feedback';
 
 interface LCData {
   leetcode_username?: string;
