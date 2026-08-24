@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
   
   // Jobs & Collab
   jobs: '/career/market/jobs',
+  opportunities: '/opportunities',
+  opportunityMatch: '/opportunities/match',
   collabFriends: '/career/collab/friends',
   collabChallenges: '/career/collab/challenges',
   collabLeaderboard: '/career/collab/leaderboard',
@@ -51,4 +53,13 @@ export const API_ENDPOINTS = {
   // Schedule
   processTimetable: '/schedule/process-timetable',
   processExam: '/schedule/process-exam',
+
+  // Personalized decision engine
+  mobileBootstrap: '/mobile/bootstrap',
+  userContext: '/user/context',
+  feedback: '/feedback',
+  skillGaps: '/skills/gaps',
+  planningOverview: '/planning/overview',
+  ragIndex: '/rag/index',
+  ragSearch: '/rag/search',
 };

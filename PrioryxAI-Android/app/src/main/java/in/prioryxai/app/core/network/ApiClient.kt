@@ -15,6 +15,21 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface ApiService {
+  @GET("mobile/bootstrap")
+  suspend fun getMobileBootstrap(): Map<String, Any>
+
+  @GET("user/context")
+  suspend fun getUserContext(): Map<String, Any>
+
+  @GET("planning/overview")
+  suspend fun getPlanningOverview(): Map<String, Any>
+
+  @GET("skills/gaps")
+  suspend fun getSkillGaps(): Map<String, Any>
+
+  @GET("opportunities")
+  suspend fun getOpportunities(): Map<String, Any>
+
   @GET("user/profile")
   suspend fun getProfile(): Profile
   

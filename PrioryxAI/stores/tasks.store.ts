@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { apiCall } from '@/lib/api';
+import { API_ENDPOINTS } from '@/constants/api';
 import { AppHaptics } from '@/lib/haptics';
 
 export interface Task {
@@ -28,7 +30,7 @@ interface TasksState {
   snoozeTask: (id: string, hours: number) => Promise<void>;
 }
 
-export const useTasksStore = create<TasksState>((set, get) => ({
+export const useTasksStore = create<TasksState>((set) => ({
   tasks: [],
   isLoading: false,
   
@@ -74,18 +76,27 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       source: taskData.source || 'manual',
     };
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        ...newTask,
-        user_id: session.user.id,
-      })
-      .select()
-      .single();
-    
-    if (!error && data) {
+    try {
+      const { task } = await apiCall<{ task: Task }>(API_ENDPOINTS.tasks, {
+        method: 'POST',
+        body: JSON.stringify(newTask),
+      });
       AppHaptics.success();
-      set(state => ({ tasks: [data, ...state.tasks] }));
+      set(state => ({ tasks: [task, ...state.tasks] }));
+    } catch {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          ...newTask,
+          user_id: session.user.id,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        AppHaptics.success();
+        set(state => ({ tasks: [data, ...state.tasks] }));
+      }
     }
   },
   
@@ -93,7 +104,11 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     AppHaptics.success();
     // Optimistic update
     set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
-    await supabase.from('tasks').update({ status: 'done', completed: true }).eq('id', id);
+    try {
+      await apiCall(`${API_ENDPOINTS.tasks}/${id}/complete`, { method: 'PATCH' });
+    } catch {
+      await supabase.from('tasks').update({ status: 'done', completed: true }).eq('id', id);
+    }
   },
   
   deleteTask: async (id) => {
@@ -109,6 +124,13 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     set(state => ({
       tasks: state.tasks.map(t => t.id === id ? { ...t, due_at: newDue, deadline: newDue } : t),
     }));
-    await supabase.from('tasks').update({ due_at: newDue, deadline: newDue }).eq('id', id);
+    try {
+      await apiCall(`${API_ENDPOINTS.tasks}/${id}/snooze`, {
+        method: 'POST',
+        body: JSON.stringify({ hours }),
+      });
+    } catch {
+      await supabase.from('tasks').update({ due_at: newDue, deadline: newDue }).eq('id', id);
+    }
   },
 }));
