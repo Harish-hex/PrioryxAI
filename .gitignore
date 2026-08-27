@@ -36,9 +36,15 @@ pnpm-debug.log*
 # local-only archives and stray workspaces
 /Frontend/
 
-# local planning docs
+# local planning docs and AI instructions
 *.docx
 priorix_plan_final.md
+AI_IMPLEMENTATION.md
+MCP_CONNECTOR_SETUP.md
+PRIORYXAI_DESCRIPTION.md
+AGENTS.md
+CLAUDE.md
+.agents/
 
 # certificates and keys
 *.pem
