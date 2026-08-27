@@ -9,7 +9,7 @@
  * The function is fully unit-testable with plain objects.
  */
 
-export const SCORE_VERSION = 1;
+export const SCORE_VERSION = 2;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Input types
@@ -83,6 +83,15 @@ export interface ComponentScore {
   weighted: number;
   /** One-sentence human-readable explanation of why this component scored this way */
   explanation: string;
+  /**
+   * True when the user simply hasn't connected/used this signal at all
+   * (no GitHub repos, no LeetCode connection, no resume). Unavailable
+   * components are excluded from the weighted total (with remaining
+   * weights renormalized) instead of being counted as a failing 0 —
+   * a user who hasn't connected LeetCode shouldn't score the same as
+   * one who connected it and solved nothing.
+   */
+  unavailable: boolean;
 }
 
 export interface ReadinessScoreResult {
@@ -120,7 +129,15 @@ function daysSince(isoTimestamp: string | null): number {
 
 // ── Component scorers ────────────────────────────────────────────────────────
 
-function scoreGitHub(g: GitHubInputs): { raw: number; explanation: string } {
+function scoreGitHub(g: GitHubInputs): { raw: number; explanation: string; unavailable: boolean } {
+  if (g.totalRepos === 0) {
+    return {
+      raw: 0,
+      unavailable: true,
+      explanation: 'No GitHub repos connected — connect GitHub to unlock this component.',
+    };
+  }
+
   // Base: health score is already 0-100 from the collector
   let raw = clamp(g.healthScore);
 
@@ -135,9 +152,7 @@ function scoreGitHub(g: GitHubInputs): { raw: number; explanation: string } {
   raw = clamp(raw);
 
   let explanation: string;
-  if (g.totalRepos === 0) {
-    explanation = 'No GitHub repos connected — connect GitHub to unlock this component.';
-  } else if (raw >= 75) {
+  if (raw >= 75) {
     explanation = `GitHub health ${g.healthScore}/100 — active and well-described repos.`;
   } else if (age > 30) {
     explanation = `GitHub last commit was ${Math.round(age)} days ago — recruiter visibility is dropping.`;
@@ -145,14 +160,16 @@ function scoreGitHub(g: GitHubInputs): { raw: number; explanation: string } {
     explanation = `GitHub health ${g.healthScore}/100 — ${Math.round(descRatio * 100)}% of repos have descriptions.`;
   }
 
-  return { raw, explanation };
+  return { raw, explanation, unavailable: false };
 }
 
-function scoreCoding(c: CodingInputs): { raw: number; explanation: string } {
-  // If LeetCode not connected, score is 0
+function scoreCoding(c: CodingInputs): { raw: number; explanation: string; unavailable: boolean } {
+  // If LeetCode not connected, exclude this component rather than scoring it 0 —
+  // "never connected" and "connected with 0 problems solved" are not the same signal.
   if (c.leetcodeScore === null) {
     return {
       raw: 0,
+      unavailable: true,
       explanation: 'LeetCode not connected — link your account to score this component.',
     };
   }
@@ -175,13 +192,14 @@ function scoreCoding(c: CodingInputs): { raw: number; explanation: string } {
       ? `LeetCode score ${c.leetcodeScore}/100 — on track, target 75+ for top product companies.`
       : `LeetCode score ${c.leetcodeScore}/100 — strong. ${c.totalSolved} problems solved.`;
 
-  return { raw, explanation };
+  return { raw, explanation, unavailable: false };
 }
 
-function scoreResume(r: ResumeInputs): { raw: number; explanation: string } {
+function scoreResume(r: ResumeInputs): { raw: number; explanation: string; unavailable: boolean } {
   if (!r.uploaded) {
     return {
       raw: 0,
+      unavailable: true,
       explanation: 'No resume uploaded — upload to unlock job matching and SWOT analysis.',
     };
   }
@@ -205,10 +223,10 @@ function scoreResume(r: ResumeInputs): { raw: number; explanation: string } {
     explanation = `Resume has ${r.skillCount} skills + SWOT analysis complete.`;
   }
 
-  return { raw, explanation };
+  return { raw, explanation, unavailable: false };
 }
 
-function scoreTasks(t: TaskInputs): { raw: number; explanation: string } {
+function scoreTasks(t: TaskInputs): { raw: number; explanation: string; unavailable: boolean } {
   let raw = 50; // Neutral baseline
 
   // Completed tasks in last 7 days: +5 per task, capped at +35
@@ -230,10 +248,10 @@ function scoreTasks(t: TaskInputs): { raw: number; explanation: string } {
     explanation = `${t.completedLast7Days} task${t.completedLast7Days > 1 ? 's' : ''} completed this week${t.overdueCount > 0 ? `, ${t.overdueCount} overdue` : ''}.`;
   }
 
-  return { raw, explanation };
+  return { raw, explanation, unavailable: false };
 }
 
-function scoreStreak(s: StreakInputs): { raw: number; explanation: string } {
+function scoreStreak(s: StreakInputs): { raw: number; explanation: string; unavailable: boolean } {
   // GitHub contribution days: up to 60 points (2 pts per day, max 30 days)
   const githubContrib = Math.min(60, s.contributionDays30 * 2);
 
@@ -249,7 +267,7 @@ function scoreStreak(s: StreakInputs): { raw: number; explanation: string } {
     explanation = `${s.contributionDays30} GitHub active days (last 30) + ${s.leetcodeSolvedLast7} LeetCode solves this week.`;
   }
 
-  return { raw, explanation };
+  return { raw, explanation, unavailable: false };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -263,7 +281,7 @@ export function computeReadinessScore(inputs: ReadinessInputs): ReadinessScoreRe
   const tk = scoreTasks(inputs.tasks);
   const st = scoreStreak(inputs.streak);
 
-  const components: Record<string, { raw: number; explanation: string; weight: number; name: string }> = {
+  const components: Record<string, { raw: number; explanation: string; weight: number; name: string; unavailable: boolean }> = {
     github: { name: 'GitHub Portfolio',       ...gh, weight: WEIGHTS.github },
     coding: { name: 'Coding Practice',        ...cd, weight: WEIGHTS.coding },
     resume: { name: 'Resume Completeness',    ...rs, weight: WEIGHTS.resume },
@@ -271,11 +289,21 @@ export function computeReadinessScore(inputs: ReadinessInputs): ReadinessScoreRe
     streak: { name: 'Consistency & Streak',   ...st, weight: WEIGHTS.streak },
   };
 
+  // Components the user hasn't connected/used at all are excluded from the
+  // weighted average (rather than counted as a failing 0), and the remaining
+  // weights are renormalized to sum back to 1.0 — so an unconnected signal
+  // doesn't unfairly drag down the score of an otherwise-strong profile.
+  const availableWeightSum = Object.values(components)
+    .filter(c => !c.unavailable)
+    .reduce((sum, c) => sum + c.weight, 0);
+  const renormalize = availableWeightSum > 0 ? 1 / availableWeightSum : 0;
+
   let total = 0;
   const breakdown: Record<string, ComponentScore> = {};
 
   for (const [key, c] of Object.entries(components)) {
-    const weighted = c.raw * c.weight;
+    const effectiveWeight = c.unavailable ? 0 : c.weight * renormalize;
+    const weighted = c.raw * effectiveWeight;
     total += weighted;
     breakdown[key] = {
       name: c.name,
@@ -283,6 +311,7 @@ export function computeReadinessScore(inputs: ReadinessInputs): ReadinessScoreRe
       weight: c.weight,
       weighted: Math.round(weighted * 10) / 10,
       explanation: c.explanation,
+      unavailable: c.unavailable,
     };
   }
 

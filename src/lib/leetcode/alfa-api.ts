@@ -84,21 +84,36 @@ export async function fetchBadges(username: string): Promise<unknown | null> {
   return fetchWithRetry<unknown>(`/${username}/badges`, `leetcode:${username}:badges`);
 }
 
-export async function fetchProblems(tags: string[], difficulty?: string, limit: number = 20): Promise<LeetCodeProblem[]> {
+async function fetchProblemsOnce(tags: string[], limit: number): Promise<LeetCodeProblem[] | null> {
   const query = new URLSearchParams();
   if (tags.length > 0) query.set('tags', tags.join('+'));
-  // Note: For Alfa API, difficulty might need to be appended or handled differently, but let's assume it accepts difficulty param as per spec.
-  // Actually alfa api might not have this exact param, but we will pass it anyway.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   const res = await fetch(`${BASE_URL}/problems?limit=${limit}&${query.toString()}`, { signal: controller.signal }).catch(() => null);
   clearTimeout(timeout);
-  if (!res || !res.ok) return [];
-  const data = await res.json();
-  
-  let problems = (data.problemsetQuestionList || []) as LeetCodeProblem[];
+  if (!res || !res.ok) return null;
+  const data = await res.json().catch(() => null);
+  if (!data) return null;
+  return (data.problemsetQuestionList || []) as LeetCodeProblem[];
+}
+
+export async function fetchProblems(tags: string[], difficulty?: string, limit: number = 20): Promise<LeetCodeProblem[]> {
+  // Single retry after a short delay — this endpoint (a free, shared Render
+  // deployment) intermittently rejects requests under any real concurrency,
+  // and a bare failure here used to silently produce an empty study plan.
+  let problems = await fetchProblemsOnce(tags, limit);
+  if (problems === null) {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    problems = await fetchProblemsOnce(tags, limit);
+  }
+  if (problems === null) return [];
+
   if (difficulty) {
-    problems = problems.filter(p => p.difficulty === difficulty);
+    // The Alfa API returns difficulty as Title Case ("Easy"/"Medium"/"Hard"),
+    // but callers pass the uppercase enum ("EASY"/"MEDIUM"/"HARD") — a strict
+    // === comparison here silently filtered every result to zero, which was
+    // the actual reason study-plan generation always failed.
+    problems = problems.filter(p => p.difficulty?.toUpperCase() === difficulty.toUpperCase());
   }
   return problems.slice(0, limit);
 }

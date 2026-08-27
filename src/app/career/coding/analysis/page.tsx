@@ -13,6 +13,8 @@ import {
   Layers,
   ArrowLeft,
   RefreshCw,
+  ExternalLink,
+  Check,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -423,7 +425,7 @@ export default function AnalysisDashboard() {
                         key={i}
                         className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"
                       >
-                        <span className="text-emerald-500 mt-1 font-bold">✓</span>
+                        <Check size={14} className="text-emerald-500 mt-0.5 flex-shrink-0" />
                         <span>{s}</span>
                       </li>
                     ))}

@@ -181,7 +181,7 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                       )}
                     </button>
                     <p className="mt-3 text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                      Secure payment via Razorpay · Pro activates within minutes
+                      Secure payment · Pro activates within minutes
                     </p>
                   </>
                 )}

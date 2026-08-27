@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Play, Search, CheckCircle2, Tv, ExternalLink, BookOpen, Code2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { ALL_CODING_PROBLEMS } from "@/lib/daily-challenges";
+import { motion, AnimatePresence } from "framer-motion";
+import { ALL_CODING_PROBLEMS, type CodingProblem } from "@/lib/daily-challenges";
+import { recordUserActivity } from "@/lib/activity-tracker";
 
 // ── Masterclasses and Full Courses ──
 export const MASTERCLASS_VIDEOS: Record<string, Array<{
@@ -197,7 +198,7 @@ function VideoCard({
                 href={video.problemLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="neu-btn flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] font-bold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                className="neu-btn flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
               >
                 <Code2 size={12} />
                 <span>Solve</span>
@@ -209,7 +210,7 @@ function VideoCard({
                 href={video.solutionArticle}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="neu-btn flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] font-bold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                className="neu-btn flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
               >
                 <BookOpen size={12} />
                 <span>Article</span>
@@ -248,6 +249,7 @@ export function FeedPageContent() {
       } catch {}
       return next;
     });
+    recordUserActivity("youtube_watch", { videoId });
     window.open(`https://www.youtube.com/watch?v=${videoId}`, "_blank", "noopener,noreferrer");
   };
 
@@ -291,7 +293,12 @@ export function FeedPageContent() {
   return (
     <div className="space-y-6">
       {/* Top Banner Card */}
-      <div className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-8"
+      >
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-red-500 dark:text-red-400">
@@ -333,7 +340,7 @@ export function FeedPageContent() {
         </div>
 
         {/* Filter Category Tabs */}
-        <div className="mt-6 flex gap-2 overflow-x-auto pb-1 text-sm">
+        <div className="mt-6 flex gap-2 overflow-x-auto pb-1 text-sm [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] sm:[mask-image:none]">
           {ALL_TABS.map((tab) => {
             const isActive = activeTab === tab;
             const count = ALL_CATEGORIES_DATA[tab]?.length ?? (tab === "All" ? totalCuratedCount : 0);
@@ -354,7 +361,7 @@ export function FeedPageContent() {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* Video Content Grid */}
       {searchQuery.trim() && Object.keys(displaySections).length === 0 ? (
@@ -376,8 +383,14 @@ export function FeedPageContent() {
         </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(displaySections).map(([category, videos]) => (
-            <section key={category} className="space-y-4">
+          {Object.entries(displaySections).map(([category, videos], sectionIdx) => (
+            <motion.section
+              key={category}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(sectionIdx * 0.05, 0.25) }}
+              className="space-y-4"
+            >
               <div className="flex items-center justify-between">
                 <h3 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-xl">
                   <span>{category}</span>
@@ -397,7 +410,7 @@ export function FeedPageContent() {
                   />
                 ))}
               </div>
-            </section>
+            </motion.section>
           ))}
         </div>
       )}

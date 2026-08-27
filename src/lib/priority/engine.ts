@@ -69,7 +69,7 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
     supabase.from('github_priority_actions').select('*').eq('user_id', userId).eq('completed', false).order('impact_score', { ascending: false }).limit(5),
   ])
 
-  const _profile = profileResult.status === 'fulfilled' ? profileResult.value.data : null
+  const profile = profileResult.status === 'fulfilled' ? profileResult.value.data : null
   const resume = resumeResult.status === 'fulfilled' ? resumeResult.value.data : null
   const lcProfile = lcProfileResult.status === 'fulfilled' ? lcProfileResult.value.data : null
   const projects = projectsResult.status === 'fulfilled' ? (projectsResult.value.data ?? []) : []
@@ -252,11 +252,7 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
   }
 
   // ── 6. DSA Tasks ──
-  let weakTopics: string[] = ['Arrays', 'Strings'];
-  if (lcProfile?.ai_analysis) {
-    // Basic extraction if it's a string, or you could use a proper JSON structure
-    weakTopics = ['Dynamic Programming', 'Graphs', 'Trees']; 
-  }
+  const weakTopics = extractWeakTopics(lcProfile?.ai_analysis);
   const dsaTasks = await getDSATasksForUser(userId, weakTopics, 'SDE');
   tasks.push(...dsaTasks);
 
@@ -276,31 +272,75 @@ export async function generatePriorityPlan(userId: string): Promise<PriorityPlan
   return plan
 }
 
+// AI-generated topic labels ("Dynamic Programming", "Two Pointers") and the
+// imported question-bank's `topic` column ("DP", "Two Pointer", "Sliding Window")
+// don't always match exactly — normalize + alias so real weak-topic filtering
+// actually returns results instead of silently degrading to 0.
+const TOPIC_ALIASES: Record<string, string[]> = {
+  'dynamic programming': ['dp'],
+  'two pointers': ['two pointer'],
+  'sliding window': ['sliding-window'],
+  'graphs': ['graph'],
+  'trees': ['tree', 'binary tree', 'binary search tree', 'bst'],
+  'linked lists': ['linked list'],
+  'hashing': ['hash table', 'hashmap', 'hash map'],
+  'bit manipulation': ['bitmask', 'bitwise'],
+  'greedy': ['greedy algorithms'],
+  'backtracking': ['recursion and backtracking'],
+}
+
+function normalizeTopic(topic: string): string[] {
+  const base = topic.trim().toLowerCase()
+  const aliases = TOPIC_ALIASES[base] ?? []
+  return [base, ...aliases]
+}
+
+/** Extract real weak topics from the LeetCode AI analysis instead of hardcoding. */
+function extractWeakTopics(aiAnalysis: any): string[] {
+  if (!aiAnalysis || typeof aiAnalysis !== 'object') return []
+
+  const fromPriorityTopics: string[] = Array.isArray(aiAnalysis.priority_topics)
+    ? aiAnalysis.priority_topics
+        .filter((t: any) => t?.topic && (t.priority === 'CRITICAL' || t.priority === 'HIGH'))
+        .map((t: any) => String(t.topic))
+    : []
+
+  const fromCriticalGaps: string[] = Array.isArray(aiAnalysis.critical_gaps)
+    ? aiAnalysis.critical_gaps.filter((g: any) => typeof g === 'string')
+    : []
+
+  return Array.from(new Set([...fromPriorityTopics, ...fromCriticalGaps])).slice(0, 6)
+}
+
 async function getDSATasksForUser(
   userId: string,
   lcWeakTopics: string[],
-  _stream: string
+  stream: string
 ): Promise<PriorityTask[]> {
   const supabase = createClient()
 
-  const query = supabase
+  const { data: questions } = await supabase
     .from('dsa_questions')
     .select(`*, dsa_progress!left(status)`)
     .eq('is_important', true)
     .is('dsa_progress.status', null)
-    .limit(50)
+    .limit(200)
 
-  // Removed strict topic filtering because the Excel sheet topics 
-  // don't exactly match LeetCode's standard tags, which caused 0 questions to appear.
-  // We now fetch completely random questions every time as requested.
-  // if (lcWeakTopics && lcWeakTopics.length > 0) {
-  //   query = query.in('topic', lcWeakTopics)
-  // }
+  const pool = questions ?? []
 
-  const { data: questions } = await query
+  // Try to match real weak topics first (case/alias-normalized); fall back to
+  // the full pool if that yields nothing so a taxonomy mismatch never means
+  // an empty feed — but the "why" copy only claims a weak-area match when true.
+  let matched: any[] = []
+  let matchedByWeakTopic = false
+  if (lcWeakTopics.length > 0) {
+    const normalizedWeak = new Set(lcWeakTopics.flatMap(normalizeTopic))
+    matched = pool.filter((q: any) => normalizeTopic(q.topic ?? '').some(t => normalizedWeak.has(t)))
+    matchedByWeakTopic = matched.length > 0
+  }
 
-  // Shuffle and pick top 5 for randomness
-  const shuffled = (questions ?? []).sort(() => 0.5 - Math.random())
+  const candidatePool = matchedByWeakTopic ? matched : pool
+  const shuffled = [...candidatePool].sort(() => 0.5 - Math.random())
   const selected = shuffled.slice(0, 5)
 
   return selected.map((q: any) => ({
@@ -312,9 +352,9 @@ async function getDSATasksForUser(
         ? `Asked by: ${q.companies.slice(0, 3).join(', ')}`
         : ''
     }`,
-    why: lcWeakTopics.length > 0
-      ? `${q.topic} is a weak area — this problem builds the pattern`
-      : `Daily random challenge on ${q.topic} to keep your problem-solving sharp`,
+    why: matchedByWeakTopic
+      ? `${q.topic} is a weak area based on your LeetCode analysis — this problem builds the pattern`
+      : `Daily challenge on ${q.topic} to keep your problem-solving sharp`,
     estimatedMinutes: q.difficulty === 'Easy' ? 20
       : q.difficulty === 'Medium' ? 45 : 90,
     priority: q.difficulty === 'Hard' ? 'HIGH' as const

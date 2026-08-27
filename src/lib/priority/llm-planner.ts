@@ -23,8 +23,6 @@ import { collectGitHubSignals } from './collectors/github-collector'
 import { collectResumeSignals } from './collectors/resume-collector'
 import { collectProjectSignals } from './collectors/project-collector'
 import { collectSubjectSignals } from './collectors/subject-collector'
-import { buildUserContext } from '@/lib/context/user-context'
-import { buildScopedAIContext } from '@/lib/ai/context-builder'
 
 /** Extended plan that includes LLM reasoning fields */
 export interface LLMPriorityPlan extends PriorityPlan {
@@ -138,12 +136,6 @@ export async function generateLLMPlan(userId: string): Promise<LLMPriorityPlan> 
   const lcScore =
     (lcProfile as { placement_readiness_score?: number } | null)
       ?.placement_readiness_score
-  const unifiedContextSummary = await buildUserContext(supabase, userId, {
-    taskLimit: 10,
-    includeFeedback: true,
-  })
-    .then((ctx) => buildScopedAIContext(ctx, 'priority'))
-    .catch(() => 'Unified context unavailable.')
 
   // Run all signal collectors in parallel
   const [examRes, dsaRes, githubRes, resumeGapsRes, projectRes, subjectRes] =
@@ -228,7 +220,6 @@ export async function generateLLMPlan(userId: string): Promise<LLMPriorityPlan> 
     },
     workloadState: workloadState.summary,
     workloadRiskScore: workloadState.riskScore,
-    regionalContext: unifiedContextSummary,
     date: todayISO,
   }
 
@@ -251,8 +242,8 @@ ${RESPONSE_SCHEMA_DESCRIPTION}
 You are reasoning about a student in semester ${signalContext.userProfile.semester ?? 'unknown'} targeting: ${signalContext.userProfile.targetCompanies.join(', ') || 'top tech companies'}.
 Their LeetCode placement score is ${lcScore !== null && lcScore !== undefined ? `${lcScore}/100` : 'unknown — not connected'}.
 Workload risk score: ${workloadState.riskScore}/100 (${workloadState.velocityTrend} velocity, ${workloadState.examPressure} exam pressure).
-${workloadState.riskScore >= 70 ? '⚠️ HIGH BURNOUT RISK — dramatically reduce workload. Max 3 tasks. Include a burnoutNote.' : ''}
-${workloadState.riskScore >= 45 && workloadState.riskScore < 70 ? '⚡ MEDIUM LOAD — moderate workload. Max 5 tasks.' : ''}`,
+${workloadState.riskScore >= 70 ? 'HIGH BURNOUT RISK — dramatically reduce workload. Max 3 tasks. Include a burnoutNote.' : ''}
+${workloadState.riskScore >= 45 && workloadState.riskScore < 70 ? 'MEDIUM LOAD — moderate workload. Max 5 tasks.' : ''}`,
         },
         {
           role: 'user',

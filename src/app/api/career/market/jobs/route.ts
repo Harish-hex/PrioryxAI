@@ -2,14 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient, getAuthUser } from '@/lib/supabase-server';
-import { buildUserContext } from '@/lib/context/user-context';
-import { matchOpportunityToUser } from '@/lib/opportunities/matching';
-import { contentHash, normalizeJobOpportunity } from '@/lib/opportunities/normalize';
-import { recordFeedbackEvent } from '@/lib/feedback/events';
-import { NormalizedOpportunity } from '@/lib/opportunities/types';
+import { redis, withFallback } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+
+// The two external job sources are already Next-fetch-cached for 1h, but this
+// route still re-runs the DB skill lookup + per-job scoring pass on every
+// request. Wrapping the final paginated response in Redis avoids paying that
+// cost again on every visit within the window — job listings don't need to
+// be fresher than this.
+const CACHE_TTL = 15 * 60; // seconds
 
 interface RawJob {
   id: string;
@@ -24,24 +27,6 @@ interface RawJob {
   source: string;
 }
 
-type JobWithScore = RawJob & {
-  matchScore: number;
-  matchedSkills: string[];
-  missingSkills?: string[];
-  matchReasons?: string[];
-  recommendedActions?: string[];
-  normalizedOpportunity?: ReturnType<typeof normalizeJobOpportunity>;
-};
-
-type ResumeSkillEntity = string | { name?: string | null };
-type CodingProfileRow = {
-  data?: {
-    strongTopics?: string[];
-    skills?: string[];
-  } | null;
-  weak_topics?: string[] | null;
-};
-
 async function fetchFromRemotive(): Promise<RawJob[]> {
   try {
     // ONLY tech categories — no product/marketing/design/sales
@@ -50,6 +35,7 @@ async function fetchFromRemotive(): Promise<RawJob[]> {
       categories.map((cat) =>
         fetch(`https://remotive.com/api/remote-jobs?category=${cat}&limit=25`, {
           next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(8000),
         }).then((r) => r.json())
       )
     );
@@ -81,10 +67,73 @@ async function fetchFromRemotive(): Promise<RawJob[]> {
   }
 }
 
+async function fetchFromRemoteOK(): Promise<RawJob[]> {
+  try {
+    const res = await fetch('https://remoteok.com/api', {
+      next: { revalidate: 3600 },
+      headers: { 'User-Agent': 'Mozilla/5.0' }, // RemoteOK 403s requests with no UA
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as unknown[];
+    // First element is always a legal-notice object, not a job.
+    return data.slice(1).map((job: unknown) => {
+      const j = job as Record<string, unknown>;
+      return {
+        id: `rok-${j.id}`,
+        title: String(j.position ?? ''),
+        company: String(j.company ?? ''),
+        location: String(j.location ?? 'Remote'),
+        salary: j.salary_min ? `$${j.salary_min}-${j.salary_max ?? j.salary_min}` : '',
+        description: String(j.description ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+        url: String(j.url ?? (j.slug ? `https://remoteok.com/remote-jobs/${j.slug}` : '')),
+        tags: Array.isArray(j.tags) ? (j.tags as string[]) : [],
+        postedAt: String(j.date ?? ''),
+        source: 'RemoteOK',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] RemoteOK fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromJobicy(): Promise<RawJob[]> {
+  try {
+    const res = await fetch('https://jobicy.com/api/v2/remote-jobs?count=50&tag=dev', {
+      next: { revalidate: 3600 },
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as { jobs?: unknown[] };
+    return (data.jobs ?? []).map((job: unknown) => {
+      const j = job as Record<string, unknown>;
+      const industry = Array.isArray(j.jobIndustry) ? (j.jobIndustry as string[]) : [];
+      return {
+        id: `jby-${j.id}`,
+        title: String(j.jobTitle ?? ''),
+        company: String(j.companyName ?? ''),
+        location: String(j.jobGeo ?? 'Remote'),
+        salary: j.annualSalaryMin ? `${j.annualSalaryMin}-${j.annualSalaryMax ?? j.annualSalaryMin} ${j.salaryCurrency ?? ''}`.trim() : '',
+        description: String(j.jobExcerpt ?? j.jobDescription ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+        url: String(j.url ?? ''),
+        tags: industry,
+        postedAt: String(j.pubDate ?? ''),
+        source: 'Jobicy',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] Jobicy fetch failed:', e);
+    return [];
+  }
+}
+
 async function fetchFromArbeitnow(): Promise<RawJob[]> {
   try {
     const res = await fetch('https://www.arbeitnow.com/api/job-board-api?page=1', {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
     const data = await res.json() as { data?: unknown[] };
@@ -149,6 +198,13 @@ export async function GET(request: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const { searchParams: qs } = new URL(request.url);
+  const cacheKey = `jobs:${user.id}:${qs.get('page') ?? '1'}:${qs.get('limit') ?? '20'}`;
+  const cached = await withFallback(() => redis.get(cacheKey), null);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const db = createServiceRoleClient();
 
   // Fetch user skills from multiple sources
@@ -159,8 +215,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    db.from('coding_profiles')
-      .select('data, leetcode_stats, weak_topics')
+    db.from('user_coding_profiles')
+      .select('platform, data')
       .eq('user_id', user.id),
     db.from('users')
       .select('subjects')
@@ -172,15 +228,34 @@ export async function GET(request: NextRequest) {
   const codingProfiles = codingRes.data ?? [];
   const profile = profileRes.data;
 
+  // Extract skills/strong topics from a connected coding platform profile.
+  // `user_coding_profiles.data` shape differs per platform — see
+  // src/app/api/leetcode/connect/route.ts and src/app/api/hackerrank/connect/route.ts
+  // for what actually gets written.
+  function extractSkillsFromCodingProfile(p: { platform: string; data: any }): string[] {
+    if (p.platform === 'leetcode') {
+      const tags = p.data?.skillStats?.data?.matchedUser?.tagProblemCounts ?? {};
+      const tagNames = [...(tags.advanced ?? []), ...(tags.intermediate ?? []), ...(tags.fundamental ?? [])]
+        .filter((t: any) => t?.problemsSolved > 0)
+        .map((t: any) => t.tagName);
+      const langs = (p.data?.languageStats?.matchedUser?.languageProblemCount ?? [])
+        .filter((l: any) => l?.problemsSolved > 0)
+        .map((l: any) => l.languageName);
+      return [...tagNames, ...langs];
+    }
+    if (p.platform === 'hackerrank') {
+      return Array.isArray(p.data?.badges) ? p.data.badges : [];
+    }
+    return [];
+  }
+
   // Extract skills from resume — handle both { skills: string[] } and SkillEntity[] formats
   let resumeSkills: string[] = [];
   if (resume) {
     const se = resume.skill_entities;
     if (Array.isArray(se)) {
       // SkillEntity[] format: [{name, category, proficiency, evidence}]
-      resumeSkills = (se as ResumeSkillEntity[])
-        .map((s) => (typeof s === 'string' ? s : s.name ?? ''))
-        .filter(Boolean);
+      resumeSkills = se.map((s: any) => (typeof s === 'string' ? s : s?.name)).filter(Boolean) as string[];
     } else if (se && typeof se === 'object') {
       resumeSkills = (se as { skills?: string[] }).skills ?? [];
     }
@@ -192,71 +267,80 @@ export async function GET(request: NextRequest) {
   // Combine all skills
   const userSkillsSet = new Set([
     ...resumeSkills,
-    ...(codingProfiles as CodingProfileRow[]).flatMap((p) => [
-      ...(p.data?.strongTopics ?? p.data?.skills ?? []),
-      ...(Array.isArray(p.weak_topics) ? p.weak_topics : []),
-    ]),
+    ...codingProfiles.flatMap((p: any) => extractSkillsFromCodingProfile(p)),
     ...(profile?.subjects ?? [])
   ].filter(Boolean).map((s: string) => s.toLowerCase().trim()));
   
   const userSkillsArray = Array.from(userSkillsSet);
   console.log(`[Jobs] userSkills count: ${userSkillsArray.length}`);
 
-  // Fetch from both sources in parallel
-  const [remotiveJobs, arbeitnowJobs] = await Promise.allSettled([
+  // Fetch from all sources in parallel — more sources means more real
+  // candidates for a genuinely good match to actually surface.
+  const [remotiveJobs, arbeitnowJobs, remoteOkJobs, jobicyJobs] = await Promise.allSettled([
     fetchFromRemotive(),
     fetchFromArbeitnow(),
+    fetchFromRemoteOK(),
+    fetchFromJobicy(),
   ]);
 
   const allJobs: RawJob[] = [
     ...(remotiveJobs.status === 'fulfilled' ? remotiveJobs.value : []),
     ...(arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value : []),
+    ...(remoteOkJobs.status === 'fulfilled' ? remoteOkJobs.value : []),
+    ...(jobicyJobs.status === 'fulfilled' ? jobicyJobs.value : []),
   ];
 
   // Filter to tech jobs only — remove Sales, Marketing, Design, etc.
   const techJobs = allJobs.filter(isTechJob);
   console.log(`[Jobs] Total: ${allJobs.length}, Tech only: ${techJobs.length}`);
 
+  // Escape a skill string for safe use inside a RegExp
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Word-boundary match so short/common skill tokens (e.g. "R", "Go", "C")
+  // don't spuriously match inside unrelated words (e.g. "Recruiter", "Google", "Coordinate").
+  const matchesSkill = (text: string, skill: string): boolean => {
+    const pattern = new RegExp(`(?<![a-z0-9])${escapeRegExp(skill)}(?![a-z0-9])`, 'i');
+    return pattern.test(text);
+  };
+
   // Compute match scores
+  //
+  // The denominator used to be the sum of weights across the user's ENTIRE
+  // skill inventory — so a user with 20 tracked skills could only ever hit a
+  // high score on a job that happened to mention nearly all 20 of them,
+  // which essentially never happens for any single real posting (a job
+  // needs maybe 4-6 relevant skills, not someone's whole resume). That bug
+  // is why defaulting the UI to a 70%+ filter showed zero jobs for
+  // virtually every real user. Normalize instead against a realistic
+  // "how much of a strong match looks like" expectation.
+  const EXPECTED_MATCH_WEIGHT = 10; // roughly 5-6 substantial skills' worth
   const scoreJob = (job: RawJob, skills: string[]): { score: number, matched: string[] } => {
     if (skills.length === 0) return { score: 0, matched: [] };
-    const jobText = (job.title + ' ' + job.description + ' ' + job.tags.join(' ')).toLowerCase();
-    
+    const jobText = job.title + ' ' + job.description + ' ' + job.tags.join(' ');
+
     let matchCount = 0;
-    let totalWeight = 0;
     const matched: string[] = [];
-    
+
     skills.forEach(skill => {
       const weight = skill.length > 4 ? 2 : 1; // longer/specific skills worth more
-      totalWeight += weight;
-      if (jobText.includes(skill)) {
+      if (matchesSkill(jobText, skill)) {
         matchCount += weight;
         matched.push(skill);
       }
     });
-    
-    const rawScore = Math.round((matchCount / (totalWeight || 1)) * 100);
+
+    if (matched.length === 0) return { score: 0, matched: [] };
+
+    const rawScore = Math.round((matchCount / EXPECTED_MATCH_WEIGHT) * 100);
     // Boost for title match
-    const titleBoost = skills.some(s => job.title.toLowerCase().includes(s)) ? 10 : 0;
+    const titleBoost = skills.some(s => matchesSkill(job.title, s)) ? 10 : 0;
     return { score: Math.min(100, rawScore + titleBoost), matched };
   };
 
-  const context = await buildUserContext(db, user.id, { taskLimit: 5 }).catch(() => null);
-
-  const jobsWithScores: JobWithScore[] = techJobs.map((job) => {
+  const jobsWithScores = techJobs.map((job) => {
     const { score, matched } = scoreJob(job, userSkillsArray);
-    if (!context) return { ...job, matchScore: score, matchedSkills: matched };
-    const normalized = normalizeJobOpportunity(job as unknown as Record<string, unknown>, job.source.toLowerCase());
-    const semanticMatch = matchOpportunityToUser(normalized, context);
-    return {
-      ...job,
-      matchScore: Math.max(score, semanticMatch.score),
-      matchedSkills: Array.from(new Set([...matched, ...semanticMatch.strongMatches])),
-      missingSkills: semanticMatch.missingSkills,
-      matchReasons: semanticMatch.reasons,
-      recommendedActions: semanticMatch.recommendedActions,
-      normalizedOpportunity: normalized,
-    };
+    return { ...job, matchScore: score, matchedSkills: matched };
   });
 
   // Sort by match score desc
@@ -270,44 +354,9 @@ export async function GET(request: NextRequest) {
   const total = jobsWithScores.length;
   const paginatedJobs = jobsWithScores.slice(offset, offset + limit);
 
-  const opportunityRows = paginatedJobs
-    .map((job) => job.normalizedOpportunity)
-    .filter((opp): opp is NormalizedOpportunity => Boolean(opp))
-    .map((opp) => ({
-      source_key: opp.sourceKey,
-      external_id: opp.externalId,
-      title: opp.title,
-      company: opp.company,
-      location: opp.location,
-      remote_policy: opp.remotePolicy,
-      country: opp.country,
-      deadline: opp.deadline,
-      salary_min: opp.salaryMin,
-      salary_max: opp.salaryMax,
-      stipend: opp.stipend,
-      currency: opp.currency,
-      eligibility: opp.eligibility,
-      required_skills: opp.requiredSkills,
-      preferred_skills: opp.preferredSkills,
-      description: opp.description,
-      application_url: opp.applicationUrl,
-      freshness_at: opp.freshnessAt,
-      raw_payload: opp.rawPayload ?? {},
-      content_hash: contentHash(opp),
-      updated_at: new Date().toISOString(),
-    }));
-
-  if (opportunityRows.length > 0) {
-    db.from('opportunities')
-      .upsert(opportunityRows, { onConflict: 'source_key,external_id' })
-      .then(({ error }) => {
-        if (error) console.warn('[Jobs] opportunity upsert failed:', error.message);
-      });
-  }
-
   console.log(`[Jobs] Returning ${paginatedJobs.length} of ${total} tech jobs (page ${page}/${Math.ceil(total / limit)})`);
 
-  return NextResponse.json({ 
+  const result = {
     jobs: paginatedJobs,
     pagination: {
       page,
@@ -316,8 +365,10 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       hasMore: offset + limit < total,
     },
-    debugSkillCount: userSkillsArray.length 
-  });
+    debugSkillCount: userSkillsArray.length
+  };
+  await withFallback(() => redis.set(cacheKey, result, { ex: CACHE_TTL }), undefined);
+  return NextResponse.json(result);
 }
 
 
@@ -344,12 +395,5 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  await recordFeedbackEvent(supabase, user.id, {
-    eventType: 'opportunity_saved',
-    source: 'job_market',
-    entityType: 'job_application',
-    entityId: body.jdUrl ?? `${body.company}:${body.jobTitle}`,
-    context: { company: body.company, jobTitle: body.jobTitle, matchScore: body.matchScore ?? 0 },
-  });
   return NextResponse.json({ success: true });
 }

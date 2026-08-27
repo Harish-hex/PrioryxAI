@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { LeetCodeConnectCard } from "@/components/leetcode/LeetCodeConnectCard";
 import { StreamSelector } from "@/components/leetcode/StreamSelector";
 import { UserStream, LeetCodeProfile } from "@/lib/leetcode/types";
-import { Loader2, ArrowRight, LineChart, Target, Zap } from "lucide-react";
+import { Loader2, ArrowRight, Code2, LineChart, Target, Zap } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { friendlyError } from '@/components/ui/feedback';
 
@@ -111,20 +112,20 @@ export default function LeetCodeDashboard() {
     return (
       <div className="max-w-3xl mx-auto py-12 px-4">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">Connect Your Coding Profile</h1>
-          <p className="text-slate-600">Link your LeetCode account to unlock deep AI analysis, personalized study plans, and placement readiness tracking.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">Connect Your Coding Profile</h1>
+          <p className="text-slate-600 dark:text-white/60">Link your LeetCode account to unlock deep AI analysis, personalized study plans, and placement readiness tracking.</p>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8">
+        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 md:p-8">
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-900/70 mb-2">LeetCode Username</label>
+              <label className="block text-sm font-medium text-slate-900/70 dark:text-white/70 mb-2">LeetCode Username</label>
               <input
                 type="text"
                 placeholder="e.g. neetcode"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-indigo-500 transition-colors"
               />
             </div>
             

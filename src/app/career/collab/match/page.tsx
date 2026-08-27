@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
-  Users, Copy, Check,
+  Users, Copy, Check, AlertCircle, CheckCircle, Clock,
   Loader2, Bell, Trophy, X, Swords, Flame, Star,
-  Target
+  UserCheck, UserX, Target, Zap, ChevronDown
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────────
@@ -99,6 +100,17 @@ function getLevel(xp: number) {
 function getLevelTitle(level: number) {
   return ['', 'Newcomer', 'Apprentice', 'Coder', 'Developer',
     'Engineer', 'Senior Dev', 'Tech Lead', 'Architect', 'Principal', 'Legend'][level] ?? 'Legend'
+}
+const LEVEL_THRESHOLDS = [0, 0, 50, 100, 200, 350, 550, 800, 1100, 1500, 2000]
+function getLevelProgress(xp: number) {
+  const level = getLevel(xp)
+  if (level >= 10) return 100
+  const floor = LEVEL_THRESHOLDS[level] ?? 0
+  const ceil = LEVEL_THRESHOLDS[level + 1] ?? floor + 1
+  return Math.max(0, Math.min(100, Math.round(((xp - floor) / (ceil - floor)) * 100)))
+}
+function challengeIcon(_type: string) {
+  return ''
 }
 function challengeLabel(type: string) {
   return {
@@ -318,7 +330,7 @@ function CollabContent() {
       const res = await fetch('/api/career/collab/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ connectCode: connectCode.trim() }),
+        body: JSON.stringify({ code: connectCode.trim(), connectCode: connectCode.trim() }),
       })
       const d = await res.json()
       if (!res.ok) {
@@ -396,15 +408,6 @@ function CollabContent() {
   const completedChallenges = challenges.filter(c => c.status === 'completed' || c.status === 'declined')
   const myLevel = myXp ? getLevel(myXp.total_xp) : 1
 
-  if (loading) {
-    return (
-      <div className="neu-card rounded-[28px] p-12 flex flex-col items-center justify-center text-center space-y-4">
-        <Loader2 size={32} className="animate-spin text-purple-500" />
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading Peer Collab Portal...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Challenge Modal */}
@@ -424,7 +427,12 @@ function CollabContent() {
       )}
 
       {/* Header */}
-      <header className="neu-card rounded-[28px] p-6 sm:p-7">
+      <motion.header
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="neu-card rounded-[28px] p-6 sm:p-7"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 sm:text-sm">
@@ -441,16 +449,26 @@ function CollabContent() {
 
           <div className="flex items-center gap-3 shrink-0">
             {myXp && (
-              <div className="neu-pill rounded-full px-4 py-1.5 flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
-                <Star className="h-3.5 w-3.5 text-amber-500" />
-                <span>{myXp.total_xp} XP</span>
-                <span className="opacity-60">•</span>
-                <span>Lv.{myLevel} {getLevelTitle(myLevel)}</span>
-                {myXp.win_streak > 1 && (
-                  <span className="flex items-center gap-0.5 text-orange-500 font-semibold">
-                    <Flame className="h-3 w-3" />{myXp.win_streak} streak
-                  </span>
-                )}
+              <div className="neu-pill rounded-2xl px-4 py-2 flex flex-col gap-1.5 min-w-[10.5rem]">
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
+                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                  <span>{myXp.total_xp} XP</span>
+                  <span className="opacity-60">•</span>
+                  <span>Lv.{myLevel} {getLevelTitle(myLevel)}</span>
+                  {myXp.win_streak > 1 && (
+                    <span className="flex items-center gap-0.5 text-orange-500 font-semibold">
+                      <Flame className="h-3 w-3" />{myXp.win_streak} streak
+                    </span>
+                  )}
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-slate-300/60 dark:bg-white/10 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${getLevelProgress(myXp.total_xp)}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500"
+                  />
+                </div>
               </div>
             )}
 
@@ -475,20 +493,20 @@ function CollabContent() {
               </button>
 
               {showNotifications && (
-                <div className="neu-card absolute right-0 top-12 w-80 rounded-[24px] shadow-2xl z-50 overflow-hidden p-4 space-y-2">
+                <div className="neu-card absolute right-0 top-12 w-[min(20rem,calc(100vw-3rem))] rounded-[24px] shadow-2xl z-50 overflow-hidden p-4 space-y-2">
                   <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-white/10">
                     <span className="font-bold text-xs text-slate-900 dark:text-white">Notifications</span>
-                    <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-700">
+                    <button onClick={() => setShowNotifications(false)} className="neu-btn p-1 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-white">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-1.5">
                     {notifications.length === 0 ? (
-                      <p className="py-6 text-xs text-slate-400 text-center">No notifications yet</p>
+                      <p className="py-6 text-xs text-slate-400 dark:text-slate-500 text-center">No notifications yet</p>
                     ) : notifications.map(n => (
                       <div key={n.id} className="neu-inset rounded-xl p-2.5 text-xs space-y-0.5">
                         <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
-                        {n.body && <p className="text-[11px] text-slate-500 dark:text-slate-400">{n.body}</p>}
+                        {n.body && <p className="text-xs text-slate-500 dark:text-slate-400">{n.body}</p>}
                       </div>
                     ))}
                   </div>
@@ -497,10 +515,15 @@ function CollabContent() {
             </div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Connect Code & Peer Add Dual Grid */}
-      <div className="grid md:grid-cols-2 gap-5">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+        className="grid md:grid-cols-2 gap-5"
+      >
         {/* My Connect Code */}
         <div className="neu-card rounded-[28px] p-6 flex flex-col justify-between space-y-3">
           <div>
@@ -525,7 +548,7 @@ function CollabContent() {
         <div className="neu-card rounded-[28px] p-6 flex flex-col justify-between space-y-3">
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Connect with Peer</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Enter a peer&apos;s 6-character connect code</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Enter a peer's 6-character connect code</p>
           </div>
 
           <div className="space-y-2 pt-1">
@@ -558,32 +581,34 @@ function CollabContent() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tabs */}
-      <div className="neu-card rounded-[24px] p-2 flex items-center gap-2 overflow-x-auto">
-        {([
-          { id: 'friends' as const, label: `Friends (${friends.length})`, icon: Users },
-          { id: 'challenges' as const, label: `Duels & Challenges (${challenges.length})`, icon: Swords, badge: pendingChallenges.length },
-          { id: 'requests' as const, label: `Requests`, icon: Bell, badge: inbox.length },
-          { id: 'leaderboard' as const, label: 'XP Leaderboard', icon: Trophy },
-        ]).map(({ id, label, icon: Icon, badge }) => (
-          <button
-            key={id}
-            onClick={() => handleTabChange(id)}
-            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
-              activeTab === id
-                ? "neu-inset text-purple-700 dark:text-purple-300 bg-purple-500/10"
-                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            <span>{label}</span>
-            {badge && badge > 0 ? (
-              <span className="bg-rose-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">{badge}</span>
-            ) : null}
-          </button>
-        ))}
+      <div className="relative">
+        <div className="neu-card rounded-[24px] p-2 flex items-center gap-2 overflow-x-auto [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] sm:[mask-image:none]">
+          {([
+            { id: 'friends' as const, label: `Friends (${friends.length})`, icon: Users },
+            { id: 'challenges' as const, label: `Duels & Challenges (${challenges.length})`, icon: Swords, badge: pendingChallenges.length },
+            { id: 'requests' as const, label: `Requests`, icon: Bell, badge: inbox.length },
+            { id: 'leaderboard' as const, label: 'XP Leaderboard', icon: Trophy },
+          ]).map(({ id, label, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => handleTabChange(id)}
+              className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition shrink-0 ${
+                activeTab === id
+                  ? "neu-inset text-purple-700 dark:text-purple-300 bg-purple-500/10"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{label}</span>
+              {badge && badge > 0 ? (
+                <span className="bg-rose-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">{badge}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── FRIENDS TAB ── */}
@@ -591,12 +616,18 @@ function CollabContent() {
         <div className="space-y-3">
           {friends.length === 0 ? (
             <div className="neu-card rounded-[28px] p-10 text-center space-y-3 max-w-xl mx-auto">
-              <Users className="h-10 w-10 text-slate-400 mx-auto" />
+              <Users className="h-10 w-10 text-slate-400 dark:text-slate-500 mx-auto" />
               <h3 className="font-bold text-slate-950 dark:text-white text-base">No connected friends yet</h3>
-              <p className="text-xs text-slate-500">Share your connect code above with your peer group to link accounts and duel.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Share your connect code above with your peer group to link accounts and duel.</p>
             </div>
-          ) : friends.map(friend => (
-            <div key={friend.connectionId} className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          ) : friends.map((friend, idx) => (
+            <motion.div
+              key={friend.connectionId}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(idx * 0.04, 0.3) }}
+              className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-transform duration-200 hover:-translate-y-0.5 hover:neu-raised-sm"
+            >
               <div className="flex items-start gap-3.5 flex-1 min-w-0">
                 <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-lg text-purple-600 dark:text-purple-300 shrink-0">
                   {friend.profile?.avatar_initial ?? '?'}
@@ -610,7 +641,7 @@ function CollabContent() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{friend.profile?.stream}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{friend.profile?.stream}</p>
                   {friend.profile?.skills && friend.profile.skills.length > 0 && (
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {friend.profile.skills.slice(0, 5).map(s => (
@@ -630,7 +661,7 @@ function CollabContent() {
                 <Swords className="h-3.5 w-3.5" />
                 <span>Challenge</span>
               </button>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -644,12 +675,12 @@ function CollabContent() {
               {inbox.map(req => (
                 <div key={req.connectionId} className="neu-card rounded-[24px] p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="neu-pill-inset h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-purple-600 shrink-0">
+                    <div className="neu-pill-inset h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-purple-600 dark:text-purple-300 shrink-0">
                       {req.profile?.avatar_initial ?? '?'}
                     </div>
                     <div>
                       <p className="font-bold text-xs text-slate-950 dark:text-white">{req.profile?.display_name ?? 'Classmate'}</p>
-                      <p className="text-[11px] text-slate-400">{req.profile?.stream} · {req.profile?.connect_code}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{req.profile?.stream} · {req.profile?.connect_code}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -658,7 +689,7 @@ function CollabContent() {
                       Accept
                     </button>
                     <button onClick={() => respondToRequest(req.connectionId, 'decline')}
-                      className="neu-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500">
+                      className="neu-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400">
                       Decline
                     </button>
                   </div>
@@ -673,7 +704,7 @@ function CollabContent() {
               {outgoing.map(req => (
                 <div key={req.connectionId} className="neu-card rounded-[20px] p-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>Sent to <strong>{req.profile?.display_name ?? req.receiverId}</strong></span>
-                  <span className="neu-pill rounded-full px-2 py-0.5 text-[10px] font-bold text-amber-600">Waiting response</span>
+                  <span className="neu-pill rounded-full px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">Waiting response</span>
                 </div>
               ))}
             </div>
@@ -751,10 +782,10 @@ function CollabContent() {
                   <div key={c.id} className="neu-card rounded-[20px] p-4 flex items-center justify-between text-xs">
                     <div>
                       <p className="font-bold text-slate-950 dark:text-white">{c.title}</p>
-                      <p className="text-slate-400 text-[11px]">vs {c.peerProfile?.display_name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">vs {c.peerProfile?.display_name}</p>
                     </div>
                     {c.status === 'completed' && (
-                      <span className={`neu-pill rounded-full px-2.5 py-0.5 text-xs font-bold ${iWon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
+                      <span className={`neu-pill rounded-full px-2.5 py-0.5 text-xs font-bold ${iWon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
                         {iWon ? 'Won' : 'Lost'}
                       </span>
                     )}
@@ -795,7 +826,7 @@ function CollabContent() {
                     <p className="font-bold text-xs text-slate-950 dark:text-white">
                       {entry.name}{entry.isMe ? ' (You)' : ''}
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       Lv.{getLevel(entry.xp)} {getLevelTitle(getLevel(entry.xp))} · {entry.won} wins {entry.streak > 1 ? `· ${entry.streak} streak` : ''}
                     </p>
                   </div>

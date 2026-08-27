@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import {
-  GitBranch, Zap, Target, AlertTriangle,
-  CheckCircle2, ExternalLink, RefreshCw,
-  Code2, ChevronRight, Loader2, Terminal, Check, Copy
+  GitBranch, Zap, Target, TrendingUp, AlertTriangle,
+  CheckCircle2, Clock, ExternalLink, RefreshCw, Award,
+  Code2, ChevronRight, Loader2, Flame, Terminal, Check, Copy
 } from 'lucide-react';
 
 interface ProjectScore {
@@ -38,8 +39,9 @@ interface IntelligenceReport {
 }
 
 const gradeColor: Record<string, string> = {
-  A: 'bg-emerald-500 text-white', B: 'bg-cyan-500 text-white',
-  C: 'bg-amber-500 text-white', D: 'bg-orange-500 text-white', F: 'bg-rose-500 text-white'
+  A: 'bg-emerald-500 text-white ring-emerald-500/25', B: 'bg-cyan-500 text-white ring-cyan-500/25',
+  C: 'bg-amber-500 text-white ring-amber-500/25', D: 'bg-orange-500 text-white ring-orange-500/25',
+  F: 'bg-rose-500 text-white ring-rose-500/25'
 };
 
 const priorityColor: Record<string, string> = {
@@ -60,18 +62,24 @@ function ScoreRing({ score }: { score: number }) {
   const color = score >= 70 ? '#10b981' : score >= 50 ? '#06b6d4' : '#f59e0b';
 
   return (
-    <div className="relative flex items-center justify-center">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4 }}
+      className="relative flex items-center justify-center"
+    >
       <svg width={140} height={140} className="-rotate-90">
         <circle cx={70} cy={70} r={r} fill="none" stroke="currentColor" className="text-slate-200/80 dark:text-white/10" strokeWidth={10} />
         <circle cx={70} cy={70} r={r} fill="none" stroke={color} strokeWidth={10}
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 1s ease' }} />
+          strokeDasharray={`0 ${circ}`} strokeLinecap="round">
+          <animate attributeName="stroke-dasharray" from={`0 ${circ}`} to={`${dash} ${circ}`} dur="1s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+        </circle>
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-4xl font-black text-slate-950 dark:text-white">{score}</span>
         <span className="text-xs text-slate-400 font-medium">/ 100</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -95,6 +103,7 @@ export default function GitHubIntelligencePage() {
   const [actions, setActions] = useState<PriorityAction[]>([]);
   const [analysing, setAnalysing] = useState(false);
   const [progress, setProgress] = useState('');
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [expandedRepo, setExpandedRepo] = useState<string | null>(null);
   const [showCommands, setShowCommands] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -118,12 +127,15 @@ export default function GitHubIntelligencePage() {
   const runAnalysis = async () => {
     setAnalysing(true);
     setProgress('Starting...');
+    setAnalysisError(null);
+    let sawError = false;
     try {
       const res = await fetch('/api/github/analyse', { method: 'POST' });
       if (!res.body) return;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
+      let currentEvent = 'message';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -132,20 +144,29 @@ export default function GitHubIntelligencePage() {
         const lines = buf.split('\n');
         buf = lines.pop() ?? '';
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
             try {
               const d = JSON.parse(line.slice(6));
-              if (d.message) setProgress(d.message);
-              if (d.report) { setReport(d.report); setActions(d.report.priorityActions ?? []); }
+              if (currentEvent === 'error') {
+                sawError = true;
+                setAnalysisError(d.message || 'GitHub sync failed. Please try again.');
+              } else {
+                if (d.message) setProgress(d.message);
+                if (d.report) { setReport(d.report); setActions(d.report.priorityActions ?? []); }
+              }
             } catch { /* ignore */ }
           }
         }
       }
     } catch (e) {
       console.error('[GitHub Intelligence]', e);
+      sawError = true;
+      setAnalysisError('GitHub sync failed. Please try again.');
     } finally {
       setAnalysing(false);
-      loadActions();
+      if (!sawError) loadActions();
     }
   };
 
@@ -208,6 +229,24 @@ export default function GitHubIntelligencePage() {
         </div>
       </header>
 
+      {/* Sync/analysis error */}
+      {analysisError && !analysing && (
+        <div className="rounded-2xl border border-dashed border-rose-500/30 bg-rose-500/5 p-4 flex items-start gap-3">
+          <AlertTriangle size={16} className="shrink-0 text-rose-500 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">Sync failed</p>
+            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{analysisError}</p>
+          </div>
+          <button
+            onClick={runAnalysis}
+            className="neu-btn shrink-0 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400"
+          >
+            <RefreshCw size={13} />
+            <span>Try again</span>
+          </button>
+        </div>
+      )}
+
       {/* Empty State */}
       {!report && !analysing && (
         <div className="neu-card rounded-[28px] p-10 md:p-14 text-center space-y-4 max-w-xl mx-auto">
@@ -255,10 +294,16 @@ export default function GitHubIntelligencePage() {
                 { label: 'Languages', value: report.careerReadiness.languageDiversity.length },
                 { label: 'Pending Fixes', value: pending.length },
               ].map((stat, i) => (
-                <div key={i} className="neu-inset rounded-2xl p-4 text-center">
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 * i, duration: 0.35 }}
+                  className="neu-inset rounded-2xl p-4 text-center transition hover:-translate-y-0.5"
+                >
                   <p className="text-2xl font-black text-slate-950 dark:text-white">{stat.value}</p>
                   <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">{stat.label}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -312,10 +357,13 @@ export default function GitHubIntelligencePage() {
           </div>
 
           <div className="space-y-3">
-            {actions.map((act) => (
-              <div
+            {actions.map((act, i) => (
+              <motion.div
                 key={act.id}
-                className={`neu-inset rounded-2xl p-4 transition ${act.completed ? 'opacity-60' : ''}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i, 8) * 0.03, duration: 0.3 }}
+                className={`neu-inset rounded-2xl p-4 transition hover:-translate-y-0.5 ${act.completed ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <button
@@ -372,7 +420,7 @@ export default function GitHubIntelligencePage() {
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </section>
@@ -387,16 +435,19 @@ export default function GitHubIntelligencePage() {
           </div>
 
           <div className="grid gap-3">
-            {report.topProjects.map((proj) => (
-              <div
+            {report.topProjects.map((proj, i) => (
+              <motion.div
                 key={proj.repoName}
-                className="neu-card rounded-[24px] overflow-hidden"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 * i, duration: 0.35 }}
+                className="neu-card rounded-[24px] overflow-hidden transition hover:-translate-y-0.5"
               >
                 <button
                   onClick={() => setExpandedRepo(expandedRepo === proj.repoName ? null : proj.repoName)}
                   className="w-full flex items-center gap-4 p-4 sm:p-5 text-left transition hover:bg-slate-500/5"
                 >
-                  <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm ${gradeColor[proj.grade]}`}>
+                  <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm ring-4 ${gradeColor[proj.grade]}`}>
                     {proj.grade}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -453,7 +504,7 @@ export default function GitHubIntelligencePage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             ))}
           </div>
         </section>

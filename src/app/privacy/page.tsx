@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
           <p>We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorised way, altered or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know.</p>
 
           <h2>5. Contact Us</h2>
-          <p>If you have any questions about this privacy policy or our privacy practices, please contact us at: <a href="mailto:support@prioryxai.in" className="text-mint hover:underline">support@prioryxai.in</a></p>
+          <p>If you have any questions about this privacy policy or our privacy practices, please contact us at: <a href="mailto:prioryxai@gmail.com" className="text-mint hover:underline">prioryxai@gmail.com</a></p>
         </div>
       </div>
     </div>

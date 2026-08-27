@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard, GraduationCap, Bot, UserRound, Menu, X,
   FileText, Hammer, Code2, Briefcase, Users, GitBranch, Settings,
-  Swords, Trophy, UserCheck, Plus, Sparkles, UploadCloud,
-  ChevronRight
+  Swords, Trophy, UserCheck, Plus, Sparkles, Clock3, UploadCloud,
+  ChevronRight, Compass, ShieldAlert, Award, ArrowUpRight
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+
+const primaryTabs = [
+  { id: "feed", label: "Dashboard", icon: LayoutDashboard, path: "/feed" },
+  { id: "assistant", label: "Assistant", icon: Bot, path: "/assistant" },
+  { id: "career", label: "Career", icon: Briefcase, path: "/career/resume/upload" },
+  { id: "collab", label: "Collab", icon: Users, path: "/career/collab/match" },
+];
 
 const careerPortals = [
   { label: "Resume Intelligence", desc: "ATS score & AI SWOT analysis", icon: FileText, path: "/career/resume/upload", color: "from-blue-500/20 to-cyan-500/20 text-cyan-400" },
@@ -34,17 +41,9 @@ function triggerHaptic() {
 
 function useIsActive() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   return (p: string) => {
     if (p.includes("?")) {
-      const [pPath, pQuery] = p.split("?");
-      if (pathname !== pPath) return false;
-      const targetParams = new URLSearchParams(pQuery);
-      let matches = true;
-      targetParams.forEach((value, key) => {
-        if (searchParams.get(key) !== value) matches = false;
-      });
-      return matches;
+      return pathname === p.split("?")[0];
     }
     return pathname === p || (pathname?.startsWith(p + "/") ?? false);
   };
@@ -115,13 +114,13 @@ export function QuickActionSheet({
             }}
             className="neu-raised-sm flex items-center gap-3.5 rounded-2xl p-3.5 text-left transition active:scale-[0.98] hover:translate-x-0.5"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/20">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/20">
               <UploadCloud size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 dark:text-white">Resume Intelligence</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Scan CV & extract SWOT match</p>
-            </div>
+            </span>
+            <span className="min-w-0 flex-1 block">
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">Resume Intelligence</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">Scan CV & extract SWOT match</span>
+            </span>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
 
@@ -135,13 +134,13 @@ export function QuickActionSheet({
             }}
             className="neu-raised-sm flex items-center gap-3.5 rounded-2xl p-3.5 text-left transition active:scale-[0.98] hover:translate-x-0.5"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500 dark:bg-purple-500/20">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500 dark:bg-purple-500/20">
               <Bot size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 dark:text-white">AI Study Assistant</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Ask questions & plan study blocks</p>
-            </div>
+            </span>
+            <span className="min-w-0 flex-1 block">
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">AI Study Assistant</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">Ask questions & plan study blocks</span>
+            </span>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
 
@@ -155,13 +154,13 @@ export function QuickActionSheet({
             }}
             className="neu-raised-sm flex items-center gap-3.5 rounded-2xl p-3.5 text-left transition active:scale-[0.98] hover:translate-x-0.5"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 dark:bg-amber-500/20">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 dark:bg-amber-500/20">
               <Swords size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 dark:text-white">Start a Coding Duel</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">1v1 real-time DSA challenge</p>
-            </div>
+            </span>
+            <span className="min-w-0 flex-1 block">
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">Start a Coding Duel</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">1v1 real-time DSA challenge</span>
+            </span>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
 
@@ -175,13 +174,13 @@ export function QuickActionSheet({
             }}
             className="neu-raised-sm flex items-center gap-3.5 rounded-2xl p-3.5 text-left transition active:scale-[0.98] hover:translate-x-0.5"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20">
               <GraduationCap size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 dark:text-white">Curated Learning Feed</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Watch targeted tech tutorials</p>
-            </div>
+            </span>
+            <span className="min-w-0 flex-1 block">
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">Curated Learning Feed</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">Watch targeted tech tutorials</span>
+            </span>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
         </div>
@@ -281,35 +280,24 @@ export function CareerSheet({ open, onClose }: { open: boolean; onClose: () => v
 
         {/* Peer Collab Portal Group */}
         <div className="space-y-2.5">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-purple-500" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-300">
-              Peer Collab Portal
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            {collabPortals.map(({ label, desc, icon: Icon, path }) => (
-              <Link
-                key={path}
-                href={path}
-                onClick={triggerHaptic}
-                className={`flex items-center gap-3 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
-                  isActive(path)
-                    ? "neu-inset text-purple-900 dark:text-purple-200"
-                    : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
-                }`}
-              >
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive(path) ? "bg-purple-500 text-white" : "bg-slate-100 dark:bg-white/5 text-purple-500"}`}>
-                  <Icon size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold truncate">{label}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{desc}</p>
-                </div>
-                <ChevronRight size={14} className="text-slate-400" />
-              </Link>
-            ))}
-          </div>
+          <Link
+            href="/career/collab/match"
+            onClick={triggerHaptic}
+            className={`flex items-center gap-3 rounded-2xl p-3 text-xs font-semibold transition active:scale-[0.98] ${
+              isActive("/career/collab/match")
+                ? "neu-inset text-purple-900 dark:text-purple-200"
+                : "neu-raised-sm text-slate-700 hover:text-purple-700 dark:text-slate-300 dark:hover:text-purple-300"
+            }`}
+          >
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive("/career/collab/match") ? "bg-purple-500 text-white" : "bg-slate-100 dark:bg-white/5 text-purple-500"}`}>
+              <Users size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold truncate">Peer Collab Portal</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Find study partners & peers</p>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </Link>
         </div>
 
         {/* Primary Pages Links */}
@@ -348,6 +336,7 @@ export function CareerSheet({ open, onClose }: { open: boolean; onClose: () => v
 
 /* ── Native-Grade Mobile Bottom Navigation Bar ── */
 export function MobileNav() {
+  const pathname = usePathname();
   const isActive = useIsActive();
   const [portalsOpen, setPortalsOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
@@ -436,9 +425,9 @@ export function MobileNav() {
             className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 rounded-2xl text-[10px] font-bold text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all active:scale-90"
             aria-label="Open All Portals"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-xl">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl">
               <Menu size={17} strokeWidth={2} />
-            </div>
+            </span>
             <span className="truncate">More</span>
           </button>
         </div>

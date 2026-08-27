@@ -4,6 +4,7 @@ import type {
   ToolResult,
   LeetCodeStats,
   HackerRankStats,
+  ProblemRecommendation,
 } from '../types';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
@@ -431,7 +432,7 @@ async function computePlacementReadinessScore(
   const hardCount = lcStats?.hardSolved ?? 0;
   breadthScore = Math.min(((mediumCount * 2 + hardCount * 4) / 80) * 25, 25);
 
-  const streakScore = 15; // baseline consistency bonus
+  let streakScore = 15; // baseline consistency bonus
 
   const totalScore = Math.round(problemScore + contestScore + breadthScore + streakScore);
   const clampedScore = Math.min(Math.max(totalScore, 20), 100);

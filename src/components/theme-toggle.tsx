@@ -21,6 +21,7 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className = "", size = "md", showLabel = false }: ThemeToggleProps) {
   const [theme, setTheme] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
@@ -30,6 +31,7 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
     const initial: Theme = isDark ? "dark" : "light";
     setTheme(initial);
     applyTheme(initial);
+    setMounted(true);
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
@@ -110,16 +112,16 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
         className="group relative cursor-pointer select-none rounded-full p-[2px] shadow-sm transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-500"
       >
         {/* Toggle Track Container */}
-        <div
-          className={`relative h-full w-full overflow-hidden rounded-full transition-colors duration-500 ${
+        <span
+          className={`relative block h-full w-full overflow-hidden rounded-full transition-colors duration-500 ${
             isDark
               ? "bg-gradient-to-r from-[#070e1c] via-[#0d1b2e] to-[#1b2b42] shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)] border border-slate-700/60"
               : "bg-gradient-to-r from-[#38bdf8] via-[#48cae4] to-[#60a5fa] shadow-[inset_0_2px_5px_rgba(0,0,0,0.25)] border border-sky-300/60"
           }`}
         >
           {/* ── Day Details: Fluffy Clouds ── */}
-          <div
-            className={`pointer-events-none absolute inset-0 transition-all duration-500 ease-out ${
+          <span
+            className={`pointer-events-none absolute inset-0 block transition-all duration-500 ease-out ${
               isDark ? "translate-y-6 opacity-0" : "translate-y-0 opacity-100"
             }`}
           >
@@ -152,11 +154,11 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
             >
               <path d="M7 16h16a5 5 0 0 0 1.2-9.8A6 6 0 0 0 13 4a6.5 6.5 0 0 0-6.1 4.3A4.5 4.5 0 0 0 7 16z" />
             </svg>
-          </div>
+          </span>
 
           {/* ── Night Details: Sparkle Stars & Constellation on the Left Side ── */}
-          <div
-            className={`pointer-events-none absolute inset-0 transition-all duration-500 ease-out ${
+          <span
+            className={`pointer-events-none absolute inset-0 block transition-all duration-500 ease-out ${
               isDark ? "translate-y-0 opacity-100" : "-translate-y-6 opacity-0"
             }`}
           >
@@ -228,10 +230,10 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
               }}
               className="absolute rounded-full bg-white/80"
             />
-          </div>
+          </span>
 
           {/* ── Sliding Knob (Sun on Left / Moon on Right) ── */}
-          <div
+          <span
             style={{
               width: `${knobSize}px`,
               height: `${knobSize}px`,
@@ -239,11 +241,11 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
               left: `${padding}px`,
               transform: isDark ? `translateX(${knobTravel}px)` : "translateX(0px)",
             }}
-            className="absolute rounded-full transition-transform duration-500 ease-[cubic-bezier(0.34,1.4,0.64,1)]"
+            className="absolute block rounded-full transition-transform duration-500 ease-[cubic-bezier(0.34,1.4,0.64,1)]"
           >
             {/* Sun Body (Light Mode) */}
-            <div
-              className={`absolute inset-0 rounded-full transition-opacity duration-400 ${
+            <span
+              className={`absolute inset-0 block rounded-full transition-opacity duration-400 ${
                 isDark ? "opacity-0" : "opacity-100"
               }`}
               style={{
@@ -253,8 +255,8 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
             />
 
             {/* Moon Body with Realistic Craters (Dark Mode) */}
-            <div
-              className={`absolute inset-0 rounded-full transition-opacity duration-400 ${
+            <span
+              className={`absolute inset-0 block rounded-full transition-opacity duration-400 ${
                 isDark ? "opacity-100" : "opacity-0"
               }`}
               style={{
@@ -263,38 +265,38 @@ export function ThemeToggle({ className = "", size = "md", showLabel = false }: 
               }}
             >
               {/* Moon Crater 1 (top right) */}
-              <div
+              <span
                 style={{
                   width: `${Math.max(3, Math.round(5 * scale))}px`,
                   height: `${Math.max(3, Math.round(5 * scale))}px`,
                   top: `${Math.round(4 * scale)}px`,
                   right: `${Math.round(4 * scale)}px`,
                 }}
-                className="absolute rounded-full bg-[#94a3b8]/45 shadow-[inset_0_0.8px_1.5px_rgba(51,65,85,0.4)]"
+                className="absolute block rounded-full bg-[#94a3b8]/45 shadow-[inset_0_0.8px_1.5px_rgba(51,65,85,0.4)]"
               />
               {/* Moon Crater 2 (bottom left) */}
-              <div
+              <span
                 style={{
                   width: `${Math.max(2.5, Math.round(4 * scale))}px`,
                   height: `${Math.max(2.5, Math.round(4 * scale))}px`,
                   bottom: `${Math.round(4 * scale)}px`,
                   left: `${Math.round(4 * scale)}px`,
                 }}
-                className="absolute rounded-full bg-[#94a3b8]/40 shadow-[inset_0_0.8px_1.5px_rgba(51,65,85,0.35)]"
+                className="absolute block rounded-full bg-[#94a3b8]/40 shadow-[inset_0_0.8px_1.5px_rgba(51,65,85,0.35)]"
               />
               {/* Moon Crater 3 (small bottom right) */}
-              <div
+              <span
                 style={{
                   width: `${Math.max(2, Math.round(3 * scale))}px`,
                   height: `${Math.max(2, Math.round(3 * scale))}px`,
                   bottom: `${Math.round(4.5 * scale)}px`,
                   right: `${Math.round(3.5 * scale)}px`,
                 }}
-                className="absolute rounded-full bg-[#94a3b8]/30 shadow-[inset_0_0.5px_1px_rgba(51,65,85,0.3)]"
+                className="absolute block rounded-full bg-[#94a3b8]/30 shadow-[inset_0_0.5px_1px_rgba(51,65,85,0.3)]"
               />
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </span>
       </button>
 
       {showLabel && (

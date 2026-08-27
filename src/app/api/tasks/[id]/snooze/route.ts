@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
-import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +14,7 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: Record<string, unknown>;
+  let body: any;
   try {
     body = await request.json();
   } catch {
@@ -60,13 +59,6 @@ export async function POST(
   }
 
   await withFallback(() => redis.del(`feed:${user.id}`), 0);
-  await recordFeedbackEvent(supabase, user.id, {
-    eventType: 'task_snoozed',
-    source: 'tasks_api',
-    entityType: 'task',
-    entityId: params.id,
-    context: { hours, previous_due_at: task.due_at, new_due_at: newDueAt },
-  });
 
   return NextResponse.json({ task: updated, snoozed_hours: hours, new_due_at: newDueAt });
 }

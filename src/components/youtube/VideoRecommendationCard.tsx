@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Play, Bookmark, X, BadgeCheck } from 'lucide-react';
 import { RecommendedVideo } from '@/lib/youtube/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordUserActivity } from '@/lib/activity-tracker';
 
 const TRUSTED_CHANNELS = [
   'UCVa4bnpgRbNnPYMwEGFJh5A', 'UC_mB3bSM5NwpvFt2IxnXcNg',
@@ -24,6 +25,7 @@ export function VideoRecommendationCard({ recommendation, onDismissed }: Props) 
   const { video, priority, category, whyRecommended, relevanceTopic, savedForLater } = recommendation;
   const [isSaved, setIsSaved] = useState(savedForLater);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [dismissReason, setDismissReason] = useState<string | null>(null);
   const [showDismissPopover, setShowDismissPopover] = useState(false);
 
   const formatViewCount = (count: number) => {
@@ -46,6 +48,7 @@ export function VideoRecommendationCard({ recommendation, onDismissed }: Props) 
   };
 
   const handleWatch = async () => {
+    recordUserActivity('youtube_watch', { videoId: video.videoId, title: video.title });
     window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank', 'noopener,noreferrer');
     fetch(`/api/youtube/${video.videoId}/watched`, { method: 'POST' }).catch(console.error);
   };
@@ -85,7 +88,7 @@ export function VideoRecommendationCard({ recommendation, onDismissed }: Props) 
                 {['Too basic', 'Already know this', 'Not relevant', 'Not interested'].map(r => (
                   <button
                     key={r}
-                    onClick={() => { handleDismiss(r); setShowDismissPopover(false); }}
+                    onClick={() => { setDismissReason(r); handleDismiss(r); setShowDismissPopover(false); }}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
                   >
                     {r}

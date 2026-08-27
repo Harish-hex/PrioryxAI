@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Code2, ArrowRight, RefreshCw } from 'lucide-react';
-import { PageSkeleton, ErrorBanner } from '@/components/ui/feedback';
+import { Code2, ArrowRight, CheckCircle2, Award, Zap, RefreshCw, ExternalLink } from 'lucide-react';
+import { PageSkeleton, EmptyState, ErrorBanner } from '@/components/ui/feedback';
 
 interface LCData {
   leetcode_username?: string;
@@ -36,7 +37,7 @@ export default function UnifiedCodingDashboardPage() {
   function load() {
     setLoading(true);
     setError(null);
-    fetch('/api/platforms/unified', { cache: 'no-store' })
+    fetch('/api/platforms/unified')
       .then(async res => {
         const d = await res.json();
         if (!res.ok) throw new Error(d?.error ?? `Request failed (${res.status})`);
@@ -136,7 +137,12 @@ export default function UnifiedCodingDashboardPage() {
 
       {/* Overall Score Hero Card */}
       {(hasLC || hasHR) && (
-        <div className="neu-card rounded-[28px] p-8 flex flex-col items-center justify-center text-center space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="neu-card rounded-[28px] p-8 flex flex-col items-center justify-center text-center space-y-4"
+        >
           <div className="relative h-44 w-44">
             <svg viewBox="0 0 100 100" className="transform -rotate-90 h-44 w-44">
               <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" className="text-slate-200/80 dark:text-white/10" strokeWidth="8" />
@@ -144,10 +150,11 @@ export default function UnifiedCodingDashboardPage() {
                 cx="50" cy="50" r="42" fill="none"
                 strokeWidth="8"
                 stroke={scoreColor}
-                strokeDasharray={`${overallScore * 2.639} 263.9`}
+                strokeDasharray={`0 263.9`}
                 strokeLinecap="round"
-                style={{ transition: 'stroke-dasharray 1s ease' }}
-              />
+              >
+                <animate attributeName="stroke-dasharray" from="0 263.9" to={`${overallScore * 2.639} 263.9`} dur="1s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+              </circle>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-5xl font-black text-slate-950 dark:text-white">{overallScore}</span>
@@ -165,14 +172,19 @@ export default function UnifiedCodingDashboardPage() {
                 : 'Calculated from connected HackerRank profile'}
             </p>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Platform Breakdown Cards */}
       {(hasLC || hasHR) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* LeetCode Card */}
-          <div className="neu-card rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-5">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="neu-card rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-4 transition hover:-translate-y-0.5"
+          >
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
@@ -234,20 +246,15 @@ export default function UnifiedCodingDashboardPage() {
                 </div>
               )}
             </div>
-
-            {hasLC && (
-              <Link
-                href="/career/coding/study-plan"
-                className="neu-btn inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-              >
-                <span>View LeetCode Study Plan</span>
-                <ArrowRight size={13} />
-              </Link>
-            )}
-          </div>
+          </motion.div>
 
           {/* HackerRank Card */}
-          <div className="neu-card rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-5">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="neu-card rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-4 transition hover:-translate-y-0.5"
+          >
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
@@ -307,17 +314,28 @@ export default function UnifiedCodingDashboardPage() {
                 </div>
               )}
             </div>
+          </motion.div>
+        </div>
+      )}
 
-            {hasHR && (
-              <Link
-                href="/career/hackerrank"
-                className="neu-btn inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-              >
-                <span>View HackerRank Stats</span>
-                <ArrowRight size={13} />
-              </Link>
-            )}
+      {/* Common View Study Plan Option */}
+      {(hasLC || hasHR) && (
+        <div className="neu-card rounded-[28px] p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <h3 className="text-base font-bold text-slate-950 dark:text-white">
+              AI-Powered Study Plan
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Personalized practice recommendations and company-tagged questions tailored to your performance across all platforms.
+            </p>
           </div>
+          <Link
+            href="/career/coding/study-plan"
+            className="neu-btn inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shrink-0 w-full sm:w-auto"
+          >
+            <span>View Study Plan</span>
+            <ArrowRight size={14} />
+          </Link>
         </div>
       )}
 

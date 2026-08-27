@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   let delta: number | null = paramDelta ? parseInt(paramDelta, 10) : null;
   let studentName = paramName || '';
   let studentCollege = paramCollege || '';
-  const summary = paramSummary || 'Deterministic career & placement readiness benchmark verified across GitHub, LeetCode, Resume & Tasks.';
+  let summary = paramSummary || 'Deterministic career & placement readiness benchmark verified across GitHub, LeetCode, Resume & Tasks.';
 
   // If user is authenticated, fill in live database details if not provided in query
   try {
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
                 boxShadow: '0 0 20px rgba(99, 102, 241, 0.5)',
               }}
             >
-              ⚡
+              P
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.5px' }}>
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
                     color: '#cbd5e1',
                   }}
                 >
-                  ✓ {label}
+                  {label}
                 </span>
               ))}
             </div>
@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span>🔒 Cryptographically Deterministic Evaluation</span>
+            <span>Cryptographically Deterministic Evaluation</span>
             <span>•</span>
             <span>Zero Hallucinations</span>
           </div>

@@ -2,8 +2,15 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 import { scoreProject, scorePortfolio } from './scorer';
+import { inspectRepoStructure, type RepoStructureSignals } from './repo-inspector';
 import type { CachedRepo, GitHubIntelligenceReport, PriorityAction, ProjectScore } from './types';
 import { v4 as uuidv4 } from 'uuid';
+
+// Bounds how many repos get a real file-tree inspection (2 REST calls each)
+// per analysis run, so this stays well within maxDuration and GitHub's rate
+// limit even for users with many repos. The rest still get metadata-only
+// scoring — better than skipping analysis for them entirely.
+const MAX_STRUCTURE_INSPECTIONS = 8;
 
 function impactScore(weakness: { priority: string; impactAreas: string[] }): number {
   const base =
@@ -34,10 +41,24 @@ export async function runGitHubIntelligence(
     .single();
 
   const repos: CachedRepo[] = (cache?.repos as CachedRepo[]) ?? [];
+  if (repos.length === 0) {
+    // Distinguish "sync never populated the cache" from a genuine zero-repo
+    // portfolio, so the caller doesn't save this as a valid zero-score report.
+    throw new Error('GITHUB_CACHE_EMPTY');
+  }
+  emit('Inspecting repository structure (tests, CI, architecture)...');
+  const inspectionCount = Math.min(repos.length, MAX_STRUCTURE_INSPECTIONS);
+  const structureResults = await Promise.allSettled(
+    repos.slice(0, inspectionCount).map(r => inspectRepoStructure(r.url))
+  );
+  const structures: Array<RepoStructureSignals | null> = structureResults.map(r =>
+    r.status === 'fulfilled' ? r.value : null
+  );
+
   emit(`Scoring ${repos.length} repositories...`);
 
-  const scored: ProjectScore[] = repos.map((repo, i) => scoreProject(repo, i));
-  const portfolioScore = scorePortfolio(repos);
+  const scored: ProjectScore[] = repos.map((repo, i) => scoreProject(repo, i, structures[i] ?? null));
+  const portfolioScore = scorePortfolio(repos, scored);
 
   // Build all priority actions across all repos
   const allActions: PriorityAction[] = [];
@@ -99,18 +120,33 @@ export async function runGitHubIntelligence(
   if (repos.length > 0 && process.env.OPENAI_API_KEY) {
     emit('Generating AI portfolio narrative...');
     try {
-      const repoSummaries = repos.slice(0, 8).map(r =>
-        `${r.name} (${r.language ?? 'unknown lang'}): ${r.description ?? 'no description'}`
-      ).join('\n');
+      // Real structural signals (tests/CI/architecture/notebook-vs-production)
+      // where we managed to inspect the repo, not just its one-line
+      // description — grounds the narrative in actual repo content instead
+      // of guessing from metadata alone.
+      const repoSummaries = repos.slice(0, 8).map((r, i) => {
+        const s = structures[i];
+        const structureNote = s
+          ? ` [structure: ${[
+              s.hasTests ? 'has tests' : 'no tests',
+              s.hasCI ? 'has CI' : 'no CI',
+              s.hasOrganizedStructure ? 'organized folders' : 'flat/unorganized',
+              s.isNotebookHeavy ? 'notebook-only (no production code)' : null,
+              s.hasModelArtifacts ? 'contains model/training code' : null,
+              s.hasDependencyManifest ? 'has dependency manifest' : 'missing dependency manifest',
+            ].filter(Boolean).join(', ')}]`
+          : '';
+        return `${r.name} (${r.language ?? 'unknown lang'}): ${r.description ?? 'no description'}${structureNote}`;
+      }).join('\n');
 
       const stream = (user as { stream?: string } | null)?.stream ?? 'software engineering';
 
       const narrative = await openai.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 400,
+        max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `Analyze this student's GitHub portfolio for a ${stream} career.\n\nRepos:\n${repoSummaries}\n\nReturn ONLY raw JSON (no markdown):\n{\n  "strengths": ["2-3 concise strengths of this portfolio"],\n  "weaknesses": ["2-3 specific gaps that hurt career prospects"]\n}`
+          content: `Analyze this student's GitHub portfolio for a ${stream} career. Where a repo has a [structure: ...] tag, that reflects its ACTUAL file tree (tests, CI, folder organization, whether it's a notebook-only ML project vs a properly structured one) — prioritize those real signals over the description text, and call out specific architecture/code-organization gaps (e.g. "model training code has no separation between data loading, model definition, and training loop", "no test coverage on the core logic", "ML work is notebook-only, never productionized") rather than generic README/documentation feedback.\n\nRepos:\n${repoSummaries}\n\nReturn ONLY raw JSON (no markdown):\n{\n  "strengths": ["2-3 concise strengths, grounded in actual repo structure where available"],\n  "weaknesses": ["2-3 specific gaps in architecture, testing, or code organization — not just documentation"]\n}`
         }]
       });
 

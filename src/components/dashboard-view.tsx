@@ -1,14 +1,58 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, Flame, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FocusSessionModal } from "@/components/focus-session-modal";
+import dynamic from "next/dynamic";
+
+// Modal, not visible on first paint — defer out of the initial DashboardView chunk.
+const FocusSessionModal = dynamic(() => import("@/components/focus-session-modal").then((m) => m.FocusSessionModal), {
+  ssr: false,
+});
 import { LoadingCard, LoadingLine } from "@/components/loading-skeletons";
 import { priorityStyles, typeStyles } from "@/components/task-styles";
 import { getDailyChallenges, type CodingProblem } from "@/lib/daily-challenges";
 import { recordDailyActivity } from "@/lib/streak-tracker";
-import { ReadinessScoreCard } from "@/components/readiness-score-card";
+
+// Module-level cache (survives component remounts, e.g. navigating away from
+// and back to Dashboard) so panels backed by slow/AI-derived endpoints don't
+// re-pay a full network round trip every time the user revisits — they render
+// last-known data instantly and only revalidate once the TTL has passed.
+const panelCache = new Map<string, { data: any; fetchedAt: number; inFlight: Promise<any> | null }>();
+
+function useCachedFetch<T>(url: string, ttlMs: number) {
+  const cached = panelCache.get(url);
+  const isFresh = cached ? Date.now() - cached.fetchedAt < ttlMs : false;
+  const [data, setData] = useState<T | null>(cached && isFresh ? cached.data : null);
+  const [loading, setLoading] = useState(!(cached && isFresh));
+
+  useEffect(() => {
+    const entry = panelCache.get(url);
+    if (entry && Date.now() - entry.fetchedAt < ttlMs) {
+      setData(entry.data);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(!entry); // keep showing stale data (if any) while revalidating
+
+    const request = entry?.inFlight ?? fetch(url).then((r) => r.json());
+    panelCache.set(url, { data: entry?.data ?? null, fetchedAt: entry?.fetchedAt ?? 0, inFlight: request });
+
+    request
+      .then((json) => {
+        panelCache.set(url, { data: json, fetchedAt: Date.now(), inFlight: null });
+        setData(json);
+      })
+      .catch(() => {
+        const stale = panelCache.get(url);
+        if (stale) panelCache.set(url, { ...stale, inFlight: null });
+      })
+      .finally(() => setLoading(false));
+  }, [url, ttlMs]);
+
+  return { data, loading };
+}
 
 const dsaDifficultyStyles = {
   Easy: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
@@ -154,13 +198,6 @@ export function DashboardView({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-6">
-        {/* ── Phase 4: Readiness Score Hero (primary surface) ─── */}
-        <ReadinessScoreCard
-          isPro={isPro}
-          onOpenPricing={onOpenPricing}
-          onCompleteTask={onCompleteTask}
-        />
-
         <NextMoveCard
           loading={loading}
           task={nextTask}
@@ -196,6 +233,7 @@ export function DashboardView({
 
       <aside className="space-y-6">
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
+        <DailyGrowthPanel />
         <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
       </aside>
@@ -598,14 +636,17 @@ function PriorityFeed({
           })}
 
           {/* Other general tasks if any */}
+          <AnimatePresence initial={false}>
           {otherAllTasks.map((task, index) =>
             task.type === "job" ? (
               <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
             ) : (
               <motion.article
                 key={task.id}
-                animate={{ opacity: 1, y: 0 }}
-                className="neu-raised-sm rounded-[26px] p-5 transition hover:neu-card"
+                layout
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, x: 24, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: "easeIn" } }}
+                className="neu-raised-sm overflow-hidden rounded-[26px] p-5 transition hover:neu-card"
                 initial={{ opacity: 0, y: 8 }}
                 transition={{ delay: index * 0.03, duration: 0.24 }}
               >
@@ -658,17 +699,21 @@ function PriorityFeed({
               </motion.article>
             )
           )}
+          </AnimatePresence>
         </div>
       ) : priorityTasks.length ? (
         <div className="mt-6 space-y-3">
+          <AnimatePresence initial={false}>
           {priorityTasks.map((task, index) =>
             task.type === "job" ? (
               <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
             ) : (
               <motion.article
                 key={task.id}
-                animate={{ opacity: 1, y: 0 }}
-                className="neu-raised-sm rounded-[26px] p-5 transition hover:neu-card"
+                layout
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, x: 24, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: "easeIn" } }}
+                className="neu-raised-sm overflow-hidden rounded-[26px] p-5 transition hover:neu-card"
                 initial={{ opacity: 0, y: 8 }}
                 transition={{ delay: index * 0.03, duration: 0.24 }}
               >
@@ -721,6 +766,7 @@ function PriorityFeed({
               </motion.article>
             )
           )}
+          </AnimatePresence>
 
           {/* Blur wall — free users with more tasks hidden */}
           {hasMore && !isPro && (
@@ -773,7 +819,7 @@ function PriorityFeed({
       ) : (
         <div className="mt-6 neu-inset rounded-[28px] px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-            No urgent tasks — you&apos;re on track!
+            No urgent tasks — you're on track!
           </h3>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Capture the next assignment, revision block, or application above.</p>
         </div>
@@ -1083,6 +1129,97 @@ function FocusPanel({ onOpenPricing, stats, isPro }: { onOpenPricing: () => void
 
 
 
+interface DailyGrowthPicks {
+  topic: string;
+  reason: string;
+  video: { videoId: string; title: string; channelName: string; thumbnail: string; duration: string } | null;
+  githubRepo: { name: string; fullName: string; description: string | null; url: string; stars: number; language: string | null } | null;
+  courseSuggestion: { type: 'college_subject' | 'general'; title: string; detail: string } | null;
+}
+
+function DailyGrowthPanel() {
+  // 10min client TTL — content is the same all day server-side anyway
+  // (server caches until midnight IST); this just avoids a redundant round
+  // trip every time the user navigates back to Dashboard within a session.
+  const { data, loading } = useCachedFetch<DailyGrowthPicks & { error?: string }>("/api/feed/daily-growth", 10 * 60 * 1000);
+  const picks = data && !data.error ? data : null;
+
+  if (loading && !picks) {
+    return <LoadingCard />;
+  }
+
+  if (!picks || !picks.topic) {
+    return null;
+  }
+
+  return (
+    <div className="neu-card rounded-[28px] p-5 sm:p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Daily growth pick</p>
+          <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{picks.topic}</h3>
+        </div>
+        <div className="neu-pill rounded-2xl p-2.5 text-slate-900 dark:text-white">
+          <Brain size={16} />
+        </div>
+      </div>
+      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{picks.reason}</p>
+
+      <div className="mt-4 space-y-2.5">
+        {picks.video && (
+          <a
+            href={`https://www.youtube.com/watch?v=${picks.video.videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="neu-inset flex items-center gap-3 rounded-2xl p-3 transition hover:brightness-105"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
+              <Play size={15} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.video.title}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{picks.video.channelName} · {picks.video.duration}</p>
+            </div>
+            <ExternalLink size={13} className="flex-shrink-0 text-slate-400" />
+          </a>
+        )}
+
+        {picks.githubRepo && (
+          <a
+            href={picks.githubRepo.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="neu-inset flex items-center gap-3 rounded-2xl p-3 transition hover:brightness-105"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-600 dark:text-violet-400">
+              <GitBranch size={15} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.githubRepo.fullName}</p>
+              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                {picks.githubRepo.description ?? `${picks.githubRepo.stars.toLocaleString()} stars`}
+              </p>
+            </div>
+            <ExternalLink size={13} className="flex-shrink-0 text-slate-400" />
+          </a>
+        )}
+
+        {picks.courseSuggestion && (
+          <div className="neu-inset flex items-center gap-3 rounded-2xl p-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <BookOpen size={15} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.courseSuggestion.title}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{picks.courseSuggestion.detail}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const difficultyStyles: Record<string, string> = {
   Beginner: "text-emerald-700 dark:text-emerald-400",
   Intermediate: "text-blue-700 dark:text-blue-400",
@@ -1090,17 +1227,11 @@ const difficultyStyles: Record<string, string> = {
 };
 
 function ProjectIdeasPanel({ isPro, onOpenPricing }: { isPro: boolean; onOpenPricing: () => void }) {
-  const [ideas, setIdeas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 6h client TTL — matches the server's Redis cache TTL for this endpoint,
+  // so a Dashboard revisit within that window never re-fetches at all.
+  const { data, loading } = useCachedFetch<{ ideas: any[] }>("/api/projects/ideas", 6 * 60 * 60 * 1000);
+  const ideas = data?.ideas ?? [];
   const [expanded, setExpanded] = useState<number | null>(0);
-
-  useEffect(() => {
-    fetch("/api/projects/ideas")
-      .then((r) => r.json())
-      .then((data) => { if (data.ideas) setIdeas(data.ideas); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   return (
     <div className="neu-card rounded-[28px] p-5 sm:p-6">
@@ -1167,24 +1298,24 @@ function ProjectIdeasPanel({ isPro, onOpenPricing }: { isPro: boolean; onOpenPri
                   onClick={() => setExpanded(isOpen ? null : i)}
                   className="w-full p-4 text-left"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 flex-1 block">
+                      <span className="flex flex-wrap items-center gap-2">
                         <span className={`neu-pill rounded-full px-2.5 py-0.5 text-[10px] font-bold ${difficultyStyles[idea.difficulty] ?? difficultyStyles.Beginner}`}>
                           {idea.difficulty}
                         </span>
                         <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
                           <Clock3 size={9} /> {idea.estimate}
                         </span>
-                      </div>
+                      </span>
                       <p className="mt-1.5 text-sm font-bold text-slate-950 dark:text-white">{idea.title}</p>
                       <p className="mt-0.5 text-xs leading-5 text-slate-600 dark:text-slate-300">{idea.description}</p>
-                    </div>
+                    </span>
                     <ChevronRight
                       size={14}
                       className={`mt-1 shrink-0 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
                     />
-                  </div>
+                  </span>
                 </button>
 
                 <AnimatePresence>

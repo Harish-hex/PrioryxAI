@@ -5,8 +5,10 @@ import { X, Cookie } from 'lucide-react';
 
 export function CookieBanner() {
   const [show, setShow] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const consent = localStorage.getItem('cookie-consent');
     if (!consent) {
       setShow(true);
@@ -23,7 +25,7 @@ export function CookieBanner() {
     setShow(false);
   };
 
-  if (!show) return null;
+  if (!mounted || !show) return null;
 
   return (
     <div

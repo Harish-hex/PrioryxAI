@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowDownToLine, Calendar, CalendarCheck, CheckCircle2, ChevronDown, FileText, GitBranch, Loader2, Lock, LogOut, Save, Shield, Upload } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { AlertCircle, ArrowDownToLine, Calendar, CalendarCheck, CheckCircle2, ChevronDown, FileText, GitBranch, Loader2, Lock, LogOut, Moon, Save, Shield, Sun, Upload, User, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UserProfile {
   name: string | null;
@@ -65,6 +66,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [classError, setClassError] = useState<string | null>(null);
   const [extractedClasses, setExtractedClasses] = useState<ExtractedClassSlot[] | null>(null);
   const [classWorksOpen, setClassWorksOpen] = useState(false);
+  const [classDragActive, setClassDragActive] = useState(false);
   const classInputRef = useRef<HTMLInputElement>(null);
 
   // 2. Exam & Assignment Schedule Upload State
@@ -74,6 +76,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const [examError, setExamError] = useState<string | null>(null);
   const [extractedExams, setExtractedExams] = useState<ExtractedTask[] | null>(null);
   const [examWorksOpen, setExamWorksOpen] = useState(false);
+  const [examDragActive, setExamDragActive] = useState(false);
   const examInputRef = useRef<HTMLInputElement>(null);
 
   const [generatingResume, setGeneratingResume] = useState(false);
@@ -98,6 +101,20 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           setSubjects(p.subjects?.join(", ") ?? "");
           setGithubUsername(p.github_username ?? "");
         }
+      })
+      .catch(() => {});
+
+    fetch("/api/schedule/timetable")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.entries?.length) setExtractedClasses(data.entries);
+      })
+      .catch(() => {});
+
+    fetch("/api/schedule/exam")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.entries?.length) setExtractedExams(data.entries);
       })
       .catch(() => {});
   }, []);
@@ -303,12 +320,41 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     }
   }
 
+  const handleClassDrop = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setClassDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setClassFile(file);
+      setClassResult(null);
+      setClassError(null);
+      setExtractedClasses(null);
+    }
+  }, []);
+
+  const handleExamDrop = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setExamDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setExamFile(file);
+      setExamResult(null);
+      setExamError(null);
+      setExtractedExams(null);
+    }
+  }, []);
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Main column */}
       <section className="space-y-6">
         {/* Profile form */}
-        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="neu-card rounded-[28px] p-5 sm:p-7"
+        >
           <h2 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Academic profile</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Tell PrioryxAI what you study so it can prioritize the right coursework and exams.
@@ -322,7 +368,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Priyan Sharma"
-                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-volt dark:text-white"
                 />
               </div>
 
@@ -332,7 +378,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   value={college}
                   onChange={(e) => setCollege(e.target.value)}
                   placeholder="e.g. Amrita Vishwa Vidyapeetham"
-                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-volt dark:text-white"
                 />
               </div>
             </div>
@@ -347,7 +393,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   type="number"
                   min="1"
                   max="12"
-                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-volt dark:text-white"
                 />
               </div>
 
@@ -361,7 +407,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   step="0.01"
                   min="0"
                   max="10"
-                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                  className="neu-inset mt-1.5 w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-volt dark:text-white"
                 />
               </div>
             </div>
@@ -384,13 +430,14 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                   value={githubUsername}
                   onChange={(e) => setGithubUsername(e.target.value)}
                   placeholder="octocat"
-                  className="neu-inset w-full rounded-2xl py-3 pl-8 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none dark:text-white"
+                  className="neu-inset w-full rounded-2xl py-3 pl-8 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-volt dark:text-white"
                 />
               </div>
             </div>
 
             {error && (
-              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                <AlertCircle size={15} className="shrink-0" />
                 {error}
               </p>
             )}
@@ -404,16 +451,21 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             <button
               type="submit"
               disabled={saving}
-              className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 dark:focus-visible:ring-offset-[#172030]"
             >
-              <Save size={16} />
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? "Saving…" : "Save changes"}
             </button>
           </form>
-        </div>
+        </motion.div>
 
         {/* ── CARD 1: Upload Weekly Timetable (Class Timetable) ── */}
-        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05, ease: "easeOut" }}
+          className="neu-card rounded-[28px] p-5 sm:p-7"
+        >
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-cyan-600 dark:text-cyan-400">
             <Calendar size={15} /> Class Schedule
           </div>
@@ -425,20 +477,51 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </p>
 
           <div className="mt-5 space-y-3">
-            <label className="neu-inset flex cursor-pointer items-center gap-3 rounded-[22px] px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200 transition">
+            <label
+              onDragOver={(e) => { e.preventDefault(); setClassDragActive(true); }}
+              onDragLeave={() => setClassDragActive(false)}
+              onDrop={handleClassDrop}
+              className={`flex cursor-pointer items-center gap-3 rounded-[22px] border-2 border-dashed px-4 py-4 text-sm font-medium transition-all focus-within:ring-2 focus-within:ring-volt ${
+                classDragActive
+                  ? "border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400 dark:text-cyan-300"
+                  : classFile
+                  ? "neu-inset border-transparent text-slate-700 dark:text-slate-200"
+                  : "neu-inset border-transparent text-slate-700 hover:border-slate-300 dark:text-slate-200 dark:hover:border-white/20"
+              }`}
+            >
               {classFile ? (
                 <FileText size={18} className="shrink-0 text-cyan-600 dark:text-cyan-400" />
               ) : (
-                <Upload size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
+                <Upload size={18} className={`shrink-0 ${classDragActive ? "text-cyan-500" : "text-slate-400 dark:text-slate-500"}`} />
               )}
               <span className="min-w-0 flex-1 truncate">
-                {classFile ? classFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
+                {classDragActive
+                  ? "Drop your timetable here…"
+                  : classFile
+                  ? classFile.name
+                  : "Choose or drag JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
               </span>
+              {classFile && !classUploading && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setClassFile(null);
+                    setClassResult(null);
+                    setClassError(null);
+                    if (classInputRef.current) classInputRef.current.value = "";
+                  }}
+                  aria-label="Remove selected file"
+                  className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-black/5 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
               <input
                 ref={classInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                className="hidden"
+                className="sr-only"
                 onChange={(e) => {
                   setClassFile(e.target.files?.[0] ?? null);
                   setClassResult(null);
@@ -449,7 +532,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </label>
 
             {classError && (
-              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                <AlertCircle size={15} className="shrink-0" />
                 {classError}
               </p>
             )}
@@ -465,7 +549,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 type="button"
                 onClick={handleClassTimetableUpload}
                 disabled={!classFile || classUploading}
-                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition dark:text-slate-200 disabled:opacity-40"
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:text-slate-200 disabled:opacity-40"
               >
                 {classUploading ? (
                   <><Loader2 size={15} className="animate-spin" /> Extracting timetable…</>
@@ -477,7 +561,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <button
                 type="button"
                 onClick={() => setClassWorksOpen(!classWorksOpen)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <span>What works best?</span>
                 <ChevronDown size={13} className={`transition-transform duration-200 ${classWorksOpen ? "rotate-180" : ""}`} />
@@ -514,10 +598,15 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* ── CARD 2: Upload Exam & Assignment Schedule ── */}
-        <div className="neu-card rounded-[28px] p-5 sm:p-7">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+          className="neu-card rounded-[28px] p-5 sm:p-7"
+        >
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-purple-600 dark:text-purple-400">
             <CalendarCheck size={15} /> Exam & Deadlines
           </div>
@@ -529,20 +618,49 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           </p>
 
           <div className="mt-5 space-y-3">
-            <label className="neu-inset flex cursor-pointer items-center gap-3 rounded-[22px] px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200 transition">
+            <label
+              onDragOver={(e) => { e.preventDefault(); setExamDragActive(true); }}
+              onDragLeave={() => setExamDragActive(false)}
+              onDrop={handleExamDrop}
+              className={`flex cursor-pointer items-center gap-3 rounded-[22px] border-2 border-dashed px-4 py-4 text-sm font-medium transition-all focus-within:ring-2 focus-within:ring-volt ${
+                examDragActive
+                  ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:border-purple-400 dark:text-purple-300"
+                  : "neu-inset border-transparent text-slate-700 hover:border-slate-300 dark:text-slate-200 dark:hover:border-white/20"
+              }`}
+            >
               {examFile ? (
                 <FileText size={18} className="shrink-0 text-purple-600 dark:text-purple-400" />
               ) : (
-                <Upload size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
+                <Upload size={18} className={`shrink-0 ${examDragActive ? "text-purple-500" : "text-slate-400 dark:text-slate-500"}`} />
               )}
               <span className="min-w-0 flex-1 truncate">
-                {examFile ? examFile.name : "Choose JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
+                {examDragActive
+                  ? "Drop your exam schedule here…"
+                  : examFile
+                  ? examFile.name
+                  : "Choose or drag JPG, PNG, WebP, HEIC, PDF, or DOC — up to 10 MB"}
               </span>
+              {examFile && !examUploading && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setExamFile(null);
+                    setExamResult(null);
+                    setExamError(null);
+                    if (examInputRef.current) examInputRef.current.value = "";
+                  }}
+                  aria-label="Remove selected file"
+                  className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-black/5 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
               <input
                 ref={examInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                className="hidden"
+                className="sr-only"
                 onChange={(e) => {
                   setExamFile(e.target.files?.[0] ?? null);
                   setExamResult(null);
@@ -553,7 +671,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             </label>
 
             {examError && (
-              <p className="neu-inset rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+              <p className="neu-inset flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+                <AlertCircle size={15} className="shrink-0" />
                 {examError}
               </p>
             )}
@@ -569,7 +688,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
                 type="button"
                 onClick={handleExamScheduleUpload}
                 disabled={!examFile || examUploading}
-                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition dark:text-slate-200 disabled:opacity-40"
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-slate-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:text-slate-200 disabled:opacity-40"
               >
                 {examUploading ? (
                   <><Loader2 size={15} className="animate-spin" /> Extracting exams…</>
@@ -581,7 +700,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <button
                 type="button"
                 onClick={() => setExamWorksOpen(!examWorksOpen)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <span>What works best?</span>
                 <ChevronDown size={13} className={`transition-transform duration-200 ${examWorksOpen ? "rotate-180" : ""}`} />
@@ -649,11 +768,16 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Right sidebar */}
-      <aside className="space-y-6">
+      <motion.aside
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+        className="space-y-6"
+      >
         {profile && (
           <div className="neu-card rounded-[28px] p-5 sm:p-6">
             <h3 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Account</h3>
@@ -662,9 +786,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               <Row label="Plan" value={isPro ? "Pro" : "Free"} highlight={isPro} />
               {profile.pro_expires_at && isPro && (
                 <Row label="Renews" value={new Date(profile.pro_expires_at).toLocaleDateString()} />
-              )}
-              {isPro && visionRemaining !== null && (
-                <Row label="Vision credits left today" value={`${visionRemaining} / ${PRO_VISION_LIMIT}`} />
               )}
             </div>
 
@@ -693,7 +814,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
             <button
               type="button"
               onClick={handleGithubOAuth}
-              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 dark:focus-visible:ring-offset-[#172030]"
             >
               <GitBranch size={16} />
               {profile?.github_username ? "Reconnect with GitHub" : "Connect with GitHub"}
@@ -720,7 +841,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               type="button"
               onClick={handleGenerateResume}
               disabled={generatingResume}
-              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 dark:focus-visible:ring-offset-[#172030]"
             >
               {generatingResume ? (
                 <><Loader2 size={16} className="animate-spin" /> Generating PDF…</>
@@ -731,7 +852,8 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
               )}
             </button>
             {resumeError && (
-              <p className="neu-inset rounded-2xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400">
+              <p className="neu-inset flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                <AlertCircle size={13} className="shrink-0" />
                 {resumeError}
               </p>
             )}
@@ -743,13 +865,13 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
           <button
             type="button"
             onClick={handleSignOut}
-            className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+            className="neu-btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-500/10 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] dark:text-rose-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 dark:focus-visible:ring-offset-[#172030]"
           >
             <LogOut size={16} />
             Sign out
           </button>
         </div>
-      </aside>
+      </motion.aside>
     </div>
   );
 }

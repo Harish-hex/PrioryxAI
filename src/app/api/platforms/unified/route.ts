@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
+import { redis, withFallback } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
+
+const CACHE_TTL = 120; // seconds — same window as /api/stats; short enough that a fresh sync shows up quickly without needing explicit cache invalidation
 
 export async function GET(_req: NextRequest) {
   try {
@@ -13,58 +16,68 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const cacheKey = `unified:${user.id}`;
+    const cached = await withFallback(() => redis.get(cacheKey), null);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     // Reads go through the service role. The anon cookie client is RLS-bound,
     // and `.single()` returns an *error* (PGRST116) on zero rows rather than
     // null — together these made a connected profile look disconnected in
     // production, which is why the UI kept asking users to reconnect.
     const db = createServiceRoleClient();
 
-    // NOTE: The research agent writes to `coding_profiles` (one row per user),
-    // which has leetcode_stats and hackerrank_stats as JSONB columns.
-    // We read from that single table instead of the non-existent leetcode_profiles
-    // and multi_platform_profiles tables.
-    const { data: profile, error: profileError } = await db
-      .from('coding_profiles')
-      .select(
-        'user_id, leetcode_username, leetcode_stats, hackerrank_username, hackerrank_stats, placement_readiness_score, last_synced'
-      )
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // The connect routes (`/api/leetcode/connect`, `/api/hackerrank/connect`)
+    // upsert into `leetcode_profiles` and `multi_platform_profiles` — read
+    // from those same tables here. A previous version of this route read
+    // from `coding_profiles`, which is only populated by the research agent
+    // and never by the connect flow, so a freshly connected profile never
+    // showed up here and the UI kept asking users to reconnect.
+    const [{ data: lcProfile, error: lcError }, { data: hrProfile, error: hrError }] = await Promise.all([
+      db
+        .from('leetcode_profiles')
+        .select(
+          'leetcode_username, solved_data, skill_stats, contest_info, placement_readiness_score, ai_analysis, last_synced_at'
+        )
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      db
+        .from('multi_platform_profiles')
+        .select(
+          'hackerrank_username, hackerrank_data, hackerrank_score, codechef_data, gfg_data, codeforces_data, last_synced_at'
+        )
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
 
-    if (profileError) {
-      console.error('[Unified] Profile query error:', profileError.message);
-    }
+    if (lcError) console.error('[Unified] LeetCode profile query error:', lcError.message);
+    if (hrError) console.error('[Unified] HackerRank profile query error:', hrError.message);
 
     console.log(
       '[Unified] Profile:',
-      profile ? 'found' : 'none',
-      '| LC:', profile?.leetcode_username ?? 'none',
-      '| HR:', profile?.hackerrank_username ?? 'none'
+      '| LC:', lcProfile?.leetcode_username ?? 'none',
+      '| HR:', hrProfile?.hackerrank_username ?? 'none'
     );
 
-    // Extract LeetCode data from JSONB
-    const lcStats = (profile?.leetcode_stats ?? {}) as Record<string, unknown>;
-    const hrStats = (profile?.hackerrank_stats ?? {}) as Record<string, unknown>;
-
-    let lcData: any = profile ? {
-      leetcode_username: profile.leetcode_username,
-      placement_readiness_score: profile.placement_readiness_score,
-      solved_data: lcStats.totalSolved ?? null,
-      skill_stats: lcStats.topicBreakdown ?? null,
-      contest_info: {
-        rating: lcStats.contestRating ?? null,
-        contests_attended: lcStats.contestsAttended ?? null,
-      },
-      ai_analysis: lcStats.aiAnalysis ?? null,
-      last_synced_at: profile.last_synced,
+    let lcData: any = lcProfile?.leetcode_username ? {
+      leetcode_username: lcProfile.leetcode_username,
+      placement_readiness_score: lcProfile.placement_readiness_score,
+      solved_data: lcProfile.solved_data ?? null,
+      skill_stats: lcProfile.skill_stats ?? null,
+      contest_info: lcProfile.contest_info ?? null,
+      ai_analysis: lcProfile.ai_analysis ?? null,
+      last_synced_at: lcProfile.last_synced_at,
     } : null;
 
-    let hrData: any = profile?.hackerrank_username ? {
-      hackerrank_username: profile.hackerrank_username,
-      hackerrank_score: hrStats.totalScore ?? 0,
-      codechef_data: hrStats.codechef ?? null,
-      gfg_data: hrStats.gfg ?? null,
-      codeforces_data: hrStats.codeforces ?? null,
+    let hrData: any = hrProfile?.hackerrank_username ? {
+      hackerrank_username: hrProfile.hackerrank_username,
+      hackerrank_score: hrProfile.hackerrank_score ?? 0,
+      hackerrank_data: hrProfile.hackerrank_data ?? null,
+      codechef_data: hrProfile.codechef_data ?? null,
+      gfg_data: hrProfile.gfg_data ?? null,
+      codeforces_data: hrProfile.codeforces_data ?? null,
+      last_synced_at: hrProfile.last_synced_at,
     } : null;
 
     // The mock-db fallback is file-backed and cannot work on Vercel's
@@ -90,11 +103,11 @@ export async function GET(_req: NextRequest) {
       if (mockHr) hrData = mockHr;
     }
 
-    const hasLC = !!profile?.leetcode_username;
-    const hasHR = !!profile?.hackerrank_username;
+    const hasLC = !!lcProfile?.leetcode_username;
+    const hasHR = !!hrProfile?.hackerrank_username;
 
-    const lcScore = Number(lcData?.placement_readiness_score ?? 0);
-    const hrScore = Number(hrData?.hackerrank_score ?? 0);
+    let lcScore = Number(lcData?.placement_readiness_score ?? 0);
+    let hrScore = Number(hrData?.hackerrank_score ?? 0);
 
     let bonusScore = 0;
     let bonusCount = 0;
@@ -126,7 +139,7 @@ export async function GET(_req: NextRequest) {
       overallScore = lcScore;
     }
 
-    return NextResponse.json({
+    const result = {
       overallScore: Math.round(overallScore),
       // Explicit connection flags so the UI never has to infer "connected"
       // from the presence of a nested field.
@@ -136,7 +149,9 @@ export async function GET(_req: NextRequest) {
       },
       leetcode: lcData || null,
       multiPlatform: hrData || null,
-    });
+    };
+    await withFallback(() => redis.set(cacheKey, result, { ex: CACHE_TTL }), undefined);
+    return NextResponse.json(result);
   } catch (err: any) {
     console.error('[Unified] Unhandled error:', err);
     return NextResponse.json(

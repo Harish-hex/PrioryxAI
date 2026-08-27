@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Code2, ExternalLink, Play, BookOpen, Flame, Plus, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getDailyChallenges, type CodingProblem } from "@/lib/daily-challenges";
+import { recordUserActivity } from "@/lib/activity-tracker";
 
 interface DailyChallengesCardProps {
   onAddTask?: (taskText: string) => void;
@@ -40,6 +41,7 @@ export function DailyChallengesCard({ onAddTask }: DailyChallengesCardProps) {
   const toggleSolved = (id: string) => {
     setSolvedIds((prev) => {
       const next = new Set(Array.from(prev));
+      const willBeSolved = !next.has(id);
       if (next.has(id)) {
         next.delete(id);
       } else {
@@ -48,6 +50,9 @@ export function DailyChallengesCard({ onAddTask }: DailyChallengesCardProps) {
       try {
         if (todayKey) {
           localStorage.setItem(todayKey, JSON.stringify(Array.from(next)));
+        }
+        if (willBeSolved) {
+          recordUserActivity("dsa_solved", { problemId: id });
         }
       } catch {}
       return next;
@@ -148,6 +153,7 @@ export function DailyChallengesCard({ onAddTask }: DailyChallengesCardProps) {
                       href={prob.problemLink}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => recordUserActivity('dsa_view', { problemId: prob.id, title: prob.title, link: prob.problemLink })}
                       className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
                     >
                       <Code2 size={13} className="text-cyan-500" />
@@ -162,6 +168,7 @@ export function DailyChallengesCard({ onAddTask }: DailyChallengesCardProps) {
                       href={prob.solutionVideo}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => recordUserActivity('youtube_watch', { problemId: prob.id, title: prob.title, videoUrl: prob.solutionVideo })}
                       className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-red-600 hover:text-red-700 dark:text-red-400"
                     >
                       <Play size={12} className="fill-current" />

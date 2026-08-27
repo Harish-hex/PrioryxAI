@@ -12,6 +12,9 @@ import {
   Hammer,
   FileText,
   AlertCircle,
+  Sparkles,
+  Layers,
+  Check,
   RefreshCw
 } from "lucide-react";
 
@@ -175,7 +178,7 @@ export default function FoundryDashboard() {
           </div>
           <h2 className="text-xl font-bold text-slate-950 dark:text-white">No skills detected in resume</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            We couldn&apos;t detect technical skills in your uploaded resume. Please re-upload a resume with clear programming languages and tools.
+            We couldn't detect technical skills in your uploaded resume. Please re-upload a resume with clear programming languages and tools.
           </p>
           <div className="pt-2">
             <Link
@@ -213,7 +216,7 @@ export default function FoundryDashboard() {
           </div>
           <h2 className="text-xl font-bold text-slate-950 dark:text-white">Ready to generate your projects</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            We&apos;ve analysed your resume. Click below to generate 9 personalized project architectures across Foundation, Intermediate, and Advanced tiers.
+            We've analysed your resume. Click below to generate 9 personalized project architectures across Foundation, Intermediate, and Advanced tiers.
           </p>
 
           {generateError && (
@@ -296,10 +299,10 @@ export default function FoundryDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`rounded-2xl px-4 py-2 text-xs font-bold transition ${
+            className={`shrink-0 rounded-2xl px-4 py-2 text-xs font-bold transition ${
               activeTab === tab.id
                 ? "neu-inset text-slate-950 dark:text-white bg-slate-100/60 dark:bg-white/10"
-                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-500/5 dark:text-slate-400 dark:hover:text-white"
             }`}
           >
             {tab.label} ({tab.count})
@@ -316,8 +319,9 @@ export default function FoundryDashboard() {
               key={project.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="neu-card rounded-[28px] p-6 flex flex-col justify-between hover:scale-[1.01] transition-transform"
+              transition={{ delay: Math.min(i, 12) * 0.04, duration: 0.35 }}
+              whileHover={{ y: -3 }}
+              className="neu-card rounded-[28px] p-6 flex flex-col justify-between transition-shadow hover:shadow-lg"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">

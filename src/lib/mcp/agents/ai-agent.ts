@@ -170,6 +170,14 @@ async function matchPeerCollaborators(
     .eq('user_id', userId)
     .single();
 
+  const { data: userResume } = await supabase
+    .from('user_resumes')
+    .select('skill_entities')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
   const userScore = userCoding?.placement_readiness_score ?? 0;
 
   // Find active users with intersecting roles (bypassing RLS so we can see other users)
@@ -239,6 +247,8 @@ async function matchPeerCollaborators(
     .in('user_id', peerIds);
 
   const peerProfiles = peerCandidates;
+
+  const userSkills = ((userResume?.skill_entities ?? []) as Array<{ name: string }>).map((s) => s.name);
 
   const matches: PeerMatch[] = (peerProfiles ?? []).map((peer) => {
     const peerScore = peerCoding?.find((p) => p.user_id === peer.id)?.placement_readiness_score ?? 50;

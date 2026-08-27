@@ -47,8 +47,9 @@ priorix_plan_final.md
 .gradle/
 **/.gradle/
 **/build/
-local.properties
-.cxx/
-*.apk
-*.aab
-*.lock
+# Temporary tool output and artifacts
+.playwright-mcp/
+.serena/
+graphify-out/
+*.zip
+supabase/.temp/

@@ -10,6 +10,81 @@ import {
 } from './types';
 
 const CPS_BASE = 'https://coding-profile-service.onrender.com';
+const HR_BASE = 'https://www.hackerrank.com/rest/hackers';
+
+interface HRBadgeModel {
+  badge_name: string;
+  stars: number;
+  total_stars: number;
+  solved: number;
+  total_challenges: number;
+}
+
+async function hrFetch<T>(path: string): Promise<T | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${HR_BASE}/${path}`, {
+      headers: {
+        // HackerRank's internal REST API 404s some clients without a
+        // realistic browser User-Agent.
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Fetches a HackerRank public profile directly from HackerRank's own
+ * internal REST API (`/rest/hackers/<username>`, `/badges`, `/scores`) —
+ * unauthenticated, no API key needed. This replaces a third-party proxy
+ * (`coding-profile-service.onrender.com`) that has been suspended by its
+ * owner (confirmed: it now returns a static "Service Suspended" page for
+ * every request), which is why HackerRank data stopped being retrieved
+ * correctly — every connect attempt was silently falling back to hardcoded
+ * fake data instead of surfacing that failure.
+ *
+ * Returns null only when the username genuinely doesn't exist on
+ * HackerRank (or the API is unreachable) — callers must treat null as a
+ * real failure, not paper over it with mock data.
+ */
+export async function fetchHackerRankDirect(username: string): Promise<HackerRankRawData | null> {
+  const profile = await hrFetch<{ model?: { username?: string } }>(`${encodeURIComponent(username)}`);
+  if (!profile?.model?.username) return null;
+
+  const [badgesRes] = await Promise.all([
+    hrFetch<{ models?: HRBadgeModel[] }>(`${encodeURIComponent(username)}/badges`),
+  ]);
+
+  const badgeModels = badgesRes?.models ?? [];
+  // A badge appears in this list for every domain the user has attempted —
+  // "earned" means they've actually gotten at least one star in it.
+  const earnedBadges = badgeModels.filter(b => b.stars > 0).map(b => b.badge_name);
+  // `solved` per domain is a real per-challenge count; summing across every
+  // attempted domain gives a genuine total-solved figure instead of a guess.
+  const totalSolved = badgeModels.reduce((sum, b) => sum + (b.solved || 0), 0);
+
+  return {
+    platform: 'hackerrank',
+    username,
+    totalSolved,
+    badges: earnedBadges,
+    // HackerRank's certificate data isn't exposed on this legacy REST API
+    // (it lives on the newer certificates product) — report 0 rather than
+    // guessing, since fabricating a number here is the exact bug being fixed.
+    certifications: 0,
+    certificationLinks: [],
+  };
+}
 
 export const HACKERRANK_BADGE_DOMAIN_MAP: Record<string, HRBadgeDomain> = {
   'Problem Solving': {
@@ -158,15 +233,22 @@ export async function fetchMultiPlatformProfiles(usernames: {
     }
   }
 
-  // Fallback to mock data if hackerrank is requested but not found (for demo purposes)
+  // HackerRank specifically: always prefer a direct fetch from HackerRank's
+  // own REST API over the third-party proxy above, which has been suspended
+  // by its owner and returns nothing usable. Previously, a failure here
+  // silently fell back to hardcoded fake data ("124 solved", canned badges)
+  // presented as if it were the user's real profile — removed. A genuine
+  // failure (bad username or HackerRank unreachable) now correctly leaves
+  // `result.hackerrank` null so the caller surfaces a real error instead.
   if (usernames.hackerrank && !result.hackerrank) {
-    result.hackerrank = {
-      username: usernames.hackerrank,
-      platform: 'hackerrank',
-      totalSolved: 124,
-      badges: ['Problem Solving', 'Python', 'SQL', '10 Days of JavaScript'],
-      certifications: 2
-    } as HackerRankRawData;
+    try {
+      result.hackerrank = await fetchHackerRankDirect(usernames.hackerrank);
+      if (!result.hackerrank) {
+        result.errors['hackerrank'] = 'HackerRank profile not found or unreachable';
+      }
+    } catch (err: unknown) {
+      result.errors['hackerrank'] = err instanceof Error ? err.message : 'HackerRank fetch failed';
+    }
   }
 
   return result;

@@ -81,7 +81,7 @@ Subjects: ${(academicContext.subjects ?? []).join(', ') || 'none'}` : '';
     try {
       result = JSON.parse(cleaned);
     } catch (e) {
-      console.error('[Foundry] JSON parse failed', rawContent, e);
+      console.error('[Foundry] JSON parse failed', rawContent);
       result = { projects: [] };
     }
   }
@@ -184,16 +184,6 @@ async function verifyPhaseCompletion(
       projectTech = project.tech_stack as string[];
       currentPhase = project.current_phase;
       phases = project.phases as ProjectPhase[];
-
-      // Phase gate: don't let a submission for a later phase jump ahead of
-      // where the project actually is — earlier phases must pass first.
-      if (phaseNumber > currentPhase) {
-        return {
-          success: false,
-          data: null,
-          error: `Phase ${phaseNumber} is locked. Complete phase ${currentPhase} first.`,
-        };
-      }
     }
   }
 

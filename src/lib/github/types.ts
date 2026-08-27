@@ -14,7 +14,10 @@ export type WeaknessCategory =
   | 'low_commit_frequency'
   | 'tiny_project'
   | 'no_deployment'
-  | 'forked_only';
+  | 'forked_only'
+  | 'notebook_only'
+  | 'no_dependency_manifest'
+  | 'unorganized_structure';
 
 export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type ImpactArea =

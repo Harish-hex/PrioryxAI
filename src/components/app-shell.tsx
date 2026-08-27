@@ -1,26 +1,35 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, Check, CheckCircle2, Clock3, Copy, ExternalLink, Loader2, RefreshCw, UserRound, X } from "lucide-react";
+import { AlertTriangle, Bell, Bot, Briefcase, CalendarClock, Check, CheckCircle2, Clock3, Command, Copy, ExternalLink, GraduationCap, LayoutDashboard, Loader2, Menu, RefreshCw, Settings, UserRound, X, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { DashboardView, type Task } from "@/components/dashboard-view";
+import type { Task } from "@/components/dashboard-view";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SimpleSkeleton } from "@/components/ui/skeleton";
 
-// Lazy-load subviews and heavy modals on-demand
-const AssistantPanel = dynamic(() => import("@/components/assistant-panel").then((m) => m.AssistantPanel), {
+// Lazy-load subviews and heavy modals on-demand. Each import() is named so it
+// can be triggered ahead of time (idle warm-up + sidebar hover) as well as by
+// dynamic() itself — webpack dedupes a repeated import() to the same chunk, so
+// a pre-warmed chunk resolves instantly when dynamic()'s loader runs later.
+const importAssistantPanel = () => import("@/components/assistant-panel");
+const importProfilePage = () => import("@/components/profile-page");
+const importSettingsPanel = () => import("@/components/settings-panel");
+const importFeedPageContent = () => import("@/components/youtube/FeedPageContent");
+
+const AssistantPanel = dynamic(() => importAssistantPanel().then((m) => m.AssistantPanel), {
   loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
   ssr: false,
 });
 
-const ProfilePage = dynamic(() => import("@/components/profile-page").then((m) => m.ProfilePage), {
+const ProfilePage = dynamic(() => importProfilePage().then((m) => m.ProfilePage), {
   loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
   ssr: false,
 });
 
-const SettingsPanel = dynamic(() => import("@/components/settings-panel").then((m) => m.SettingsPanel), {
+const SettingsPanel = dynamic(() => importSettingsPanel().then((m) => m.SettingsPanel), {
   loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
   ssr: false,
 });
@@ -29,10 +38,26 @@ const PricingModal = dynamic(() => import("@/components/pricing-modal").then((m)
   ssr: false,
 });
 
-const FeedPageContent = dynamic(() => import("@/components/youtube/FeedPageContent").then((m) => m.FeedPageContent), {
+const FeedPageContent = dynamic(() => importFeedPageContent().then((m) => m.FeedPageContent), {
   loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
   ssr: false,
 });
+
+// DashboardView is the default view on the busiest route (/feed) — unlike the
+// other panels above it stays ssr:true so its content is still server-rendered,
+// but splitting it into its own chunk keeps it out of app-shell's initial JS.
+const DashboardView = dynamic(() => import("@/components/dashboard-view").then((m) => m.DashboardView), {
+  loading: () => <SimpleSkeleton className="h-96 w-full rounded-3xl" />,
+});
+
+// Warms all in-shell view chunks. Safe to call repeatedly — webpack caches by
+// module, so a second call for an already-loaded chunk is a no-op.
+function prefetchShellViews() {
+  importAssistantPanel();
+  importProfilePage();
+  importSettingsPanel();
+  importFeedPageContent();
+}
 
 const CareerSheet = dynamic(() => import("@/components/mobile-nav").then((m) => m.CareerSheet), {
   ssr: false,
@@ -43,6 +68,7 @@ const WavesBackground = dynamic(() => import("@/components/ui/waves-background")
 });
 
 import { getCurrentWeekDays, recordDailyActivity, toggleDailyActivity } from "@/lib/streak-tracker";
+import { recordUserActivity } from "@/lib/activity-tracker";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -74,24 +100,20 @@ const viewToPath: Record<string, string> = {
 interface AppShellProps {
   username: string;
   initialView?: string;
+  /** Server-fetched initial data (see src/app/feed/page.tsx) — when present,
+   * the shell seeds its state from these instead of starting empty and
+   * waiting for the post-mount client fetch, so the first paint already has
+   * real content. Each is the same shape /api/feed, /api/stats, and
+   * /api/user/status normally return; null means the server-side loader
+   * failed or this route didn't provide one, and the shell falls back to its
+   * usual client fetch. */
+  initialFeed?: { feed?: any[]; setup?: any[]; hasMore?: boolean; totalCount?: number; hiddenPreview?: any } | null;
+  initialStats?: any | null;
+  initialStatus?: { pro_status?: boolean; pro_expires_at?: string | null; messages_today?: number; vision_uploads_today?: number } | null;
 }
 
-const EMPTY_WEEK_DATA: ReturnType<typeof getCurrentWeekDays> = {
-  days: [],
-  completedCount: 0,
-  currentDayIndex: 0,
-  weekRange: "",
-};
-
-function StreakCalendar({ stats, isPro: _isPro }: { stats: any; isPro: boolean }) {
-  // `getCurrentWeekDays` reads `new Date()` to decide which day is "today".
-  // The server (UTC) and the client's browser (local timezone) disagree on
-  // the calendar day for part of every day, which would make the server-
-  // rendered icons differ from the client's first render and trigger a
-  // hydration mismatch. Starting from a stable, date-independent placeholder
-  // and only computing the real week client-side (in an effect, after
-  // hydration) keeps the first render identical on both sides.
-  const [weekData, setWeekData] = useState(EMPTY_WEEK_DATA);
+function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
+  const [weekData, setWeekData] = useState(() => getCurrentWeekDays(stats));
 
   const refreshWeek = useCallback(() => {
     setWeekData(getCurrentWeekDays(stats));
@@ -150,7 +172,7 @@ function StreakCalendar({ stats, isPro: _isPro }: { stats: any; isPro: boolean }
                     : `${day}: Click to mark completed`
                 }
               >
-                <div
+                <span
                   className={`flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full transition-all duration-200 ${
                     isCompleted
                       ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 scale-100 group-hover:opacity-90"
@@ -168,7 +190,7 @@ function StreakCalendar({ stats, isPro: _isPro }: { stats: any; isPro: boolean }
                   ) : isPast ? (
                     <span className="h-1 w-1 rounded-full bg-slate-400/40" />
                   ) : null}
-                </div>
+                </span>
                 <span
                   className={`text-[10px] tracking-wider transition-colors ${
                     isToday
@@ -196,21 +218,26 @@ function StreakCalendar({ stats, isPro: _isPro }: { stats: any; isPro: boolean }
         className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 active:scale-95 transition"
         title="Weekly Streak (Tap to toggle today)"
       >
-        <span className="text-cyan-500 font-extrabold text-sm">⚡</span>
+        <Zap size={13} className="text-cyan-500 fill-cyan-500/20" />
         <span>{completedCount}/7</span>
       </button>
     </>
   );
 }
 
-export default function AppShell({ username, initialView = "dashboard" }: AppShellProps) {
+export default function AppShell({ username, initialView = "dashboard", initialFeed, initialStats, initialStatus }: AppShellProps) {
   const [activeView, setActiveView] = useState(initialView);
   const [collapsed, setCollapsed] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [careerSheetOpen, setCareerSheetOpen] = useState(false);
 
-  // Instant hydration from sessionStorage if available
+  // Prefer server-rendered initial data (see feed/page.tsx) so first paint has
+  // real content instead of an empty shell. Falls back to the sessionStorage
+  // snapshot from a previous client fetch, then to empty, only when this
+  // route didn't provide server data (e.g. a route other than /feed reusing
+  // this shell, or the server-side loader failed).
   const [tasks, setTasks] = useState<Task[]>(() => {
+    if (initialFeed?.feed) return initialFeed.feed;
     if (typeof window === "undefined") return [];
     try {
       const cached = sessionStorage.getItem("prioryx_feed");
@@ -222,6 +249,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     return [];
   });
   const [setupItems, setSetupItems] = useState<any[]>(() => {
+    if (initialFeed?.setup) return initialFeed.setup;
     if (typeof window === "undefined") return [];
     try {
       const cached = sessionStorage.getItem("prioryx_feed");
@@ -233,6 +261,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     return [];
   });
   const [stats, setStats] = useState(() => {
+    if (initialStats) return initialStats;
     if (typeof window === "undefined") return null;
     try {
       const cached = sessionStorage.getItem("prioryx_stats");
@@ -241,6 +270,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
     return null;
   });
   const [loadingTasks, setLoadingTasks] = useState(() => {
+    if (initialFeed) return false;
     if (typeof window === "undefined") return true;
     try {
       return !sessionStorage.getItem("prioryx_feed");
@@ -248,24 +278,26 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       return true;
     }
   });
-  const [hasMore, setHasMore] = useState(false);
-  const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
-  const [hiddenPreview, setHiddenPreview] = useState<{ count: number; topJobTitle: string | null; breakdown: string | null } | null>(null);
+  const [hasMore, setHasMore] = useState(() => initialFeed?.hasMore ?? false);
+  const [totalCount, setTotalCount] = useState<number | undefined>(() => initialFeed?.totalCount);
+  const [hiddenPreview, setHiddenPreview] = useState<{ count: number; topJobTitle: string | null; breakdown: string | null } | null>(() => initialFeed?.hiddenPreview ?? null);
 
   // Pro state
   const [isPro, setIsPro] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const cached = sessionStorage.getItem("prioryx_status");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return Boolean(parsed.pro_status) && (!parsed.pro_expires_at || new Date(parsed.pro_expires_at) > new Date());
+    const source = initialStatus ?? (() => {
+      if (typeof window === "undefined") return null;
+      try {
+        const cached = sessionStorage.getItem("prioryx_status");
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
       }
-    } catch {}
-    return false;
+    })();
+    if (!source) return false;
+    return Boolean(source.pro_status) && (!source.pro_expires_at || new Date(source.pro_expires_at) > new Date());
   });
-  const [messagesUsedToday, setMessagesUsedToday] = useState(0);
-  const [visionUsedToday, setVisionUsedToday] = useState(0);
+  const [messagesUsedToday, setMessagesUsedToday] = useState(() => initialStatus?.messages_today ?? 0);
+  const [visionUsedToday, setVisionUsedToday] = useState(() => initialStatus?.vision_uploads_today ?? 0);
 
   // Task context passed from "Plan with AI" — carried into AssistantPanel
   const [assistantTask, setAssistantTask] = useState<any | null>(null);
@@ -345,8 +377,29 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   useEffect(() => {
     recordDailyActivity();
-    Promise.allSettled([fetchFeed(), fetchStats(), fetchStatus()]);
+    // Server-rendered initial* props (see feed/page.tsx) already carry
+    // first-paint data for this exact request — only fetch on mount whatever
+    // the server didn't provide (e.g. its loader failed, or this shell is
+    // being used by a route that doesn't pass initial data). Fetching all
+    // three unconditionally here would just re-run work the server render
+    // already paid for moments ago.
+    const toFetch: Promise<unknown>[] = [];
+    if (!initialFeed) toFetch.push(fetchFeed());
+    if (!initialStats) toFetch.push(fetchStats());
+    if (!initialStatus) toFetch.push(fetchStatus());
+    if (toFetch.length > 0) Promise.allSettled(toFetch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchFeed, fetchStats, fetchStatus]);
+
+  // Warm the other in-shell view chunks once the critical dashboard fetch is
+  // underway, so the first click into Assistant/Learning/Profile/Settings
+  // doesn't pay a cold JS-chunk download+parse on top of its own data fetch.
+  useEffect(() => {
+    const idle = (window as any).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 300));
+    const cancelIdle = (window as any).cancelIdleCallback ?? clearTimeout;
+    const handle = idle(prefetchShellViews);
+    return () => cancelIdle(handle);
+  }, []);
 
   // Track previous isPro to detect the moment it flips true → show activation banner
   const prevIsProRef = useRef(false);
@@ -458,6 +511,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
       razorpay_payment_link_id: params.get("razorpay_payment_link_id"),
       razorpay_payment_link_reference_id: params.get("razorpay_payment_link_reference_id"),
       razorpay_payment_link_status: params.get("razorpay_payment_link_status"),
+      razorpay_subscription_id: params.get("razorpay_subscription_id"),
       razorpay_signature: params.get("razorpay_signature"),
     };
     const hasRedirectParams = Boolean(razorpayParams.razorpay_payment_id);
@@ -473,8 +527,19 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           body: JSON.stringify(razorpayParams),
         });
         if (res.ok) {
+          // Activate instantly — don't wait for the next /api/user/status poll tick.
           setIsPro(true);
           setPaymentPending(false);
+          try {
+            const cached = sessionStorage.getItem("prioryx_status");
+            const parsed = cached ? JSON.parse(cached) : {};
+            sessionStorage.setItem(
+              "prioryx_status",
+              JSON.stringify({ ...parsed, pro_status: true })
+            );
+          } catch {}
+          // Reconcile with the server in the background (expiry date, usage counters, etc.)
+          fetchStatus();
           return true;
         }
         const errData = await res.json().catch(() => ({}));
@@ -517,6 +582,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   async function handleAddTask(text: string) {
     try {
+      recordUserActivity("task_created", { text });
       const res = await fetch("/api/ingest/manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -531,7 +597,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   async function handleCompleteTask(id: string) {
     try {
-      recordDailyActivity();
+      recordUserActivity("task_completed", { taskId: id });
       await fetch(`/api/tasks/${id}/complete`, { method: "PATCH" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
       fetchStats();
@@ -540,6 +606,7 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
 
   async function handleSnoozeTask(id: string, hours: number) {
     try {
+      recordUserActivity("task_snoozed", { taskId: id, hours });
       await fetch(`/api/tasks/${id}/snooze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -656,6 +723,12 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
         onNavigate={navigateToView}
         onOpenPricing={() => setPricingOpen(true)}
         onToggle={() => setCollapsed((v) => !v)}
+        onPrefetchView={(id) => {
+          if (id === "assistant") importAssistantPanel();
+          else if (id === "profile") importProfilePage();
+          else if (id === "settings") importSettingsPanel();
+          else if (id === "learning") importFeedPageContent();
+        }}
       />
 
       <div
@@ -824,51 +897,6 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
                 </AnimatePresence>
               </div>
 
-              {/* Profile menu */}
-              <div ref={profileMenuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => { setProfileMenuOpen((o) => !o); setNotifOpen(false); }}
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl neu-btn text-slate-700 dark:text-slate-200"
-                  aria-label="Profile menu"
-                >
-                  <UserRound size={18} />
-                </button>
-
-                <AnimatePresence>
-                  {profileMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-[24px] neu-card"
-                    >
-                      <button
-                        type="button"
-                        onClick={handleCopyProfileLink}
-                        className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-white/5"
-                      >
-                        {profileLinkCopied ? (
-                          <Check size={15} className="text-emerald-500" />
-                        ) : (
-                          <Copy size={15} className="text-slate-400" />
-                        )}
-                        {profileLinkCopied ? "Link copied!" : "Copy profile link"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleOpenPublicProfile}
-                        className="flex w-full items-center gap-2.5 border-t border-slate-100 px-4 py-3 text-left text-sm font-medium text-slate-900 transition hover:bg-slate-50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
-                      >
-                        <ExternalLink size={15} className="text-slate-400" />
-                        View public profile
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               {/* Pro badge / Upgrade button */}
               {isPro ? (
                 <div className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 sm:gap-2 sm:px-4 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
@@ -962,14 +990,21 @@ export default function AppShell({ username, initialView = "dashboard" }: AppShe
           )}
         </AnimatePresence>
 
-        <AnimatePresence mode="wait">
+        {/*
+          mode="wait" serialized a 0.2s exit-then-0.2s-enter on every click —
+          a fixed ~400ms tax independent of how fast the data actually is.
+          popLayout lets the incoming view start rendering immediately while
+          the outgoing one fades out in place, so the click *feels* instant
+          while keeping a light, intentional transition instead of a hard cut.
+        */}
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.section
             key={activeView}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1 }}
             className="mx-auto max-w-7xl"
-            exit={{ opacity: 0, y: 8 }}
-            initial={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            exit={{ opacity: 0, transition: { duration: 0.08 } }}
+            initial={{ opacity: 0 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
           >
             <Suspense fallback={<SimpleSkeleton />}>
               {view[activeView]}

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +18,8 @@ export async function GET(_req: Request) {
       .select('*')
       .eq('user_id', user.id)
       .eq('saved_for_later', true)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     const formatted = (savedRecs || []).map(rec => ({
       id: rec.id,

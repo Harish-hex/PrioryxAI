@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const maxDuration = 20
 
@@ -17,8 +16,8 @@ export async function POST(
     }
 
     const { videoId } = params;
-    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-    const watchDurationSeconds = typeof body.watchDurationSeconds === 'number' ? body.watchDurationSeconds : 0;
+    const body = await req.json().catch(() => ({}));
+    const watchDurationSeconds = body.watchDurationSeconds || 0;
 
     // Update recommendation watched status
     await supabase
@@ -35,18 +34,10 @@ export async function POST(
         { onConflict: 'user_id, video_id' }
       );
 
-    await recordFeedbackEvent(supabase, user.id, {
-      eventType: 'learning_resource_completed',
-      source: 'youtube',
-      entityType: 'youtube_video',
-      entityId: videoId,
-      context: { watchDurationSeconds },
-    });
-
     return NextResponse.json({ success: true });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error marking video as watched:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

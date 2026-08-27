@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, MessageCircle, Pause, Play, TimerReset, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { priorityStyles, typeStyles } from "@/components/task-styles";
+import { recordUserActivity } from "@/lib/activity-tracker";
 
 interface Task {
   id: string | number;
@@ -150,7 +151,12 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
               </button>
               <button
                 type="button"
-                onClick={onComplete}
+                onClick={() => {
+                  if (task) {
+                    recordUserActivity("focus_session_completed", { taskId: task.id, title: task.title });
+                  }
+                  onComplete();
+                }}
                 className="neu-btn inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
               >
                 <CheckCircle2 size={16} />

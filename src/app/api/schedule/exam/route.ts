@@ -181,18 +181,19 @@ export async function POST(req: NextRequest) {
       .delete()
       .eq('user_id', user.id)
 
-    // Insert new entries
+    // Insert new entries. subject_name/venue map onto the table's existing
+    // subject/location columns; the rest are dedicated columns.
     const rows = validEntries.map(entry => ({
       user_id: user.id,
       title: entry.title,
       subject_code: entry.subject_code ?? null,
-      subject_name: entry.subject_name ?? null,
+      subject: entry.subject_name ?? entry.subject_code ?? null,
       date: entry.date ?? null,
       day_of_week: entry.day ?? null,
       start_time: entry.start_time ?? null,
       end_time: entry.end_time ?? null,
       session: entry.session ?? null,
-      venue: entry.venue ?? null,
+      location: entry.venue ?? null,
       type: entry.type ?? 'exam',
       exam_type: entry.exam_type ?? 'internal',
       priority: entry.priority ?? 'medium',
@@ -208,19 +209,11 @@ export async function POST(req: NextRequest) {
 
     if (dbError) {
       console.error('[ExamSchedule API] DB insert error:', dbError.message, dbError.code, dbError.details)
+      return NextResponse.json(
+        { error: 'Extracted the schedule but failed to save it. Please try again.' },
+        { status: 500 }
+      )
     }
-
-    // Also sync to user_exam_schedules
-    try {
-      await db
-        .from('user_exam_schedules')
-        .upsert({
-          user_id: user.id,
-          entries: validEntries,
-          schedule_data: scheduleData,
-          extracted_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-    } catch {}
 
     // Also insert into tasks table so exams immediately appear on Priority Feed / Calendar
     const taskRows = validEntries.map(e => ({
@@ -236,10 +229,9 @@ export async function POST(req: NextRequest) {
     }));
 
     if (taskRows.length > 0) {
-      try {
-        await db.from('tasks').insert(taskRows);
-      } catch (err) {
-        console.warn('[ExamSchedule] tasks insert warn:', err);
+      const { error: taskError } = await db.from('tasks').insert(taskRows);
+      if (taskError) {
+        console.error('[ExamSchedule] tasks insert error:', taskError.message, taskError.code, taskError.details);
       }
     }
   }
@@ -258,7 +250,7 @@ export async function POST(req: NextRequest) {
   })
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -281,13 +273,13 @@ export async function GET(_req: NextRequest) {
     const entries = data.map(row => ({
       title: row.title,
       subject_code: row.subject_code,
-      subject_name: row.subject_name,
+      subject_name: row.subject,
       date: row.date,
       day: row.day_of_week,
       start_time: row.start_time,
       end_time: row.end_time,
       session: row.session,
-      venue: row.venue,
+      venue: row.location,
       type: row.type,
       exam_type: row.exam_type,
       priority: row.priority,

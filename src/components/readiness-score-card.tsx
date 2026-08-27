@@ -204,14 +204,14 @@ function SparklineChart({ history }: { history: ScoreHistory[] }) {
 // ── Main export ────────────────────────────────────────────────────────────────
 
 interface ReadinessScoreCardProps {
-  isPro: boolean;
-  onOpenPricing: () => void;
+  isPro?: boolean;
+  onOpenPricing?: () => void;
   onCompleteTask?: (id: string) => void;
 }
 
 export function ReadinessScoreCard({
-  isPro,
-  onOpenPricing,
+  isPro = false,
+  onOpenPricing = () => {},
   onCompleteTask,
 }: ReadinessScoreCardProps) {
   const [data, setData] = useState<ScoreData | null>(null);
@@ -552,7 +552,7 @@ export function ReadinessScoreCard({
                 <button
                   type="button"
                   onClick={() => {
-                    const text = `I just benchmarked my Placement Readiness Score on @PrioryxAI: ${score}/100! 🚀 Check your score at prioryx.ai`;
+                    const text = `I just benchmarked my Placement Readiness Score on @PrioryxAI: ${score}/100! Check your score at prioryx.ai`;
                     const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
                     window.open(url, "_blank");
 
@@ -571,7 +571,7 @@ export function ReadinessScoreCard({
                 <button
                   type="button"
                   onClick={() => {
-                    const text = `My PrioryxAI Placement Readiness Score is ${score}/100! 🎯 Check yours: https://prioryx.ai`;
+                    const text = `My PrioryxAI Placement Readiness Score is ${score}/100! Check yours: https://prioryx.ai`;
                     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
                     window.open(url, "_blank");
 

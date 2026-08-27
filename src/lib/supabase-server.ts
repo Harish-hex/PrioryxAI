@@ -1,5 +1,6 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
-import { createClient as createServerClientSSR } from '@/lib/supabase/server'
+import { createClient as createServerClientSSR, createServiceClient as createServiceClientSSR } from '@/lib/supabase/server'
+import { createTimeoutFetch } from '@/lib/supabase/fetch-with-timeout'
 import { cookies } from 'next/headers'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -28,6 +29,7 @@ export function createServiceRoleClient() {
       persistSession: false,
       detectSessionInUrl: false,
     },
+    global: { fetch: createTimeoutFetch() },
   })
 }
 

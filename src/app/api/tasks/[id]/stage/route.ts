@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withFallback, redis } from '@/lib/redis';
-import { recordFeedbackEvent } from '@/lib/feedback/events';
 
 export const runtime = 'nodejs';
 
@@ -16,8 +15,8 @@ export async function PATCH(
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await request.json().catch(() => null) as { stage?: unknown } | null;
-  const stage = typeof body?.stage === 'string' ? body.stage : '';
+  const body = await request.json();
+  const stage: string = body.stage;
 
   if (!VALID_STAGES.includes(stage)) {
     return NextResponse.json(
@@ -40,13 +39,6 @@ export async function PATCH(
 
   // Invalidate feed cache
   await withFallback(() => redis.del(`feed:${user.id}`), 0);
-  await recordFeedbackEvent(supabase, user.id, {
-    eventType: stage === 'applied' ? 'application_started' : stage === 'offer' ? 'application_completed' : 'opportunity_saved',
-    source: 'tasks_api',
-    entityType: 'job_task',
-    entityId: params.id,
-    outcome: stage,
-  });
 
   return NextResponse.json({ success: true, stage });
 }

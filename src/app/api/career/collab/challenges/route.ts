@@ -23,6 +23,7 @@ export async function GET() {
     .select('*')
     .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
     .order('created_at', { ascending: false })
+    .limit(100)
 
   // Get peer profiles for challenge participants
   const peerIds = new Set<string>()

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createTimeoutFetch } from '@/lib/supabase/fetch-with-timeout';
 
 function shouldUseSecureCookies() {
   if (process.env.SUPABASE_COOKIE_SECURE) {
@@ -20,6 +21,7 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: createTimeoutFetch() },
       cookies: {
         getAll() {
           try {
@@ -48,10 +50,16 @@ export function createClient() {
 
 // Service role client — bypasses RLS. For administrative and backend agent jobs.
 export function createServiceClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for createServiceClient');
+  }
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    serviceRoleKey,
     {
+      global: { fetch: createTimeoutFetch() },
       cookies: {
         getAll() { return []; },
         setAll() {},

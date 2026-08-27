@@ -6,7 +6,7 @@ export function LoadingLine({ className = "" }: { className?: string }) {
 
 export function LoadingCard() {
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/[0.03]">
       <div className="flex items-start justify-between gap-4">
         <div className="w-full space-y-3">
           <LoadingLine className="h-4 w-28" />

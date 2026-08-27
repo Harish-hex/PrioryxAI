@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   console.log('[Collab Connect] Current user:', user.id)
 
   // 2. Parse body
-  let body: { code?: string }
+  let body: { code?: string; connectCode?: string }
   try {
     body = await req.json()
   } catch {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const rawCode = body.code?.toString().trim() ?? ''
+  const rawCode = (body.code ?? body.connectCode)?.toString().trim() ?? ''
   const code = rawCode.toUpperCase() // normalize to uppercase
 
   console.log('[Collab Connect] Looking for code:', code)

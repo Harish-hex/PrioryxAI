@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check } from "lucide-react";
+import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check, Sparkles } from "lucide-react";
 
 interface Job {
   id: string;
@@ -48,7 +48,9 @@ export default function JobMarketPage() {
     role: "all",
     location: "all",
     experience: "all",
-    matchScore: 0,
+    // Default to strong matches only (>=70%) — the "Any Match %" option is
+    // still available for a user who wants to see the full unfiltered list.
+    matchScore: 70,
   });
 
   useEffect(() => {
@@ -58,11 +60,11 @@ export default function JobMarketPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((j) => {
+  const applyFilters = (jobList: Job[], ignoreMatchScore: boolean) => {
+    return jobList.filter((j) => {
       const text = (j.title + " " + j.company + " " + j.location + " " + (j.tags ?? []).join(" ")).toLowerCase();
 
-      if (filters.matchScore > 0 && j.matchScore < filters.matchScore) return false;
+      if (!ignoreMatchScore && filters.matchScore > 0 && j.matchScore < filters.matchScore) return false;
 
       if (filters.role !== "all") {
         const kws = ROLE_KEYWORDS[filters.role] ?? [];
@@ -89,7 +91,23 @@ export default function JobMarketPage() {
 
       return true;
     });
-  }, [jobs, filters, searchQuery]);
+  };
+
+  const strictFiltered = useMemo(() => applyFilters(jobs, false), [jobs, filters, searchQuery]);
+
+  // Never show a flat blank page just because nothing cleared the match-score
+  // floor — that's a filter setting, not "there are no jobs." If relaxing
+  // only the match-score requirement (role/location/experience/search still
+  // apply) turns up real jobs, show the closest ones instead, clearly
+  // labeled as below the requested threshold rather than presented as if
+  // they cleared it.
+  const usingFallback = strictFiltered.length === 0 && filters.matchScore > 0;
+  const fallbackJobs = useMemo(() => {
+    if (!usingFallback) return [];
+    return [...applyFilters(jobs, true)].sort((a, b) => b.matchScore - a.matchScore).slice(0, 10);
+  }, [usingFallback, jobs, filters, searchQuery]);
+
+  const filteredJobs = usingFallback ? fallbackJobs : strictFiltered;
 
   const saveJob = async (job: Job) => {
     setSavedIds(prev => new Set(prev).add(job.id));
@@ -148,7 +166,7 @@ export default function JobMarketPage() {
       </header>
 
       {/* Filter & Search Bar */}
-      <div className="neu-card rounded-[28px] p-5 sm:p-6 space-y-4">
+      <div className="neu-card sticky top-2 z-10 rounded-[28px] p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
             <Filter size={15} className="text-cyan-500" />
@@ -238,8 +256,24 @@ export default function JobMarketPage() {
       </div>
 
       <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 px-1">
-        <span>Showing {filteredJobs.length} of {jobs.length} jobs</span>
+        <span>
+          Showing {filteredJobs.length} of {jobs.length} jobs
+          {filters.matchScore > 0 && !usingFallback && <> · {filters.matchScore}%+ profile match</>}
+          {usingFallback && <> · closest matches (below {filters.matchScore}%)</>}
+        </span>
       </div>
+
+      {usingFallback && filteredJobs.length > 0 && (
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/25 px-4 py-3 text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center justify-between gap-3">
+          <span>No jobs cleared your {filters.matchScore}% match filter right now — showing your closest matches instead.</span>
+          <button
+            onClick={() => setFilters((f) => ({ ...f, matchScore: 0 }))}
+            className="shrink-0 underline hover:no-underline"
+          >
+            Show all jobs
+          </button>
+        </div>
+      )}
 
       {/* Job Cards List */}
       <div className="space-y-3.5">
@@ -252,8 +286,9 @@ export default function JobMarketPage() {
               key={job.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.02 }}
-              className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:scale-[1.005] transition-transform"
+              transition={{ delay: Math.min(i, 15) * 0.02, duration: 0.3 }}
+              whileHover={{ y: -2 }}
+              className="neu-card rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-shadow hover:shadow-lg"
             >
               <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                 {/* Match Score Ring */}
@@ -284,7 +319,7 @@ export default function JobMarketPage() {
                     {job.salary && job.salary !== "Not disclosed" && (
                       <>
                         <span>•</span>
-                        <span className="neu-pill rounded-full px-2 py-0.2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="neu-pill rounded-full px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                           {job.salary}
                         </span>
                       </>
@@ -322,9 +357,13 @@ export default function JobMarketPage() {
           <div className="neu-pill-inset h-16 w-16 rounded-2xl flex items-center justify-center text-slate-400 mx-auto">
             <Briefcase size={32} />
           </div>
-          <h2 className="text-xl font-bold text-slate-950 dark:text-white">No jobs match your criteria</h2>
+          <h2 className="text-xl font-bold text-slate-950 dark:text-white">
+            {jobs.length === 0 ? "No jobs available right now" : "No jobs match your criteria"}
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Try adjusting your role or location filter settings to view more opportunities.
+            {jobs.length === 0
+              ? "Live job sources didn't return results just now — try again shortly."
+              : "Try adjusting your role, location, or experience filters to view more opportunities."}
           </p>
           <div className="pt-2">
             <button

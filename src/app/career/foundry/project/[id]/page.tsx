@@ -13,9 +13,12 @@ import {
   MessageSquare,
   ArrowLeft,
   Hammer,
-  Sparkles
+  Code,
+  Sparkles,
+  Layers
 } from "lucide-react";
 import type { ProjectPhase } from "@/lib/mcp/types";
+import { recordUserActivity } from "@/lib/activity-tracker";
 
 const PHASE_LABELS = ["Conceptualize", "Design", "Build", "Test", "Deploy", "Review"];
 
@@ -59,6 +62,7 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
     const cmd = command.trim();
     setCommand("");
     setTerminalLines((prev) => [...prev, `$ ${cmd}`]);
+    recordUserActivity("foundry_command", { projectId: project.id, command: cmd });
 
     try {
       const res = await fetch("/api/mcp", {
@@ -118,6 +122,7 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
     if (!submission.trim() || !project) return;
     setSubmitting(true);
     setFeedback(null);
+    recordUserActivity("foundry_phase_submitted", { projectId: project.id, phase: project.current_phase });
     try {
       const res = await fetch("/api/mcp", {
         method: "POST",
@@ -267,7 +272,12 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
       {/* Three Panel Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: AI Terminal */}
-        <div className="lg:col-span-4 neu-card rounded-[28px] p-5 flex flex-col h-[520px]">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="lg:col-span-4 neu-card rounded-[28px] p-5 flex flex-col h-[420px] lg:h-[520px]"
+        >
           <div className="pb-3 border-b border-slate-200/60 dark:border-white/10 text-xs font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
             <Terminal size={15} className="text-cyan-500" />
             <span>AI Simulation Terminal</span>
@@ -290,14 +300,19 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
               placeholder="Type simulation command (e.g. npm test)..."
               className="flex-1 bg-transparent px-2.5 py-1 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none font-mono"
             />
-            <button onClick={runCommand} className="neu-btn p-2 rounded-xl text-cyan-600 dark:text-cyan-400">
+            <button onClick={runCommand} className="neu-btn p-2 rounded-xl text-cyan-600 dark:text-cyan-400 transition active:scale-90">
               <Send size={13} />
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Center: Phase Deliverable & Submission */}
-        <div className="lg:col-span-5 neu-card rounded-[28px] p-6 flex flex-col h-[520px] overflow-y-auto space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.08 }}
+          className="lg:col-span-5 neu-card rounded-[28px] p-6 flex flex-col h-[420px] lg:h-[520px] overflow-y-auto space-y-4"
+        >
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-950 dark:text-white">
@@ -367,10 +382,15 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
               <p className="text-xs leading-relaxed opacity-90">{String(feedback.feedback ?? "")}</p>
             </motion.div>
           )}
-        </div>
+        </motion.div>
 
         {/* Right: AI Mentor Chat */}
-        <div className="lg:col-span-3 neu-card rounded-[28px] p-5 flex flex-col h-[520px]">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.16 }}
+          className="lg:col-span-3 neu-card rounded-[28px] p-5 flex flex-col h-[420px] lg:h-[520px]"
+        >
           <div className="pb-3 border-b border-slate-200/60 dark:border-white/10 text-xs font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
             <MessageSquare size={15} className="text-indigo-500" />
             <span>AI Project Mentor</span>
@@ -406,11 +426,11 @@ export default function ProjectWorkspace({ params }: { params: { id: string } })
               placeholder="Ask mentor..."
               className="flex-1 bg-transparent px-2.5 py-1 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none"
             />
-            <button onClick={sendChat} className="neu-btn p-2 rounded-xl text-indigo-600 dark:text-indigo-400">
+            <button onClick={sendChat} className="neu-btn p-2 rounded-xl text-indigo-600 dark:text-indigo-400 transition active:scale-90">
               <Send size={13} />
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { runGitHubIntelligence } from '@/lib/github/analyser';
+import { syncGithubForUser } from '@/lib/github-sync';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -88,6 +89,24 @@ export async function POST() {
       try {
         emit('progress', { message: 'Starting GitHub analysis...' });
 
+        const { data: cache } = await serviceClient
+          .from('github_cache')
+          .select('repos')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const cachedRepos = (cache?.repos as unknown[] | null) ?? [];
+        if (cachedRepos.length === 0) {
+          emit('progress', { message: 'Syncing GitHub data...' });
+          try {
+            await syncGithubForUser(user.id, githubUsername);
+          } catch (syncErr) {
+            emit('error', { message: 'GitHub sync failed: ' + String(syncErr) });
+            controller.close();
+            return;
+          }
+        }
+
         const report = await runGitHubIntelligence(user.id, (msg) => {
           emit('progress', { message: msg });
         });
@@ -116,7 +135,10 @@ export async function POST() {
         emit('result', { report });
       } catch (err) {
         console.error('[GitHub Analyse API]', err);
-        emit('error', { message: String(err) });
+        const message = err instanceof Error && err.message === 'GITHUB_CACHE_EMPTY'
+          ? 'GitHub sync completed but returned no repositories. Check that your GitHub username is correct in Settings.'
+          : String(err);
+        emit('error', { message });
       } finally {
         controller.close();
       }

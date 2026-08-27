@@ -45,7 +45,7 @@ export async function generateRecommendations(userId: string): Promise<Recommend
 
   // 1. Get user context
   const { data: profile } = await supabase.from('users').select('stream').eq('id', userId).single();
-  const { data: lcProfile } = await supabase.from('leetcode_profiles').select('placement_readiness_score').eq('id', userId).single();
+  const { data: lcProfile } = await supabase.from('leetcode_profiles').select('placement_readiness_score').eq('user_id', userId).single();
   
   const context = {
     stream: profile?.stream || 'software engineering',

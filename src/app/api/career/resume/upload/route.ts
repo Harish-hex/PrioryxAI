@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
-import { hashContent } from '@/lib/rag/embeddings'
 
 export const maxDuration = 60;
 export const runtime = 'nodejs';
@@ -110,7 +109,7 @@ export async function POST(req: NextRequest) {
       console.error('[Resume API] No authenticated user')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.log('[Resume API] Authenticated user verified')
+    console.log('[Resume API] User:', user.id, user.email)
 
     // ── 2. Parse uploaded file ─────────────────────────────────
     const fileResult = await parseUploadedFile(req)
@@ -197,7 +196,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const resumeData = parseResult.data
+  let resumeData = parseResult.data
   console.log('[Resume API] Parsed name:', resumeData.name)
   console.log('[Resume API] Raw skills:', resumeData.skills?.length ?? 0)
 
@@ -305,6 +304,7 @@ export async function POST(req: NextRequest) {
   // ── 9. SAVE TO SUPABASE (the critical step) ─────────────────
 
   console.log('[Resume API] === SAVING TO SUPABASE ===')
+  console.log('[Resume API] user_id:', user.id)
   console.log('[Resume API] skills to save:', allSkills.length)
 
   // Step 9a: Check if row exists
@@ -314,7 +314,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  console.log('[Resume API] Existing row:', existingRow ? 'yes' : 'no')
+  console.log('[Resume API] Existing row:', existingRow?.id ?? 'NONE')
   if (checkErr) console.error('[Resume API] Check error:', checkErr)
 
   const resumePayload = {
@@ -337,7 +337,7 @@ export async function POST(req: NextRequest) {
 
   if (existingRow) {
     // UPDATE
-    console.log('[Resume API] Updating existing row')
+    console.log('[Resume API] Updating existing row:', existingRow.id)
     const { data: updated, error: updateErr } = await db
       .from('user_resumes')
       .update(resumePayload)
@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
       console.error('[Resume API] UPDATE details:', updateErr.details)
     } else {
       savedId = updated.id
-      console.log('[Resume API] UPDATE SUCCESS')
+      console.log('[Resume API] UPDATE SUCCESS. id:', savedId)
     }
   } else {
     // INSERT
@@ -368,7 +368,7 @@ export async function POST(req: NextRequest) {
       console.error('[Resume API] INSERT details:', insertErr.details)
     } else {
       savedId = inserted.id
-      console.log('[Resume API] INSERT SUCCESS')
+      console.log('[Resume API] INSERT SUCCESS. id:', savedId)
     }
   }
 
@@ -386,38 +386,6 @@ export async function POST(req: NextRequest) {
       console.error('[Resume API] Profile flag update failed:', profileErr.message)
     } else {
       console.log('[Resume API] Profile flag set to resume_uploaded=true')
-    }
-
-    if (allSkills.length > 0) {
-      await db.from('user_skills').upsert(
-        allSkills.slice(0, 80).map(skill => ({
-          user_id: user.id,
-          skill,
-          normalized_skill: skill.toLowerCase().replace(/[^a-z0-9+#.]+/g, ' ').trim(),
-          source: 'resume',
-          evidence: 'Extracted from uploaded resume',
-          confidence: 0.8,
-          updated_at: new Date().toISOString()
-        })),
-        { onConflict: 'user_id,normalized_skill,source' }
-      )
-    }
-
-    const preview = readResult.rawText.slice(0, 4000)
-    if (preview.length > 40) {
-      await db.from('ai_context_documents').upsert({
-        user_id: user.id,
-        source_type: 'resume',
-        source_id: savedId,
-        title: `${resumeData.name ?? 'Student'} Resume`,
-        content_preview: preview,
-        metadata: {
-          skills_count: allSkills.length,
-          extraction_method: readResult.method,
-        },
-        content_hash: hashContent(preview),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,source_type,source_id' }).then(() => undefined)
     }
   } else {
     console.error('[Resume API] savedId is null — RESUME NOT SAVED TO DB')
@@ -444,11 +412,12 @@ export async function POST(req: NextRequest) {
       skillsFound: allSkills.length,
       resumeId: savedId
     })
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[Resume API] UNHANDLED EXCEPTION:', error);
     return NextResponse.json(
-      { error: `Internal server error: ${error instanceof Error ? error.message : String(error)}` },
+      { error: `Internal server error: ${error.message || String(error)}` },
       { status: 500 }
     );
   }
 }
+

@@ -110,7 +110,10 @@ export async function GET() {
   }
 
   try {
-    const response = await openai.chat.completions.create({
+    // Bounded so a stalled OpenAI request can't block the dashboard panel
+    // indefinitely — falls through to the static fallback ideas below instead.
+    const response = await Promise.race([
+      openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -137,8 +140,10 @@ Rules:
           content: `Student skills: ${allSkills.join(', ')}\nSemester: ${profile?.semester ?? 'unknown'}`,
         },
       ],
-      max_tokens: 900,
-    });
+        max_tokens: 900,
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OpenAI timeout')), 5000)),
+    ]);
 
     const ideas = parseIdeas(response.choices[0]?.message?.content);
     if (!ideas || ideas.length === 0) {

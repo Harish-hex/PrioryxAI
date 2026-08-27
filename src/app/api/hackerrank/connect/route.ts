@@ -42,8 +42,7 @@ export async function POST(req: NextRequest) {
     const supabase = createServiceRoleClient();
 
     const body = await req.json();
-    const { codechef_username, gfg_username, codeforces_username, stream, targetCompanies } = body;
-    let { hackerrank_username } = body;
+    let { hackerrank_username, codechef_username, gfg_username, codeforces_username, stream, targetCompanies } = body;
 
     if (!hackerrank_username || !stream || !targetCompanies) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -121,14 +120,31 @@ export async function POST(req: NextRequest) {
     }
 
     // 4.5. Also upsert to unified user_coding_profiles table
-    await supabase.from('user_coding_profiles').upsert({
+    const { error: ucpError } = await supabase.from('user_coding_profiles').upsert({
       user_id: user.id,
       platform: 'hackerrank',
       username: hackerrank_username,
       data: fetchedData.hackerrank,
       connected: true,
       last_synced: new Date().toISOString()
-    }, { onConflict: 'user_id,platform' }).then(res => res, (e: any) => console.warn('user_coding_profiles upsert warn:', e.message));
+    }, { onConflict: 'user_id,platform' });
+    if (ucpError) console.warn('user_coding_profiles upsert warn:', ucpError.message);
+
+    // Practice recommendations are pure deterministic logic (badge-map driven,
+    // no external calls) — generate and save them independently of the AI
+    // analysis below. Previously both were awaited in the same try block, so
+    // an AI/OpenAI failure or timeout also silently dropped these, leaving
+    // the practice plan page permanently empty for that user.
+    const earnedBadges = analyzedHR.raw.badges || [];
+    const missingBadges = analyzedHR.missingBadges || [];
+    try {
+      const practiceRecs = await generateHRPracticeProblems(stream, missingBadges, earnedBadges, targetCompanies);
+      await supabase.from('multi_platform_profiles').update({
+        hr_practice_recommendations: practiceRecs as any,
+      }).eq('user_id', user.id);
+    } catch (e) {
+      console.error('[hackerrank connect] practice recommendations failed (profile still saved):', e);
+    }
 
     // AI analysis — previously fire-and-forget, which never completed on
     // Vercel because the serverless instance freezes as soon as the response
@@ -136,17 +152,24 @@ export async function POST(req: NextRequest) {
     // degrades gracefully instead of failing the connection.
     try {
       const aiAnalysis = await analyzeHackerRankWithAI(analyzedHR, stream, targetCompanies);
-
-      const earnedBadges = analyzedHR.raw.badges || [];
-      const missingBadges = analyzedHR.missingBadges || [];
-      const practiceRecs = await generateHRPracticeProblems(stream, missingBadges, earnedBadges, targetCompanies);
-
       await supabase.from('multi_platform_profiles').update({
         ai_analysis: aiAnalysis as any,
-        hr_practice_recommendations: practiceRecs as any,
       }).eq('user_id', user.id);
     } catch (e) {
       console.error('[hackerrank connect] AI analysis failed (profile still saved):', e);
+    }
+
+    // Invalidate the public/unified profile cache so the newly connected
+    // platform data shows up immediately instead of waiting out the TTL.
+    try {
+      const { withFallback, redis } = await import('@/lib/redis');
+      const { data: userRow } = await supabase.from('users').select('username').eq('id', user.id).maybeSingle();
+      if (userRow?.username) {
+        await withFallback(() => redis.del(`profile:${userRow.username}`), 0);
+      }
+      await withFallback(() => redis.del(`user-profile:${user.id}`), 0);
+    } catch (e) {
+      console.warn('[hackerrank connect] profile cache invalidation warn:', e);
     }
 
     return NextResponse.json({

@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
-import { errorMentionsColumn } from '@/lib/schema-migrations';
+import { ensureSchemaMigrations, errorMentionsColumn } from '@/lib/schema-migrations';
+import { checkRateLimit, visionRatelimit, visionRatelimitPro } from '@/lib/redis';
 // pdf-parse and mammoth are loaded dynamically to avoid webpack bundling issues in Next.js
 
 export const runtime = 'nodejs';
 
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_DOC_MIME = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+];
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
 const YEAR = new Date().getFullYear();
@@ -141,6 +148,30 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Every branch below (image OCR, PDF/DOCX/text extraction) calls OpenAI —
+  // this endpoint was previously unmetered, letting one authenticated user
+  // drive unbounded OpenAI spend. `visionRatelimit`/`visionRatelimitPro`
+  // already existed in src/lib/redis.ts for exactly this but were never
+  // wired in.
+  const { data: userData } = await supabase
+    .from('users')
+    .select('pro_status, pro_expires_at')
+    .eq('id', user.id)
+    .single();
+  const isPro =
+    userData?.pro_status &&
+    (!userData.pro_expires_at || new Date(userData.pro_expires_at) > new Date());
+
+  const rl = await checkRateLimit(isPro ? visionRatelimitPro : visionRatelimit, user.id);
+  if (rl.blocked) {
+    const msg = rl.reason === 'redis_error'
+      ? 'Service temporarily unavailable. Try again shortly.'
+      : isPro
+        ? "You've reached today's document/image upload limit. Try again tomorrow."
+        : "You've used your free upload for today. Upgrade to Pro for more, or try again tomorrow.";
+    return NextResponse.json({ error: msg }, { status: rl.reason === 'redis_error' ? 503 : 429 });
   }
 
   const formData: any = await request.formData();

@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 
+export const openaiConfigured = Boolean(process.env.OPENAI_API_KEY?.trim());
+
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });

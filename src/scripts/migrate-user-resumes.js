@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Client } = require('pg');
 
 const dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';

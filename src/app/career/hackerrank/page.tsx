@@ -128,16 +128,16 @@ export default function HackerRankConnectPage() {
     return (
       <div className="max-w-7xl mx-auto py-8 px-4 space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-slate-900">HackerRank Profile</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">HackerRank Profile</h1>
           <div className="flex gap-3">
-            <button className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium" onClick={() => router.push('/career/hackerrank/analysis')}>Deep Analysis</button>
-            <button className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium" onClick={() => router.push('/career/hackerrank/practice')}>Practice Plan</button>
-            <button className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium" onClick={() => router.push('/career/hackerrank/certifications')}>Certifications</button>
+            <button className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-sm font-medium transition-colors" onClick={() => router.push('/career/hackerrank/analysis')}>Deep Analysis</button>
+            <button className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-sm font-medium transition-colors" onClick={() => router.push('/career/hackerrank/practice')}>Practice Plan</button>
+            <button className="px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-sm font-medium transition-colors" onClick={() => router.push('/career/hackerrank/certifications')}>Certifications</button>
           </div>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Profile Connected</h2>
-          <p className="text-slate-600">Your profile is actively being analyzed. Navigate through the tabs to view insights.</p>
+        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Profile Connected</h2>
+          <p className="text-slate-600 dark:text-white/60">Your profile is actively being analyzed. Navigate through the tabs to view insights.</p>
         </div>
       </div>
     );
@@ -147,22 +147,22 @@ export default function HackerRankConnectPage() {
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">HackerRank Profile</h1>
-        <p className="text-slate-500 text-sm">Connect your profile to get skill analysis and badge recommendations tailored to your target companies.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">HackerRank Profile</h1>
+        <p className="text-slate-500 dark:text-white/50 text-sm">Connect your profile to get skill analysis and badge recommendations tailored to your target companies.</p>
       </div>
 
       {/* Connect Form */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8">
-        <h2 className="text-lg font-semibold text-slate-900 mb-5">Connect Your Profile</h2>
+      <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 md:p-8">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-5">Connect Your Profile</h2>
         <div className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">HackerRank Username *</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-white/70">HackerRank Username *</label>
             <div className="relative">
               <input
                 placeholder="e.g. johndoe"
                 value={hackerrankUsername}
                 onChange={(e) => setHackerrankUsername(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-indigo-500 transition-colors"
               />
               <div className="absolute right-3 top-3">
                 {isValidating && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
@@ -189,9 +189,9 @@ export default function HackerRankConnectPage() {
               { label: 'Codeforces (Optional)', value: codeforcesUsername, setter: setCodeforcesUsername },
             ].map(({ label, value, setter }) => (
               <div key={label} className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">{label}</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-white/70">{label}</label>
                 <input placeholder="username" value={value} onChange={(e) => setter(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors" />
+                  className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-indigo-500 transition-colors" />
               </div>
             ))}
           </div>
@@ -211,10 +211,10 @@ export default function HackerRankConnectPage() {
       </div>
 
       {/* Why HackerRank matters */}
-      <div className="border border-slate-200 rounded-2xl p-6">
+      <div className="border border-slate-200 dark:border-white/10 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-1">
           <Award size={18} className="text-amber-500" />
-          <h2 className="text-lg font-semibold text-slate-900">Why HackerRank matters for placements</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Why HackerRank matters for placements</h2>
         </div>
         <p className="text-sm text-slate-500 mb-5">
           90% of top Indian tech companies use HackerRank for online assessments. Here are the certifications to prioritise:
@@ -222,9 +222,9 @@ export default function HackerRankConnectPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {CERTIFICATIONS.map((cert) => (
-            <div key={cert.name} className="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 transition-colors bg-white">
+            <div key={cert.name} className="border border-slate-200 dark:border-white/10 rounded-xl p-4 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors bg-white dark:bg-white/5">
               <div className="flex justify-between items-start mb-2">
-                <span className="font-semibold text-sm text-slate-900">{cert.name}</span>
+                <span className="font-semibold text-sm text-slate-900 dark:text-white">{cert.name}</span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PRIORITY_STYLE[cert.priority]}`}>
                   {cert.priority}
                 </span>
@@ -241,13 +241,13 @@ export default function HackerRankConnectPage() {
 
         <div className="flex items-center gap-2 mb-3">
           <Code2 size={16} className="text-slate-500" />
-          <h3 className="font-semibold text-sm text-slate-900">Recommended Practice Domains</h3>
+          <h3 className="font-semibold text-sm text-slate-900 dark:text-white">Recommended Practice Domains</h3>
         </div>
         <div className="space-y-2">
           {PRACTICE_DOMAINS.map((domain) => (
-            <div key={domain.domain} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div key={domain.domain} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
               <div>
-                <span className="text-sm font-medium text-slate-900">{domain.domain}</span>
+                <span className="text-sm font-medium text-slate-900 dark:text-white">{domain.domain}</span>
                 <span className="text-xs text-slate-400 ml-2">{domain.problems} problems</span>
                 <p className="text-xs text-slate-500 mt-0.5">{domain.relevance}</p>
               </div>

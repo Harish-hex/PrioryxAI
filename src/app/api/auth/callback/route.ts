@@ -1,49 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { syncGithubForUser } from '@/lib/github-sync';
+import { resolveTrustedBaseUrl } from '@/lib/auth-redirect';
 
 export const runtime = 'nodejs';
-
-function getRequestBaseUrl(request: NextRequest, origin: string) {
-  const forwardedHost = request.headers.get('x-forwarded-host');
-  const forwardedProto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '');
-  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const originHost = new URL(origin).hostname;
-
-  if (originHost === 'localhost' || originHost === '127.0.0.1') {
-    return origin;
-  }
-
-  // Only trust X-Forwarded-Host when it matches the configured app host — this
-  // URL becomes the post-login redirect destination, so an unvalidated
-  // forwarded header here would let a spoofed request redirect a real login
-  // to an attacker-chosen origin.
-  let configuredHost: string | null = null;
-  if (configuredAppUrl) {
-    try {
-      configuredHost = new URL(configuredAppUrl).hostname.toLowerCase();
-    } catch {
-      configuredHost = null;
-    }
-  }
-
-  if (forwardedHost && configuredHost && forwardedHost.split(':')[0].toLowerCase() === configuredHost) {
-    return `${forwardedProto}://${forwardedHost}`;
-  }
-
-  if (configuredAppUrl?.startsWith('https://')) {
-    return configuredAppUrl.replace(/\/$/, '');
-  }
-
-  return origin;
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const providerError = searchParams.get('error');
   const providerErrorDescription = searchParams.get('error_description');
-  const popup = searchParams.get('popup') === '1';
   let next = searchParams.get('next') ?? '/feed';
 
   if (!next.startsWith('/')) {
@@ -55,25 +21,19 @@ export async function GET(request: NextRequest) {
       providerError,
       providerErrorDescription,
     });
-    if (popup) {
-      return NextResponse.redirect(`${origin}/auth/popup-complete?error=auth_failed`);
-    }
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
   if (!code) {
-    if (popup) {
-      return NextResponse.redirect(`${origin}/auth/popup-complete?error=no_code`);
-    }
     return NextResponse.redirect(`${origin}/login?error=no_code`);
   }
 
-  const forwardedProto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '');
-  const baseUrl = getRequestBaseUrl(request, origin);
-  const secureCookie =
-    forwardedProto === 'https' ||
-    request.nextUrl.protocol === 'https:' ||
-    baseUrl.startsWith('https://');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+  const isLocalEnv = process.env.NODE_ENV === 'development';
+  const baseUrl = isLocalEnv
+    ? origin
+    : resolveTrustedBaseUrl(forwardedHost, forwardedProto, origin);
 
   // Prepare a redirect response so Supabase can write session cookies onto it.
   // We keep the final response object and move cookies onto the final destination explicitly.
@@ -92,7 +52,7 @@ export async function GET(request: NextRequest) {
             cookieCarrier.cookies.set(name, value, {
               ...options,
               httpOnly: true,
-              secure: secureCookie,
+              secure: process.env.NODE_ENV === 'production',
               sameSite: 'lax',
             });
           });
@@ -104,20 +64,12 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error('[auth/callback] exchangeCodeForSession failed:', error.message, error.status);
-    if (popup) {
-      return NextResponse.redirect(`${origin}/auth/popup-complete?error=auth_failed`);
-    }
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
-  const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    console.error('[auth/callback] getUser() returned no user after successful code exchange:', getUserError?.message);
-    if (popup) {
-      return NextResponse.redirect(`${origin}/auth/popup-complete?error=auth_failed`);
-    }
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
@@ -168,8 +120,7 @@ export async function GET(request: NextRequest) {
   // `next` is also used by the onboarding flow itself: after connecting GitHub during
   // onboarding, we pass next=/onboarding?step=3 so they jump back into the wizard.
   const destination = isNew ? '/onboarding' : next;
-  const popupDestination = `/auth/popup-complete?next=${encodeURIComponent(destination)}`;
-  const finalRedirect = NextResponse.redirect(`${baseUrl}${popup ? popupDestination : destination}`);
+  const finalRedirect = NextResponse.redirect(`${baseUrl}${destination}`);
 
   cookieCarrier.cookies.getAll().forEach((cookie) => {
     finalRedirect.cookies.set(cookie);

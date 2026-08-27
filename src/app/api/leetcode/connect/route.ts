@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase-server';
-import { fetchFullLeetCodeProfile, fetchSolved } from '@/lib/leetcode/alfa-api';
+import { fetchFullLeetCodeProfile, fetchSolved, fetchProfile } from '@/lib/leetcode/alfa-api';
 import { computePlacementReadinessScore, analyzeProfile } from '@/lib/leetcode/ai-analyzer';
 import { saveMockProfile } from '@/lib/mock-db';
 import { UserStream } from '@/lib/leetcode/types';
@@ -139,14 +139,15 @@ export async function POST(req: Request) {
     }
 
     // 4.5. Also upsert to unified user_coding_profiles table
-    await db.from('user_coding_profiles').upsert({
+    const { error: ucpError } = await db.from('user_coding_profiles').upsert({
       user_id: user.id,
       platform: 'leetcode',
       username: username,
       data: fullData,
       connected: true,
       last_synced: new Date().toISOString()
-    }, { onConflict: 'user_id,platform' }).then(res => res, e => console.warn('user_coding_profiles upsert warn:', e.message));
+    }, { onConflict: 'user_id,platform' });
+    if (ucpError) console.warn('user_coding_profiles upsert warn:', ucpError.message);
 
     // 5. AI analysis.
     // This used to be fire-and-forget. On Vercel the serverless instance is
@@ -169,6 +170,19 @@ export async function POST(req: Request) {
       ]);
     } catch (e) {
       console.error('[leetcode connect] AI analysis failed (profile still saved):', e);
+    }
+
+    // Invalidate the public/unified profile cache so the newly connected
+    // platform data shows up immediately instead of waiting out the TTL.
+    try {
+      const { withFallback, redis } = await import('@/lib/redis');
+      const { data: userRow } = await db.from('users').select('username').eq('id', user.id).maybeSingle();
+      if (userRow?.username) {
+        await withFallback(() => redis.del(`profile:${userRow.username}`), 0);
+      }
+      await withFallback(() => redis.del(`user-profile:${user.id}`), 0);
+    } catch (e) {
+      console.warn('[leetcode connect] profile cache invalidation warn:', e);
     }
 
     // 6. Return success

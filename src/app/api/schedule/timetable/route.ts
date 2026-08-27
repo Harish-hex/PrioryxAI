@@ -61,9 +61,10 @@ export async function POST(req: Request) {
     const db = createServiceRoleClient();
 
     // Replace user's old timetable records
-    try {
-      await db.from('schedule_timetable').delete().eq('user_id', user.id);
-    } catch {}
+    const { error: deleteError } = await db.from('schedule_timetable').delete().eq('user_id', user.id);
+    if (deleteError) {
+      console.error('[Schedule Extract] DB Delete Error:', deleteError.message);
+    }
 
     const { error: dbError } = await db
       .from('schedule_timetable')
@@ -71,16 +72,11 @@ export async function POST(req: Request) {
 
     if (dbError) {
       console.error('[Schedule Extract] DB Insert Error:', dbError.message);
+      return NextResponse.json(
+        { error: 'Extracted the timetable but failed to save it. Please try again.' },
+        { status: 500 }
+      );
     }
-
-    // Keep user_timetables synced
-    try {
-      await db.from('user_timetables').upsert({
-        user_id: user.id,
-        entries,
-        extracted_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
-    } catch {}
 
     return NextResponse.json({
       success: true,
@@ -95,7 +91,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -111,16 +107,6 @@ export async function GET(_req: Request) {
       .eq('user_id', user.id);
 
     if (error || !data || data.length === 0) {
-      // Fallback to user_timetables table
-      const { data: fallbackData } = await db
-        .from('user_timetables')
-        .select('entries')
-        .eq('user_id', user.id)
-        .single();
-
-      if (fallbackData?.entries) {
-        return NextResponse.json({ entries: fallbackData.entries });
-      }
       return NextResponse.json({ entries: [] });
     }
 

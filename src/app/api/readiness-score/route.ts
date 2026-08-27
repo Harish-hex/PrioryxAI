@@ -32,7 +32,14 @@ async function gatherInputs(userId: string): Promise<ReadinessInputs> {
       .maybeSingle(),
     supabase
       .from('leetcode_profiles')
-      .select('placement_readiness_score, total_solved, ai_analysis')
+      // `total_solved` is not a real column on this table (it never existed —
+      // confirmed against the migration) — selecting it made this entire
+      // query fail on every request, silently marking Coding Practice
+      // "unavailable" for every user regardless of whether LeetCode was
+      // actually connected. Real solved counts live in `solved_data`
+      // (a SolvedStats blob), and calendar_data carries the daily submission
+      // history needed for the weekly-solved streak signal.
+      .select('placement_readiness_score, solved_data, calendar_data, ai_analysis')
       .eq('user_id', userId)
       .maybeSingle(),
     supabase
@@ -73,18 +80,46 @@ async function gatherInputs(userId: string): Promise<ReadinessInputs> {
   const repos: Array<{ description?: string }> = (github?.repos as Array<{ description?: string }>) ?? [];
   const reposWithDescription = repos.filter((r) => r.description?.trim()).length;
 
-  // LeetCode stats from ai_analysis if available
-  const lcAnalysis = lc?.ai_analysis as {
-    total_solved?: number;
-    medium_solved?: number;
-    hard_solved?: number;
-    weekly_solved?: number;
+  // `contribution_days` is an array of { date, count } entries (up to 182
+  // days), not a number — passing the array straight through as a count
+  // (as this used to do) coerces to NaN in arithmetic below and corrupts
+  // the entire final score to NaN for any GitHub-connected user. Compute
+  // the actual "active days in the last 30 days" count instead.
+  const contributionEntries: Array<{ date: string; count: number }> =
+    (github?.contribution_days as Array<{ date: string; count: number }>) ?? [];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+  const contributionDays30 = contributionEntries.filter(
+    (d) => d.count > 0 && new Date(d.date) >= thirtyDaysAgo
+  ).length;
+
+  // Real solved counts live in solved_data (a SolvedStats blob written at
+  // connect/sync time) — ai_analysis never contained these fields, so they
+  // were always 0/undefined regardless of actual LeetCode activity.
+  const solvedData = lc?.solved_data as {
+    solvedProblem?: number;
+    mediumSolved?: number;
+    hardSolved?: number;
   } | null;
-  const totalSolved   = lcAnalysis?.total_solved   ?? 0;
-  const mediumSolved  = lcAnalysis?.medium_solved  ?? 0;
-  const hardSolved    = lcAnalysis?.hard_solved    ?? 0;
+  const totalSolved  = solvedData?.solvedProblem ?? 0;
+  const mediumSolved = solvedData?.mediumSolved ?? 0;
+  const hardSolved   = solvedData?.hardSolved ?? 0;
   const mediumHardRatio = totalSolved > 0 ? (mediumSolved + hardSolved) / totalSolved : 0;
-  const leetcodeSolvedLast7 = lcAnalysis?.weekly_solved ?? 0;
+
+  // Weekly solve count from the submission calendar (a stringified JSON map
+  // of unix-day-timestamp -> submission count for that day).
+  let leetcodeSolvedLast7 = 0;
+  const rawCalendar = (lc?.calendar_data as { submissionCalendar?: string } | null)?.submissionCalendar;
+  if (rawCalendar) {
+    try {
+      const parsed = JSON.parse(rawCalendar) as Record<string, number>;
+      const sevenDaysAgoUnix = Math.floor(Date.now() / 1000) - 7 * 86_400;
+      leetcodeSolvedLast7 = Object.entries(parsed)
+        .filter(([ts]) => Number(ts) >= sevenDaysAgoUnix)
+        .reduce((sum, [, count]) => sum + count, 0);
+    } catch {
+      // Malformed/missing calendar data — leave at 0 rather than fail the request.
+    }
+  }
 
   const skills: string[] =
     (resume?.skill_entities as { skills?: string[] } | null)?.skills ?? [];
@@ -113,7 +148,7 @@ async function gatherInputs(userId: string): Promise<ReadinessInputs> {
       upcomingDeadlineCount: upcomingRes.status === 'fulfilled' ? (upcomingRes.value.count ?? 0) : 0,
     },
     streak: {
-      contributionDays30: github?.contribution_days ?? 0,
+      contributionDays30,
       leetcodeSolvedLast7,
     },
   };

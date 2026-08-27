@@ -13,31 +13,42 @@ export function ContributionHeatmap({ calendarString }: { calendarString: string
     }
   }, [calendarString]);
 
-  // Construct a 52x7 grid
-  // In a real scenario we'd align exactly to the last 365 days. 
-  // For simplicity, we'll build a fixed grid of 52 weeks (cols) x 7 days (rows)
-  const cols = 52;
+  // LeetCode's `calendarString` keys are UTC-day epoch-second timestamps
+  // (midnight UTC). Bucketing with local-timezone midnight caused off-by-one-day
+  // cells for any user not in UTC — so every date here is computed in UTC.
   const rows = 7;
   const cellSize = 12;
   const gap = 3;
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   const now = new Date();
-  const oneYearAgo = new Date(now.getTime() - 364 * 24 * 60 * 60 * 1000);
-  oneYearAgo.setHours(0,0,0,0);
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const rangeStartUtc = todayUtc - 364 * DAY_MS;
+
+  // Align the grid's first column to the actual weekday (Sun=0) of the start
+  // date, like GitHub's heatmap, instead of assuming a fixed offset.
+  const startWeekday = new Date(rangeStartUtc).getUTCDay();
+  const gridStartUtc = rangeStartUtc - startWeekday * DAY_MS;
+  const totalDays = Math.ceil((todayUtc - gridStartUtc) / DAY_MS) + 1;
+  const cols = Math.ceil(totalDays / rows);
 
   const cells = [];
-  const currentDate = new Date(oneYearAgo);
+  let cursorUtc = gridStartUtc;
 
   for (let c = 0; c < cols; c++) {
     const colCells = [];
     for (let r = 0; r < rows; r++) {
-      const ts = Math.floor(currentDate.getTime() / 1000).toString();
+      const cellDate = new Date(cursorUtc);
+      const ts = Math.floor(cursorUtc / 1000).toString();
       const count = data[ts] || 0;
-      
+      const isFuture = cursorUtc > todayUtc;
+
       let fill = '#27272a'; // gray
-      if (count > 0 && count <= 2) fill = '#064e3b'; // very dark green
-      else if (count > 2 && count <= 5) fill = '#047857';
-      else if (count > 5) fill = '#10b981';
+      if (!isFuture) {
+        if (count > 0 && count <= 2) fill = '#064e3b'; // very dark green
+        else if (count > 2 && count <= 5) fill = '#047857';
+        else if (count > 5) fill = '#10b981';
+      }
 
       colCells.push(
         <rect
@@ -49,12 +60,13 @@ export function ContributionHeatmap({ calendarString }: { calendarString: string
           fill={fill}
           rx={2}
           ry={2}
+          opacity={isFuture ? 0 : 1}
           className="transition-colors hover:stroke-white hover:stroke-1"
         >
-          <title>{`${count} submissions on ${currentDate.toDateString()}`}</title>
+          {!isFuture && <title>{`${count} submissions on ${cellDate.toDateString()}`}</title>}
         </rect>
       );
-      currentDate.setDate(currentDate.getDate() + 1);
+      cursorUtc += DAY_MS;
     }
     cells.push(<g key={c}>{colCells}</g>);
   }

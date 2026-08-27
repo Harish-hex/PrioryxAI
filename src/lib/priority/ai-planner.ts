@@ -6,8 +6,6 @@ import { collectResumeSignals } from './collectors/resume-collector'
 import { collectProjectSignals } from './collectors/project-collector'
 import { collectSubjectSignals } from './collectors/subject-collector'
 import { signalToTask, PriorityTaskRow } from './task-generator'
-import { buildUserContext } from '@/lib/context/user-context'
-import { getRecentFeedbackSignals } from '@/lib/feedback/events'
 
 export interface DailyPlan {
   todaysFocus: string
@@ -42,8 +40,6 @@ export async function generateDailyPlan(
 
   const companies = (profile?.target_companies ?? []) as string[]
   const skills = (resume?.skill_entities as { skills?: string[] } | null)?.skills ?? []
-  const unifiedContext = await buildUserContext(db, userId, { taskLimit: 10, includeFeedback: true }).catch(() => null)
-  const feedbackSignals = await getRecentFeedbackSignals(db, userId, 30).catch(() => null)
 
   // Extract weak topics from LeetCode AI analysis
   const lcWeakTopics = (lcProfile?.ai_analysis as {
@@ -102,9 +98,6 @@ export async function generateDailyPlan(
   const totalMinutesToday = todaysTasks.reduce(
     (sum, t) => sum + t.estimated_minutes, 0
   )
-  const availableMinutesToday = unifiedContext?.workCapacity.availableHoursPerWeek
-    ? Math.round((unifiedContext.workCapacity.availableHoursPerWeek * 60) / 7)
-    : null
 
   // ── Build urgent alerts ───────────────────────────────────
   const urgentAlerts: string[] = []
@@ -139,12 +132,6 @@ export async function generateDailyPlan(
   }
   if (dsa.length > 0 && lcWeakTopics.length > 0) {
     insights.push(`Weak topics detected: ${lcWeakTopics.slice(0, 3).join(', ')} — today's DSA picks target these`)
-  }
-  if (availableMinutesToday && totalMinutesToday > availableMinutesToday) {
-    insights.push(`Today's plan is ${totalMinutesToday} min against an estimated ${availableMinutesToday} min/day capacity — defer lower-priority work if needed`)
-  }
-  if (feedbackSignals && feedbackSignals.postponed > feedbackSignals.completed) {
-    insights.push('Recent postponements suggest reducing scope and finishing the highest-impact task first')
   }
 
   // ── Build today's focus headline ──────────────────────────

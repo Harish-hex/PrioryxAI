@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { openai, sanitize } from '@/lib/openai';
 import { withFallback, redis } from '@/lib/redis';
+import { getAggregatedUserContributions } from '@/lib/activity-aggregator';
 
 export const runtime = 'nodejs';
 
@@ -50,14 +51,26 @@ export async function GET(
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  const [{ data: github }, { data: tasks }] = await Promise.all([
+  const [{ data: github }, { data: tasks }, { data: leetcode }, { data: multiPlatform }] = await Promise.all([
     supabase
       .from('github_cache')
       .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
       .eq('user_id', user.id)
-      .single(),
+      .maybeSingle(),
     supabase.from('tasks').select('completed').eq('user_id', user.id),
+    supabase
+      .from('leetcode_profiles')
+      .select('leetcode_username, solved_data, contest_info, placement_readiness_score, last_synced_at')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('multi_platform_profiles')
+      .select('hackerrank_username, hackerrank_data, hackerrank_score, codechef_username, codeforces_username, gfg_username, last_synced_at')
+      .eq('user_id', user.id)
+      .maybeSingle(),
   ]);
+
+  const aggregated = await getAggregatedUserContributions(user.id, supabase, github);
 
   let projectBullets: string[] = [];
   const repos: any[] = Array.isArray(github?.repos) ? [...github.repos] : [];
@@ -163,12 +176,38 @@ Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), desc
       ...publicUser,
       subjects: null,
       github_health_score: github?.health_score ?? (user.github_username ? 33 : 0),
-      github_streak_days: github?.streak_days ?? 0,
+      github_streak_days: aggregated.streak_days,
       top_repos: topReposList,
       project_bullets: projectBullets,
-      contribution_days: (github?.contribution_days ?? []) as { date: string; count: number }[],
+      contribution_days: aggregated.contribution_days,
+      total_contributions: aggregated.total_contributions,
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
+      coding_profiles: {
+        leetcode: leetcode
+          ? {
+              username: leetcode.leetcode_username,
+              total_solved: (leetcode.solved_data as any)?.totalSolved ?? null,
+              easy_solved: (leetcode.solved_data as any)?.easySolved ?? null,
+              medium_solved: (leetcode.solved_data as any)?.mediumSolved ?? null,
+              hard_solved: (leetcode.solved_data as any)?.hardSolved ?? null,
+              rating: (leetcode.contest_info as any)?.rating ?? null,
+              placement_readiness_score: leetcode.placement_readiness_score ?? null,
+              last_synced_at: leetcode.last_synced_at,
+            }
+          : null,
+        hackerrank: multiPlatform?.hackerrank_username
+          ? {
+              username: multiPlatform.hackerrank_username,
+              score: multiPlatform.hackerrank_score ?? null,
+              badges: (multiPlatform.hackerrank_data as any)?.badges ?? null,
+              last_synced_at: multiPlatform.last_synced_at,
+            }
+          : null,
+        codechef: multiPlatform?.codechef_username ?? null,
+        codeforces: multiPlatform?.codeforces_username ?? null,
+        gfg: multiPlatform?.gfg_username ?? null,
+      },
     },
   };
 

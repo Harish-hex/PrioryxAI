@@ -13,7 +13,8 @@ export function ExamPreview({ entries, onClear }: { entries: ExamEntry[], onClea
     <div className="mt-4">
       <div className="space-y-3">
         {sortedEntries.map((entry, i) => {
-          const priorityColor = entry.priority === "high"
+          const typeIcon = entry.type === "exam" ? "EXAM" : entry.type === "assignment" ? "ASSIGNMENT" : "EVENT";
+          const priorityColor = entry.priority === "high" 
             ? "border-l-red-500" 
             : entry.priority === "medium" 
             ? "border-l-amber-500" 

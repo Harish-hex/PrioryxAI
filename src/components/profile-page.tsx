@@ -1,9 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, BriefcaseBusiness, Check, Code2, GitFork, MapPin, Share2, Star, Trophy } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Check, Code2, Flame, GitFork, MapPin, Share2, Star, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LoadingLine } from "@/components/loading-skeletons";
+import { calculateStreakFromDays, getTodayDateStr } from "@/lib/activity-tracker";
+import { ReadinessScoreCard } from "@/components/readiness-score-card";
 
 interface GithubRepo {
   name: string;
@@ -30,25 +32,51 @@ interface ProfileData {
   top_repos: GithubRepo[] | null;
   project_bullets: string[] | null;
   contribution_days: ContributionDay[] | null;
+  total_contributions?: number;
   total_tasks: number;
   completed_tasks: number;
+  coding_profiles?: {
+    leetcode: {
+      username: string;
+      total_solved: number | null;
+      easy_solved: number | null;
+      medium_solved: number | null;
+      hard_solved: number | null;
+      rating: number | null;
+      placement_readiness_score: number | null;
+      last_synced_at: string | null;
+    } | null;
+    hackerrank: {
+      username: string;
+      score: number | null;
+      badges: unknown;
+      last_synced_at: string | null;
+    } | null;
+    codechef: string | null;
+    codeforces: string | null;
+    gfg: string | null;
+  } | null;
 }
 
 interface ProfilePageProps {
   username: string;
+  /** True when viewing your own profile (the in-app /profile route) — skips the
+   *  public /api/profile/[username] endpoint, which regenerates AI resume bullets
+   *  on every cache miss and is far slower than the self /api/user/profile lookup. */
+  isOwnProfile?: boolean;
 }
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Green scale matching the reference image:
-// 0: Crisp rounded off-white pill
+// Green scale matching GitHub & high-contrast dark aesthetic:
+// 0: Dark clean pill border for zero-activity days
 // 1: Light mint green (#9be9a8)
 // 2: Vibrant green (#4ade80)
 // 3: Strong emerald green (#22c55e)
 // 4: Deep forest green (#166534)
 const CONTRIBUTION_LEVEL_STYLES = [
-  "bg-white border border-slate-200 dark:border-white/10 dark:bg-[#f4f4f5]",
+  "bg-zinc-800/80 border border-zinc-700/60 dark:bg-[#181b20] dark:border-white/10 hover:border-zinc-500",
   "bg-[#9be9a8] border border-emerald-300 shadow-[0_0_4px_rgba(155,233,168,0.4)]",
   "bg-[#4ade80] border border-emerald-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]",
   "bg-[#22c55e] border border-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
@@ -63,18 +91,33 @@ function countToLevel(count: number): number {
   return 4;
 }
 
+function formatDateDisplay(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
+
 function ContributionGraph({ days }: { days: ContributionDay[] }) {
+  const [hoveredDay, setHoveredDay] = useState<{ dateStr: string; count: number } | null>(null);
+
   // Map date string -> count
   const daysMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const d of days) {
-      map.set(d.date, d.count);
+    for (const d of days || []) {
+      if (d.date) {
+        const key = d.date.slice(0, 10);
+        map.set(key, (map.get(key) ?? 0) + Number(d.count ?? 0));
+      }
     }
     return map;
   }, [days]);
 
   // Generate 52 weeks (364 days) leading up to today
-  const { weeks, monthHeaders } = useMemo(() => {
+  const { weeks, monthHeaders, totalYearCount } = useMemo(() => {
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Sun
     
@@ -89,6 +132,7 @@ function ContributionGraph({ days }: { days: ContributionDay[] }) {
     const generatedWeeks: Array<Array<{ dateStr: string; count: number; level: number; isFuture: boolean }>> = [];
     const months: Array<{ month: string; colIndex: number }> = [];
     let lastMonth = -1;
+    let totalCount = 0;
 
     const cursor = new Date(startDate);
     for (let w = 0; w < 52; w++) {
@@ -100,31 +144,32 @@ function ContributionGraph({ days }: { days: ContributionDay[] }) {
       }
 
       for (let d = 0; d < 7; d++) {
-        const dateStr = cursor.toISOString().split("T")[0];
+        const dateStr = getTodayDateStr(cursor);
         const isFuture = cursor > today;
         const count = isFuture ? 0 : (daysMap.get(dateStr) ?? 0);
         const level = isFuture ? 0 : countToLevel(count);
+        if (!isFuture) totalCount += count;
         weekDays.push({ dateStr, count, level, isFuture });
         cursor.setDate(cursor.getDate() + 1);
       }
       generatedWeeks.push(weekDays);
     }
 
-    return { weeks: generatedWeeks, monthHeaders: months };
+    return { weeks: generatedWeeks, monthHeaders: months, totalYearCount: totalCount };
   }, [daysMap]);
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[24px] bg-[#111315] p-5 text-white shadow-2xl">
+    <div className="mt-5 overflow-hidden rounded-[24px] bg-[#0d0f12] p-4 text-white shadow-lg ring-1 ring-white/5 relative sm:p-6">
       {/* Scrollable Graph Area */}
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
-        <div className="inline-block min-w-[760px]">
+      <div className="overflow-x-auto pb-2 [scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-700">
+        <div className="inline-block min-w-[780px]">
           {/* Month labels */}
           <div className="mb-2 flex text-[11px] font-semibold text-zinc-400 pl-8">
-            <div className="grid grid-flow-col auto-cols-[13px] gap-[3px]">
+            <div className="grid grid-flow-col auto-cols-[14px] gap-[4px]">
               {weeks.map((_, colIdx) => {
                 const header = monthHeaders.find((m) => m.colIndex === colIdx);
                 return (
-                  <div key={colIdx} className="w-[13px] text-left">
+                  <div key={colIdx} className="w-[14px] text-left">
                     {header ? header.month : ""}
                   </div>
                 );
@@ -135,118 +180,74 @@ function ContributionGraph({ days }: { days: ContributionDay[] }) {
           {/* Grid with Day labels */}
           <div className="flex items-start gap-2">
             {/* Day of week labels */}
-            <div className="grid grid-rows-7 gap-[3px] text-[10px] font-medium text-zinc-500 pt-[1px] leading-[13px]">
+            <div className="grid grid-rows-7 gap-[4px] text-[10px] font-medium text-zinc-500 pt-[1px] leading-[14px]">
               {DAY_LABELS.map((day, idx) => (
-                <div key={day} className="h-[13px] text-right pr-1">
+                <div key={day} className="h-[14px] text-right pr-1">
                   {idx % 2 === 0 ? day : ""}
                 </div>
               ))}
             </div>
 
             {/* 52 Columns of 7 Pills */}
-            <div className="grid grid-flow-col auto-cols-[13px] grid-rows-7 gap-[3px]">
+            <div className="grid grid-flow-col auto-cols-[14px] grid-rows-7 gap-[4px]">
               {weeks.map((week, wIdx) =>
-                week.map((day, dIdx) => (
-                  <div
-                    key={`${wIdx}-${dIdx}`}
-                    title={`${day.dateStr}: ${day.count} contributions`}
-                    className={`h-[13px] w-[13px] rounded-[3px] transition-all hover:scale-125 hover:z-10 ${
-                      day.isFuture
-                        ? "opacity-20 bg-zinc-800"
-                        : CONTRIBUTION_LEVEL_STYLES[day.level]
-                    }`}
-                  />
-                ))
+                week.map((day, dIdx) => {
+                  const tooltipText = day.isFuture
+                    ? "Future date"
+                    : day.count > 0
+                    ? `${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${formatDateDisplay(day.dateStr)}`
+                    : `No contributions on ${formatDateDisplay(day.dateStr)}`;
+
+                  return (
+                    <div
+                      key={`${wIdx}-${dIdx}`}
+                      title={tooltipText}
+                      aria-label={tooltipText}
+                      onMouseEnter={() => !day.isFuture && setHoveredDay({ dateStr: day.dateStr, count: day.count })}
+                      onMouseLeave={() => setHoveredDay(null)}
+                      className={`h-[14px] w-[14px] rounded-[3px] transition-all duration-150 cursor-pointer hover:scale-125 hover:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:z-20 ${
+                        day.isFuture
+                          ? "opacity-20 bg-zinc-800 pointer-events-none"
+                          : CONTRIBUTION_LEVEL_STYLES[day.level]
+                      }`}
+                    />
+                  );
+                })
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Legend and Scroll Indicator */}
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-800/80 pt-3 text-[11px] text-zinc-400">
+      {/* Floating Hover Info or Legend */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800/80 pt-3 text-[11px] text-zinc-400">
         <div className="flex items-center gap-1.5 font-medium">
           <span>Less</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-[3px]">
             {CONTRIBUTION_LEVEL_STYLES.map((cls, idx) => (
               <div key={idx} className={`h-2.5 w-2.5 rounded-[2px] ${cls}`} />
             ))}
           </div>
           <span>More</span>
         </div>
-        <span className="text-[10px] text-zinc-500">52 weeks activity</span>
+
+        <div className="text-[11px] font-medium text-zinc-400 min-h-[14px]">
+          {hoveredDay ? (
+            <span className="text-emerald-400 font-semibold">
+              {hoveredDay.count} {hoveredDay.count === 1 ? "activity" : "activities"} on {formatDateDisplay(hoveredDay.dateStr)}
+            </span>
+          ) : (
+            <span className="text-zinc-500">
+              {totalYearCount} {totalYearCount === 1 ? "activity" : "activities"} across tasks, videos & GitHub
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function PlaceholderGraph() {
-  // Generate sample aesthetic pattern matching reference
-  const randomPattern = useMemo(() => {
-    return Array.from({ length: 42 }, () =>
-      Array.from({ length: 7 }, () => {
-        const r = Math.random();
-        if (r > 0.85) return 3;
-        if (r > 0.65) return 2;
-        if (r > 0.45) return 1;
-        return 0;
-      })
-    );
-  }, []);
-
-  return (
-    <div className="mt-5 overflow-hidden rounded-[24px] bg-[#111315] p-5 text-white shadow-2xl">
-      <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
-        <div className="inline-block min-w-[700px]">
-          {/* Months */}
-          <div className="mb-2 flex text-[11px] font-semibold text-zinc-400 pl-8 gap-10">
-            {["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"].map((m) => (
-              <span key={m}>{m}</span>
-            ))}
-          </div>
-
-          <div className="flex items-start gap-2">
-            <div className="grid grid-rows-7 gap-[3px] text-[10px] font-medium text-zinc-500 leading-[13px]">
-              {DAY_LABELS.map((day, idx) => (
-                <div key={day} className="h-[13px] text-right pr-1">
-                  {idx % 2 === 0 ? day : ""}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-flow-col auto-cols-[13px] grid-rows-7 gap-[3px]">
-              {randomPattern.map((week, wIdx) =>
-                week.map((level, dIdx) => (
-                  <div
-                    key={`${wIdx}-${dIdx}`}
-                    className={`h-[13px] w-[13px] rounded-[3px] transition-all hover:scale-125 ${
-                      CONTRIBUTION_LEVEL_STYLES[level]
-                    }`}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-800/80 pt-3 text-[11px] text-zinc-400">
-        <div className="flex items-center gap-1.5 font-medium">
-          <span>Less</span>
-          <div className="flex items-center gap-1">
-            {CONTRIBUTION_LEVEL_STYLES.map((cls, idx) => (
-              <div key={idx} className={`h-2.5 w-2.5 rounded-[2px] ${cls}`} />
-            ))}
-          </div>
-          <span>More</span>
-        </div>
-        <span className="text-[10px] text-zinc-500">Live shipping record</span>
-      </div>
-    </div>
-  );
-}
-
-export function ProfilePage({ username }: ProfilePageProps) {
+export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -262,7 +263,7 @@ export function ProfilePage({ username }: ProfilePageProps) {
           url,
         });
         return;
-      } catch {
+      } catch (err) {
         // Fallback to clipboard
       }
     }
@@ -280,35 +281,59 @@ export function ProfilePage({ username }: ProfilePageProps) {
 
     async function load() {
       try {
-        const requests: Promise<Response>[] = username
-          ? [fetch(`/api/profile/${encodeURIComponent(username)}`)]
-          : [fetch("/api/user/profile")];
-        const [profileRes, userRes] = await Promise.allSettled(requests);
-
+        // Own profile: hit only the fast self endpoint (cached 60s, no AI calls).
+        // Public profile view: hit only the public endpoint (cached 10min, generates
+        // AI resume bullets on a cache miss — inherently slower, but that's fine for
+        // a page someone else is loading, not the owner's every-visit profile page).
         let resolvedProfile: ProfileData | null = null;
 
-        if (profileRes.status === "fulfilled" && profileRes.value.ok) {
-          const data = await profileRes.value.json().catch(() => null);
-          if (data?.profile) resolvedProfile = data.profile;
-        }
-
-        if (!resolvedProfile && userRes?.status === "fulfilled" && userRes.value.ok) {
-          const data = await userRes.value.json().catch(() => null);
-          if (data?.profile) resolvedProfile = data.profile;
+        if (isOwnProfile) {
+          const res = await fetch("/api/user/profile").catch(() => null);
+          if (res?.ok) {
+            const data = await res.json().catch(() => null);
+            if (data?.profile) resolvedProfile = data.profile;
+          }
+        } else if (username) {
+          const res = await fetch(`/api/profile/${encodeURIComponent(username)}`).catch(() => null);
+          if (res?.ok) {
+            const data = await res.json().catch(() => null);
+            if (data?.profile) resolvedProfile = data.profile;
+          }
         }
 
         if (isMounted) {
           if (resolvedProfile) {
-            setProfile(resolvedProfile);
+            // Client-side enhancement: Check localStorage for any immediate local activity
+            const todayStr = getTodayDateStr();
+            const daysList: ContributionDay[] = resolvedProfile.contribution_days ? [...resolvedProfile.contribution_days] : [];
+            
+            try {
+              const localDaysRaw = localStorage.getItem("prioryx_completed_days");
+              const localDays: string[] = localDaysRaw ? JSON.parse(localDaysRaw) : [];
+              for (const lDate of localDays) {
+                if (!daysList.some((d) => d.date === lDate)) {
+                  daysList.push({ date: lDate, count: 1 });
+                }
+              }
+            } catch {}
+
+            const dynamicStreak = calculateStreakFromDays(daysList);
+            const finalStreak = Math.max(dynamicStreak, resolvedProfile.github_streak_days ?? 0);
+
+            setProfile({
+              ...resolvedProfile,
+              contribution_days: daysList,
+              github_streak_days: finalStreak,
+            });
             setError(null);
           } else {
             setError("Profile not found");
           }
           setLoading(false);
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to load profile");
+          setError(err?.message || "Failed to load profile");
           setLoading(false);
         }
       }
@@ -316,8 +341,41 @@ export function ProfilePage({ username }: ProfilePageProps) {
 
     load();
 
+    // Listen to real-time activity events across the app
+    const onActivityUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const actDate = customEvent.detail?.date || getTodayDateStr();
+
+      setProfile((prev) => {
+        if (!prev) return prev;
+        const currentDays = prev.contribution_days ? [...prev.contribution_days] : [];
+        const existingIdx = currentDays.findIndex((d) => d.date === actDate);
+
+        if (existingIdx >= 0) {
+          currentDays[existingIdx] = {
+            ...currentDays[existingIdx],
+            count: currentDays[existingIdx].count + 1,
+          };
+        } else {
+          currentDays.push({ date: actDate, count: 1 });
+        }
+
+        const newStreak = Math.max(calculateStreakFromDays(currentDays), prev.github_streak_days ?? 0, 1);
+
+        return {
+          ...prev,
+          contribution_days: currentDays,
+          github_streak_days: newStreak,
+          completed_tasks: prev.completed_tasks + 1,
+        };
+      });
+    };
+
+    window.addEventListener("prioryx_activity_updated", onActivityUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("prioryx_activity_updated", onActivityUpdated);
     };
   }, [username]);
 
@@ -344,9 +402,9 @@ export function ProfilePage({ username }: ProfilePageProps) {
 
   if (error || !profile) {
     return (
-      <div className="glass rounded-[32px] p-8 text-center">
-        <h2 className="text-xl font-semibold text-slate-950">Profile not found</h2>
-        <p className="mt-2 text-sm text-slate-500">{error ?? "This profile doesn't exist."}</p>
+      <div className="glass rounded-[32px] p-8 text-center sm:p-10">
+        <h2 className="text-xl font-semibold text-slate-950 dark:text-white">Profile not found</h2>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{error ?? "This profile doesn't exist."}</p>
       </div>
     );
   }
@@ -358,8 +416,10 @@ export function ProfilePage({ username }: ProfilePageProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  const calculatedStreak = profile.github_streak_days ?? calculateStreakFromDays(profile.contribution_days ?? []);
+
   const stats = [
-    { label: "GitHub streak", value: `${profile.github_streak_days ?? 0}d`, icon: Star },
+    { label: "Active streak", value: `${calculatedStreak}d`, icon: Flame },
     { label: "Health score", value: `${profile.github_health_score ?? (profile.github_username ? 33 : 0)}`, icon: GitFork },
     { label: "Tasks done", value: String(profile.completed_tasks > 0 ? profile.completed_tasks : (profile.total_tasks > 0 ? profile.total_tasks : 1)), icon: Trophy },
     { label: "Semester", value: profile.semester ? `Sem ${profile.semester}` : "Sem 5", icon: BriefcaseBusiness },
@@ -403,12 +463,15 @@ export function ProfilePage({ username }: ProfilePageProps) {
     ? profile.top_repos.slice(0, 3)
     : fallbackProjects;
 
-  const hasContributions = profile.contribution_days && profile.contribution_days.length > 0;
-
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* Hero */}
-      <section className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-8">
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-8"
+      >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-slate-950 text-xl font-bold text-white sm:h-20 sm:w-20 sm:rounded-[24px] sm:text-2xl shadow-md dark:bg-white dark:text-slate-950">
@@ -428,68 +491,68 @@ export function ProfilePage({ username }: ProfilePageProps) {
                   {recruiterBullets[0]}
                 </p>
               )}
-              <div className="mt-3.5 flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
-                {(profile.college || "amrita vishwa vidyapeetham") && (
-                  <span className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
+                {profile.college && (
+                  <span className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     <MapPin size={12} />
-                    {profile.college || "amrita vishwa vidyapeetham"}
-                  </span>
-                )}
-                {profile.subjects && profile.subjects.length > 0 && (
-                  <span className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <Code2 size={12} />
-                    {profile.subjects.slice(0, 3).join(", ")}
+                    {profile.college}
                   </span>
                 )}
                 {profile.github_username && (
-                  <span className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  <a
+                    href={`https://github.com/${profile.github_username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] dark:text-slate-300 dark:hover:text-white dark:focus-visible:ring-offset-[#172030]"
+                  >
+                    <Code2 size={12} />
                     @{profile.github_username}
-                  </span>
+                    <ArrowUpRight size={10} className="opacity-60" />
+                  </a>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
-            <button
+          <div className="flex items-center gap-2.5">
+            <motion.button
               type="button"
               onClick={handleShare}
-              className="neu-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 sm:w-auto"
+              whileTap={{ scale: 0.96 }}
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] sm:text-sm dark:text-slate-200 dark:hover:text-white dark:focus-visible:ring-offset-[#172030]"
             >
-              {copied ? <Check size={16} className="text-emerald-500" /> : <Share2 size={16} />}
-              <span>{copied ? "Link Copied!" : "Share Profile"}</span>
-            </button>
-
-            {profile.github_username && (
-              <a
-                href={`https://github.com/${profile.github_username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="neu-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 sm:w-auto"
-              >
-                View GitHub
-                <ArrowUpRight size={16} />
-              </a>
-            )}
+              {copied ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
+              <span>{copied ? "Copied!" : "Share profile"}</span>
+            </motion.button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Stats */}
+      {/* Placement Readiness Score — lives here only, not on the dashboard */}
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.03, ease: "easeOut" }}
+      >
+        <ReadinessScoreCard />
+      </motion.section>
+
+      {/* Quick stats */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {stats.map((stat, index) => {
+        {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
             <motion.div
               key={stat.label}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="neu-raised-sm rounded-[24px] p-4 sm:rounded-[28px] sm:p-5 transition hover:neu-card"
-              initial={{ opacity: 0, y: 8 }}
-              transition={{ delay: index * 0.04 }}
+              transition={{ duration: 0.3, delay: idx * 0.05, ease: "easeOut" }}
+              whileHover={{ y: -2 }}
+              className="neu-raised-sm rounded-[24px] p-4 text-left transition-shadow sm:rounded-[28px] sm:p-5"
             >
               <div className="w-fit neu-pill rounded-xl p-2.5 text-slate-900 dark:text-white sm:rounded-2xl sm:p-3">
-                <Icon size={16} className="sm:hidden" />
-                <Icon size={18} className="hidden sm:block" />
+                <Icon size={16} className="sm:hidden text-amber-500" />
+                <Icon size={18} className="hidden sm:block text-amber-500" />
               </div>
               <p className="mt-4 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:mt-5 sm:text-3xl">
                 {stat.value}
@@ -501,7 +564,12 @@ export function ProfilePage({ username }: ProfilePageProps) {
       </section>
 
       {/* Contribution graph + Recruiter snapshot */}
-      <section className="grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05, ease: "easeOut" }}
+        className="grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+      >
         <div className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
@@ -509,18 +577,16 @@ export function ProfilePage({ username }: ProfilePageProps) {
                 Contribution graph
               </h3>
               <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400 sm:mt-2 sm:text-sm">
-                A record of steady shipping across coursework and projects.
+                A record of steady shipping across coursework, videos, and projects.
               </p>
             </div>
-            <span className="neu-pill rounded-full px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 sm:text-sm">
-              {profile.github_streak_days ?? 0}d streak
+            <span className="neu-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 sm:text-sm">
+              <Flame size={13} className="text-amber-500" />
+              {calculatedStreak}d streak
             </span>
           </div>
-          {hasContributions ? (
-            <ContributionGraph days={profile.contribution_days!} />
-          ) : (
-            <PlaceholderGraph />
-          )}
+          
+          <ContributionGraph days={profile.contribution_days || []} />
         </div>
 
         <div className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-6">
@@ -549,10 +615,15 @@ export function ProfilePage({ username }: ProfilePageProps) {
             )}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Projects Section */}
-      <section className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-7">
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+        className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-7"
+      >
         <div>
           <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Projects</h3>
           <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400 sm:mt-2 sm:text-sm">
@@ -567,9 +638,11 @@ export function ProfilePage({ username }: ProfilePageProps) {
               target="_blank"
               rel="noopener noreferrer"
               animate={{ opacity: 1, y: 0 }}
-              className="neu-raised-sm block rounded-[22px] p-4 transition hover:neu-card sm:rounded-[28px] sm:p-5"
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              className="neu-raised-sm block rounded-[22px] p-4 transition-shadow hover:neu-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt sm:rounded-[28px] sm:p-5"
               initial={{ opacity: 0, y: 8 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
             >
               <div className="neu-pill inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
                 Selected work
@@ -594,7 +667,70 @@ export function ProfilePage({ username }: ProfilePageProps) {
             </motion.a>
           ))}
         </div>
-      </section>
+      </motion.section>
+
+      {/* Coding Platforms Section */}
+      {(profile.coding_profiles?.leetcode || profile.coding_profiles?.hackerrank) && (
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15, ease: "easeOut" }}
+          className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-7"
+        >
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Coding Platforms</h3>
+            <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400 sm:mt-2 sm:text-sm">
+              Connected competitive-programming profiles.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-4 md:grid-cols-2">
+            {profile.coding_profiles.leetcode && (
+              <div className="neu-raised-sm rounded-[22px] p-4 sm:rounded-[28px] sm:p-5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-slate-950 dark:text-white">LeetCode</h4>
+                  <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    @{profile.coding_profiles.leetcode.username}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+                  <div>
+                    <p className="text-lg font-bold text-slate-950 dark:text-white">{profile.coding_profiles.leetcode.total_solved ?? "—"}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Solved</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{profile.coding_profiles.leetcode.easy_solved ?? "—"}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Easy</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{profile.coding_profiles.leetcode.medium_solved ?? "—"}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Medium</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{profile.coding_profiles.leetcode.hard_solved ?? "—"}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Hard</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {profile.coding_profiles.hackerrank && (
+              <div className="neu-raised-sm rounded-[22px] p-4 sm:rounded-[28px] sm:p-5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-slate-950 dark:text-white">HackerRank</h4>
+                  <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    @{profile.coding_profiles.hackerrank.username}
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <Trophy size={14} className="text-slate-500 dark:text-slate-400" />
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    Score: {profile.coding_profiles.hackerrank.score ?? "—"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.section>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
  * Weekly streak and daily task activity tracker.
  * Cycle: Starts on Sunday (0) and ends on Saturday (6).
  * Automatically resets for the new week after Saturday (starting fresh on Sunday).
- * If a user signs in or completes at least 1 task on a day, that day gets the checkmark tick (✓).
+ * If a user signs in or completes at least 1 task on a day, that day gets marked as completed.
  * Users can also click any day to manually toggle the tick option.
  */
 

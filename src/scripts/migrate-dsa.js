@@ -1,6 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Pool } = require('pg');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
 
 // Basic manual parsing of .env.local

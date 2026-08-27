@@ -2,7 +2,34 @@ import { openai } from '../openai';
 import { FullLeetCodeData, UserStream, PriorityTopic, ProblemRecommendation } from './types';
 import { fetchProblems } from './alfa-api';
 
-export function computePlacementReadinessScore(data: FullLeetCodeData, _stream: UserStream): number {
+const STREAM_TOPIC_MAP: Record<UserStream, string[]> = {
+  'SDE': ['arrays', 'strings', 'dynamic-programming', 'trees', 'graphs', 'binary-search', 'two-pointers', 'sliding-window', 'backtracking', 'heap-priority-queue', 'linked-list', 'stack', 'hash-table'],
+  'ML_AI': ['math', 'dynamic-programming', 'matrix', 'probability-and-statistics', 'arrays', 'sorting', 'binary-search', 'hash-table', 'recursion'],
+  'DATA_SCIENCE': ['database', 'math', 'sorting', 'arrays', 'hash-table', 'string', 'dynamic-programming', 'greedy'],
+  'FRONTEND': ['arrays', 'strings', 'hash-table', 'design', 'recursion', 'tree', 'breadth-first-search', 'depth-first-search'],
+  'BACKEND': ['arrays', 'strings', 'database', 'design', 'graphs', 'dynamic-programming', 'binary-search', 'heap-priority-queue'],
+  'FULLSTACK': ['arrays', 'strings', 'hash-table', 'trees', 'database', 'design', 'dynamic-programming', 'binary-search'],
+  'COMPETITIVE': ['dynamic-programming', 'graphs', 'math', 'trees', 'binary-search', 'segment-tree', 'bit-manipulation', 'combinatorics', 'backtracking', 'greedy'],
+  'CS_GENERAL': ['arrays', 'strings', 'hash-table', 'trees', 'graphs', 'dynamic-programming', 'binary-search', 'sorting', 'two-pointers']
+};
+
+const COMPANY_TAGS: Record<string, string[]> = {
+  'Google': ['arrays', 'dynamic-programming', 'graphs', 'trees', 'strings'],
+  'Meta': ['arrays', 'strings', 'trees', 'dynamic-programming', 'binary-search'],
+  'Amazon': ['arrays', 'strings', 'trees', 'graphs', 'dynamic-programming'],
+  'Microsoft': ['arrays', 'strings', 'trees', 'dynamic-programming'],
+  'Apple': ['arrays', 'strings', 'trees', 'dynamic-programming'],
+  'Netflix': ['design', 'arrays', 'hash-table', 'dynamic-programming'],
+  'Stripe': ['arrays', 'strings', 'dynamic-programming', 'design'],
+  'Uber': ['graphs', 'arrays', 'dynamic-programming', 'math'],
+  'Flipkart': ['arrays', 'dynamic-programming', 'trees', 'strings'],
+  'Swiggy': ['arrays', 'dynamic-programming', 'graphs', 'hash-table'],
+  'Zomato': ['arrays', 'dynamic-programming', 'hash-table', 'strings'],
+  'Atlassian': ['arrays', 'strings', 'dynamic-programming', 'trees'],
+  'Adobe': ['arrays', 'strings', 'dynamic-programming', 'math'],
+};
+
+export function computePlacementReadinessScore(data: FullLeetCodeData, stream: UserStream): number {
   if (!data.solved) return 0;
   
   const { easySolved, mediumSolved, hardSolved, solvedProblem: totalSolved } = data.solved;
@@ -33,7 +60,7 @@ export function computePlacementReadinessScore(data: FullLeetCodeData, _stream: 
       const parsed = JSON.parse(data.calendar.submissionCalendar);
       const activeDays = Object.keys(parsed).length;
       consistencyScore = Math.min(activeDays / 200, 1) * 15;
-    } catch (_e) {
+    } catch (e) {
       // JSON parse error
     }
   }
@@ -124,25 +151,72 @@ Return JSON with this schema:
   return JSON.parse(completion.choices[0].message.content || '{}');
 }
 
-export async function generateProblemRecommendations(
+// Common mismatches between AI-generated topic names and LeetCode's actual
+// tag slugs (singular/plural, spacing) — the AI is free-text, LeetCode's tag
+// API is not, and a mismatch here silently produced zero problem candidates.
+const TOPIC_SLUG_ALIASES: Record<string, string> = {
+  arrays: 'array',
+  strings: 'string',
+  trees: 'tree',
+  graphs: 'graph',
+  'linked-lists': 'linked-list',
+  stacks: 'stack',
+  queues: 'queue',
+  heaps: 'heap-priority-queue',
+  'heap-priority-queues': 'heap-priority-queue',
+  'priority-queue': 'heap-priority-queue',
+  'priority-queues': 'heap-priority-queue',
+  'hash-tables': 'hash-table',
+  'hash-maps': 'hash-table',
+  hashmap: 'hash-table',
+  hashmaps: 'hash-table',
+  'two-pointer': 'two-pointers',
+  recursions: 'recursion',
+  'bit-manipulations': 'bit-manipulation',
+  'dp': 'dynamic-programming',
+};
+
+function slugifyTopic(topic: string): string {
+  const slug = topic
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-');
+  return TOPIC_SLUG_ALIASES[slug] ?? slug;
+}
+
+/**
+ * Curates a study list for a single topic: fetches a pool of candidate
+ * problems for the topic, then asks the model to pick the best 5 spanning
+ * difficulties. Isolated per-topic so the caller can run many of these
+ * concurrently instead of paying each topic's fetch + completion latency
+ * serially (that sequential loop was the main reason study-plan generation
+ * timed out in production).
+ */
+async function generateRecommendationsForTopic(
+  topic: PriorityTopic,
   stream: UserStream,
-  priorityTopics: PriorityTopic[],
   targetCompanies: string[]
 ): Promise<ProblemRecommendation[]> {
-  const recommendations: ProblemRecommendation[] = [];
-  
-  const highPriority = priorityTopics.filter(t => t.priority === 'CRITICAL' || t.priority === 'HIGH');
-  
-  for (const topic of highPriority) {
-    // 1-3. Fetch candidate problems across difficulties
-    const easyProbs = await fetchProblems([topic.topic], 'EASY', 5);
-    const medProbs = await fetchProblems([topic.topic], 'MEDIUM', 8);
-    const hardProbs = await fetchProblems([topic.topic], 'HARD', 3);
-    
-    const allCandidates = [...easyProbs, ...medProbs, ...hardProbs];
-    if (allCandidates.length === 0) continue;
+  const slug = slugifyTopic(topic.topic);
 
-    // 4-5. Ask AI to select the best 5 problems overall
+  // One request for a broad pool (mixed difficulties) rather than three
+  // separate easy/medium/hard requests — cuts external API calls by 3x,
+  // which matters because this free, shared API rate-limits aggressively
+  // under concurrency (6 topics × 3 calls = 18 simultaneous requests was
+  // enough to get every one of them rejected).
+  let allCandidates = await fetchProblems([slug], undefined, 40);
+
+  // The AI's topic name may not correspond to any real LeetCode tag slug at
+  // all — fall back to an unfiltered pool rather than giving up on the topic.
+  if (allCandidates.length === 0) {
+    allCandidates = await fetchProblems([], undefined, 40);
+  }
+  if (allCandidates.length === 0) return [];
+
+  // 4-5. Ask AI to select the best 5 problems overall
+  let aiRes: any = {};
+  try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -169,26 +243,62 @@ Select exactly 5 problems that build up knowledge well. Return JSON:
       ],
       response_format: { type: "json_object" }
     });
+    aiRes = JSON.parse(completion.choices[0].message.content || '{}');
+  } catch (e) {
+    // If the model call fails/times out for this one topic, fall back to a
+    // deterministic pick (first 5 candidates, easy-to-hard) rather than
+    // dropping the whole topic — a partial plan beats none.
+    console.error(`[generateRecommendationsForTopic] AI selection failed for "${topic.topic}", using fallback:`, e);
+    aiRes = {
+      selected: allCandidates.slice(0, 5).map(p => ({
+        problem_slug: p.titleSlug,
+        why_this_problem: `Builds core ${topic.topic} skills relevant to ${stream}.`,
+        company_tags: [],
+      })),
+    };
+  }
 
-    const aiRes = JSON.parse(completion.choices[0].message.content || '{}');
-    const selected = aiRes.selected || [];
+  const selected = aiRes.selected || [];
+  const recommendations: ProblemRecommendation[] = [];
 
-    for (const s of selected) {
-      const prob = allCandidates.find(p => p.titleSlug === s.problem_slug);
-      if (prob) {
-        recommendations.push({
-          stream,
-          priority: topic.priority,
-          topic: topic.topic,
-          problem_slug: prob.titleSlug,
-          problem_title: prob.title,
-          difficulty: prob.difficulty,
-          why_this_problem: s.why_this_problem,
-          company_tags: s.company_tags || []
-        });
-      }
+  for (const s of selected) {
+    const prob = allCandidates.find(p => p.titleSlug === s.problem_slug);
+    if (prob) {
+      recommendations.push({
+        stream,
+        priority: topic.priority,
+        topic: topic.topic,
+        problem_slug: prob.titleSlug,
+        problem_title: prob.title,
+        difficulty: prob.difficulty,
+        why_this_problem: s.why_this_problem,
+        company_tags: s.company_tags || []
+      });
     }
   }
 
   return recommendations;
+}
+
+const PRIORITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+
+export async function generateProblemRecommendations(
+  stream: UserStream,
+  priorityTopics: PriorityTopic[],
+  targetCompanies: string[]
+): Promise<ProblemRecommendation[]> {
+  // Rank ALL topics by priority rather than filtering to CRITICAL/HIGH only —
+  // a solid profile can legitimately have nothing but MEDIUM/LOW gaps, and
+  // filtering them out entirely produced a silent empty plan with no error.
+  // Cap topic count so total latency/cost stays bounded even if the AI
+  // analysis flags many topics — the rest still surface via a regenerate.
+  const topTopics = [...priorityTopics]
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9))
+    .slice(0, 6);
+
+  const results = await Promise.allSettled(
+    topTopics.map(topic => generateRecommendationsForTopic(topic, stream, targetCompanies))
+  );
+
+  return results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
 }

@@ -24,6 +24,27 @@ function verifyRedirectSignature(
   }
 }
 
+// Razorpay Subscription checkout redirects with payment_id + subscription_id,
+// signed as `${payment_id}|${subscription_id}` (per Razorpay subscription docs) —
+// a different shape than the Payment Link redirect above.
+function verifySubscriptionSignature(
+  paymentId: string,
+  subscriptionId: string,
+  signature: string,
+  secret: string,
+): boolean {
+  const message = `${paymentId}|${subscriptionId}`;
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(message)
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   // Caller must be authenticated — the logged-in session is our trust anchor
   const supabase = createClient();
@@ -45,6 +66,7 @@ export async function POST(request: NextRequest) {
     razorpay_payment_link_id: paymentLinkId,
     razorpay_payment_link_reference_id: referenceId,
     razorpay_payment_link_status: status,
+    razorpay_subscription_id: subscriptionId,
     razorpay_signature: signature,
   } = body;
 
@@ -64,7 +86,15 @@ export async function POST(request: NextRequest) {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   const hasRealSecret = keySecret && keySecret !== 'YOUR_SECRET' && keySecret.length > 10;
 
-  if (hasRealSecret && signature && paymentLinkId && referenceId) {
+  if (hasRealSecret && signature && subscriptionId) {
+    // Subscription checkout redirect shape — verify with the subscription signature scheme
+    const valid = verifySubscriptionSignature(paymentId, subscriptionId, signature, keySecret);
+    if (!valid) {
+      console.error('[payments/verify] Subscription signature mismatch — payment:', paymentId);
+      return NextResponse.json({ error: 'Invalid signature', code: 'signature_mismatch' }, { status: 401 });
+    }
+    console.log('[payments/verify] Subscription signature verified for payment:', paymentId, 'subscription:', subscriptionId);
+  } else if (hasRealSecret && signature && paymentLinkId && referenceId) {
     // Full signature verification when keys are configured
     const valid = verifyRedirectSignature(paymentLinkId, referenceId, status, paymentId, signature, keySecret);
     if (!valid) {
@@ -128,9 +158,10 @@ export async function POST(request: NextRequest) {
       {
         user_id: user.id,
         razorpay_payment_id: paymentId,
+        razorpay_subscription_id: subscriptionId ?? undefined,
         status: 'active',
         current_period_end: proExpiresAt,
-        plan_id: 'payment_link',
+        plan_id: subscriptionId ? 'subscription' : 'payment_link',
         amount_paid: (body as any).amount ?? 0,
       },
       { onConflict: 'user_id' }

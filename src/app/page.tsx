@@ -21,7 +21,7 @@ export default async function HomePage({
 }) {
   // Pass OAuth callback params through to the callback handler
   const oauthParams = new URLSearchParams();
-  const oauthKeys = ["code", "next", "popup", "error", "error_code", "error_description"];
+  const oauthKeys = ["code", "next", "error", "error_code", "error_description"];
   oauthKeys.forEach((key) => {
     appendSearchParam(oauthParams, key, searchParams?.[key]);
   });
