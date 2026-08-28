@@ -28,10 +28,10 @@ const TESTIMONIALS = [
     rating: 5,
   },
   {
-    name: 'Ananya T.',
+    name: 'Vishal VS',
     college: 'Amrita · 3rd Year AI',
     text: 'Project Foundry generated 9 personalized projects based on my specific skill gaps. I have already completed 3 and added them to my portfolio.',
-    avatar: 'AT',
+    avatar: 'VS',
     color: 'from-amber-500 to-orange-600',
     rating: 5,
   },
@@ -60,10 +60,10 @@ export function Testimonials() {
     <section ref={ref} className="py-28 px-5 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <span className="inline-block rounded-full border border-white/30 bg-[#02161f]/80 backdrop-blur-md px-4 py-1 text-xs font-black uppercase tracking-[0.25em] text-cyan-300 shadow-md mb-3">
+          <span className="inline-block rounded-full border border-white/30 bg-[#02161f]/80 backdrop-blur-md px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300 shadow-md mb-3">
             Testimonials
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+          <h2 className="text-4xl sm:text-5xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
             Trusted by top engineering students
           </h2>
         </div>
@@ -91,7 +91,7 @@ export function Testimonials() {
               {/* Author */}
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-black text-xs shadow-md`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-semibold text-xs shadow-md`}
                 >
                   {t.avatar}
                 </div>

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { analyzeProfile, generateProblemRecommendations } from '@/lib/leetcode/ai-analyzer';
 import { FullLeetCodeData, PriorityTopic, UserStream } from '@/lib/leetcode/types';
+import { withFallback, redis } from '@/lib/redis';
+
+const RECOMMENDATIONS_CACHE_TTL = 120; // seconds
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +15,12 @@ const PRIORITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2,
 export async function GET(req: Request) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const cacheKey = `leetcode-recommendations:${user.id}`;
+  const cached = await withFallback(() => redis.get(cacheKey), null);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
 
   // Service role: the anon cookie client is RLS-bound in production, which
   // was making an already-generated plan look empty on this page.
@@ -34,7 +43,9 @@ export async function GET(req: Request) {
     return (a.topic || '').localeCompare(b.topic || '');
   });
 
-  return NextResponse.json({ data: sorted });
+  const responseBody = { data: sorted };
+  await withFallback(() => redis.set(cacheKey, responseBody, { ex: RECOMMENDATIONS_CACHE_TTL }), undefined);
+  return NextResponse.json(responseBody);
 }
 
 export async function POST(req: Request) {
@@ -141,6 +152,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to save the generated study plan' }, { status: 500 });
     }
 
+    await withFallback(() => redis.del(`leetcode-recommendations:${user.id}`), 0);
     return NextResponse.json({ success: true, count: recommendations.length });
 
   } catch (error) {

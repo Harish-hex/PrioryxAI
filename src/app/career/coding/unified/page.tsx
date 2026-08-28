@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Code2, ArrowRight, CheckCircle2, Award, Zap, RefreshCw, ExternalLink } from 'lucide-react';
 import { PageSkeleton, EmptyState, ErrorBanner } from '@/components/ui/feedback';
+import { LeetCodeLogo } from '@/components/icons/leetcode-logo';
+import { HackerRankLogo } from '@/components/icons/hackerrank-logo';
 
 interface LCData {
   leetcode_username?: string;
@@ -188,8 +190,8 @@ export default function UnifiedCodingDashboardPage() {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center font-black text-amber-500 dark:text-amber-400 text-sm">
-                    LC
+                  <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center text-amber-500 dark:text-amber-400">
+                    <LeetCodeLogo size={24} />
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-slate-950 dark:text-white">LeetCode</h3>
@@ -258,8 +260,8 @@ export default function UnifiedCodingDashboardPage() {
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                    HR
+                  <div className="neu-pill-inset h-12 w-12 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <HackerRankLogo size={24} />
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-slate-950 dark:text-white">HackerRank</h3>

@@ -168,6 +168,8 @@ export async function POST(req: NextRequest) {
         await withFallback(() => redis.del(`profile:${userRow.username}`), 0);
       }
       await withFallback(() => redis.del(`user-profile:${user.id}`), 0);
+      await withFallback(() => redis.del(`hackerrank-profile:${user.id}`), 0);
+      await withFallback(() => redis.del(`hackerrank-analysis:${user.id}`), 0);
     } catch (e) {
       console.warn('[hackerrank connect] profile cache invalidation warn:', e);
     }

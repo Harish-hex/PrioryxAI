@@ -5,6 +5,9 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
+import { withFallback, redis } from '@/lib/redis';
+
+const LEETCODE_ANALYSIS_CACHE_TTL = 60; // seconds — short since analysis can still be "in progress"
 
 export async function GET(req: Request) {
   const user = await getAuthUser();
@@ -18,6 +21,12 @@ export async function GET(req: Request) {
 
   if (userId !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const cacheKey = `leetcode-analysis:${user.id}`;
+  const cached = await withFallback(() => redis.get(cacheKey), null);
+  if (cached) {
+    return NextResponse.json(cached);
   }
 
   try {
@@ -52,7 +61,9 @@ export async function GET(req: Request) {
       );
     }
 
-    return NextResponse.json({ data: profileData.ai_analysis });
+    const responseBody = { data: profileData.ai_analysis };
+    await withFallback(() => redis.set(cacheKey, responseBody, { ex: LEETCODE_ANALYSIS_CACHE_TTL }), undefined);
+    return NextResponse.json(responseBody);
   } catch (error) {
     console.error('[leetcode analysis] error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

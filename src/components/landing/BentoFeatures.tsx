@@ -67,7 +67,7 @@ function DashboardPreview() {
 
 function ScoreRingPreview() {
   const circumference = 2 * Math.PI * 45;
-  const progress = 0.78;
+  const progress = 0.84;
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -102,7 +102,7 @@ function ScoreRingPreview() {
           </defs>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-black text-white">78</span>
+          <span className="text-3xl font-semibold text-white">84</span>
           <span className="text-emerald-400 font-bold text-xs">/ 100 Score</span>
         </div>
       </div>
@@ -158,10 +158,10 @@ export function BentoFeatures() {
     <section id="features" className="py-28 px-5 max-w-7xl mx-auto">
       {/* Section header */}
       <div className="text-center mb-16">
-        <span className="inline-block rounded-full border border-white/30 bg-[#02161f]/75 backdrop-blur-md px-4 py-1 text-xs font-black uppercase tracking-[0.25em] text-cyan-300 shadow-md mb-4">
+        <span className="inline-block rounded-full border border-white/30 bg-[#02161f]/75 backdrop-blur-md px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300 shadow-md mb-4">
           Core Features
         </span>
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-4 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+        <h2 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-white mb-4 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
           Everything you need to{' '}
           <span className="bg-gradient-to-r from-violet-400 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
             dominate your semester
@@ -181,7 +181,7 @@ export function BentoFeatures() {
               <Zap size={20} className="fill-cyan-400 text-cyan-400" />
             </div>
             <div>
-              <h3 className="text-white font-black text-lg sm:text-xl">AI Priority Feed</h3>
+              <h3 className="text-white font-semibold text-lg sm:text-xl">AI Priority Feed</h3>
               <p className="text-cyan-300 text-sm font-semibold">Ranked by urgency × syllabus weightage × skill gaps</p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function BentoFeatures() {
         <BentoCard className="md:col-span-1 lg:col-span-1" delay={0.1}>
           <div className="flex items-center gap-2 mb-2">
             <Trophy size={18} className="text-amber-400" />
-            <h3 className="text-white font-black text-base">Placement Score</h3>
+            <h3 className="text-white font-semibold text-base">Placement Score</h3>
           </div>
           <p className="text-slate-300 text-sm font-semibold">Real-time 100-point readiness benchmark</p>
           <ScoreRingPreview />
@@ -205,7 +205,7 @@ export function BentoFeatures() {
         <BentoCard className="md:col-span-1 lg:col-span-1" delay={0.15}>
           <div className="flex items-center gap-2 mb-2">
             <GitBranch size={18} className="text-emerald-400" />
-            <h3 className="text-white font-black text-base">GitHub Health</h3>
+            <h3 className="text-white font-semibold text-base">GitHub Health</h3>
           </div>
           <p className="text-slate-300 text-sm font-medium leading-relaxed">
             Tracks commit streak, health score, and suggests repository actions before campus interviews.
@@ -213,12 +213,12 @@ export function BentoFeatures() {
           <div className="mt-4 p-3 rounded-xl bg-white/10 border border-white/10">
             <div className="flex justify-between mb-2">
               <span className="text-slate-300 text-sm font-bold">Health Score</span>
-              <span className="text-emerald-400 text-sm font-black">78/100</span>
+              <span className="text-emerald-400 text-sm font-semibold">92/100</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                whileInView={{ width: '78%' }}
+                whileInView={{ width: '92%' }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.2, delay: 0.3 }}
                 className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full"
@@ -231,7 +231,7 @@ export function BentoFeatures() {
         <BentoCard className="md:col-span-2 lg:col-span-2" delay={0.2}>
           <div className="flex items-center gap-2 mb-2">
             <FileText size={18} className="text-violet-400" />
-            <h3 className="text-white font-black text-lg">Resume Intelligence & SWOT</h3>
+            <h3 className="text-white font-semibold text-lg">Resume Intelligence & SWOT</h3>
           </div>
           <p className="text-slate-200 text-sm leading-relaxed mb-4 font-medium">
             Upload PDF once. AI extracts 64+ skills, generates a 4-quadrant SWOT matrix, and pinpoints missing skills for dream roles.
@@ -253,7 +253,7 @@ export function BentoFeatures() {
       <div className="mt-4 sm:mt-5">
         <BentoCard className="!p-0" delay={0.3}>
           <div className="px-6 pt-6 sm:px-7 sm:pt-7">
-            <p className="text-white/50 text-xs font-black uppercase tracking-[0.2em]">
+            <p className="text-white/50 text-xs font-semibold uppercase tracking-[0.2em]">
               And the full toolkit underneath it
             </p>
           </div>

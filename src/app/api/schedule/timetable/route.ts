@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase-server';
 import { extractSchedule, TimetableEntry } from '@/lib/schedule/extractor';
+import { withFallback, redis } from '@/lib/redis';
+
+const TIMETABLE_CACHE_TTL = 300; // seconds — timetable rarely changes; upload invalidates it
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,6 +81,8 @@ export async function POST(req: Request) {
       );
     }
 
+    await withFallback(() => redis.del(`schedule-timetable:${user.id}`), 0);
+
     return NextResponse.json({
       success: true,
       entries,
@@ -100,18 +105,34 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const cacheKey = `schedule-timetable:${user.id}`;
+    const cached = await withFallback(() => redis.get(cacheKey), null);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const db = createServiceRoleClient();
     const { data, error } = await db
       .from('schedule_timetable')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('start_time');
 
     if (error || !data || data.length === 0) {
       return NextResponse.json({ entries: [] });
     }
 
+    // Sort by weekday order, then start time, so the same timetable
+    // always renders in the same order regardless of insert order.
+    const WEEKDAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const sorted = [...data].sort((a, b) => {
+      const dayDiff = WEEKDAY_ORDER.indexOf(String(a.day).toLowerCase()) - WEEKDAY_ORDER.indexOf(String(b.day).toLowerCase());
+      if (dayDiff !== 0) return dayDiff;
+      return String(a.start_time ?? '').localeCompare(String(b.start_time ?? ''));
+    });
+
     // Map DB rows back to TimetableEntry format
-    const entries = data.map(row => ({
+    const entries = sorted.map(row => ({
       subject: row.subject,
       day: row.day,
       startTime: row.start_time,
@@ -120,7 +141,10 @@ export async function GET(req: Request) {
       type: row.type || 'lecture',
     }));
 
-    return NextResponse.json({ entries });
+    const responseBody = { entries };
+    await withFallback(() => redis.set(cacheKey, responseBody, { ex: TIMETABLE_CACHE_TTL }), undefined);
+
+    return NextResponse.json(responseBody);
   } catch (error: any) {
     console.error('[Schedule Extract] GET API Error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

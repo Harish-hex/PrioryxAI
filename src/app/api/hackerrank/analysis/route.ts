@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server';
 import { getMockProfile } from '@/lib/mock-db';
+import { withFallback, redis } from '@/lib/redis';
 
 export const maxDuration = 30;
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const HACKERRANK_ANALYSIS_CACHE_TTL = 60; // seconds — short since analysis can still be "in progress"
 
 export async function GET() {
   try {
     const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const cacheKey = `hackerrank-analysis:${user.id}`;
+    const cached = await withFallback(() => redis.get(cacheKey), null);
+    if (cached) {
+      return NextResponse.json(cached);
     }
 
     // Reads go through the service role. This route previously built an inline
@@ -67,14 +76,16 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({
+    const responseBody = {
       connected: true,
       hackerrank_username: profileData.hackerrank_username,
       hackerrank_score: profileData.hackerrank_score ?? 0,
       ai_analysis: profileData.ai_analysis,
       hr_practice_recommendations: profileData.hr_practice_recommendations,
       hackerrank_analysis: profileData.hackerrank_analysis,
-    });
+    };
+    await withFallback(() => redis.set(cacheKey, responseBody, { ex: HACKERRANK_ANALYSIS_CACHE_TTL }), undefined);
+    return NextResponse.json(responseBody);
   } catch (err: any) {
     console.error('[HR Analysis] Unhandled error:', err);
     return NextResponse.json(

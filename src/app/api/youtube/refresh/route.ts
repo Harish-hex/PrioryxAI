@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateRecommendations } from '@/lib/youtube/recommender';
-import { redis } from '@/lib/redis';
+import { redis, withFallback } from '@/lib/redis';
 
 export const maxDuration = 20
 
@@ -15,14 +15,16 @@ export async function POST(req: Request) {
     }
 
     const rateLimitKey = `yt_refresh:${user.id}`;
-    const lastRefresh = await redis.get(rateLimitKey);
-    
+    // Redis unreachable → treat as "not rate limited" and let the refresh
+    // through, same fail-open reasoning as checkRateLimit in src/lib/redis.ts.
+    const lastRefresh = await withFallback(() => redis.get(rateLimitKey), null);
+
     // Rate limit: 6 hours = 21600 seconds
     if (lastRefresh) {
       return NextResponse.json({ error: 'Refresh rate limited. Please try again later.' }, { status: 429 });
     }
 
-    await redis.setex(rateLimitKey, 21600, 'true');
+    await withFallback(() => redis.setex(rateLimitKey, 21600, 'true'), undefined);
 
     // Return immediately to not block the client, we will let client fetch the actual recs
     // Wait, the client expects the response to trigger the new recs.

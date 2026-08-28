@@ -4,8 +4,9 @@ import { GitHubSignal } from './collectors/github-collector'
 import { ResumeSignal } from './collectors/resume-collector'
 import { ProjectSignal } from './collectors/project-collector'
 import { SubjectSignal } from './collectors/subject-collector'
+import { JobSignal } from './collectors/job-collector'
 
-type AnySignal = ExamSignal | DSASignal | GitHubSignal | ResumeSignal | ProjectSignal | SubjectSignal
+type AnySignal = ExamSignal | DSASignal | GitHubSignal | ResumeSignal | ProjectSignal | SubjectSignal | JobSignal
 
 export interface PriorityTaskRow {
   user_id: string
@@ -63,8 +64,11 @@ export function signalToTask(
         why_now: s.daysUntil <= 2
           ? `URGENT: ${s.subjectName} exam in ${s.daysUntil} day${s.daysUntil === 1 ? '' : 's'} — start revision now`
           : `Exam in ${s.daysUntil} days — build daily revision blocks`,
-        estimated_minutes: s.daysUntil <= 2 ? 180 : 120,
-        effort_level: s.daysUntil <= 2 ? 'deep' : 'medium',
+        estimated_minutes:
+          s.daysUntil <= 1 ? 240 :
+          s.daysUntil <= 3 ? 180 :
+          s.daysUntil <= 7 ? 120 : 60,
+        effort_level: s.daysUntil <= 3 ? 'deep' : 'medium',
         source_type: 'exam_schedule',
         source_id: s.id,
         task_data: {
@@ -179,6 +183,39 @@ export function signalToTask(
         source_type: 'subject',
         source_id: s.subject,
         task_data: { subject: s.subject, topic: s.topic }
+      }
+    }
+
+    case 'job_opportunity': {
+      const s = signal as JobSignal
+      const deadlineLabel = s.deadline
+        ? new Date(s.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        : null
+      return {
+        ...base,
+        title: `Apply: ${s.title}${s.company ? ` at ${s.company}` : ''}`,
+        description:
+          `${s.matchScore}% match` +
+          (deadlineLabel ? ` · Deadline ${deadlineLabel}` : '') +
+          (s.reasons.length > 0 ? ` · ${s.reasons[0]}` : ''),
+        category: 'job',
+        priority: s.priority,
+        urgency_score: s.urgencyScore,
+        due_date: s.deadline ?? undefined,
+        action_url: s.applicationUrl,
+        action_label: 'Apply Now',
+        secondary_url: '/career/market/jobs',
+        why_now: `${s.matchScore}% skill match — ${s.reasons.slice(0, 2).join('; ') || 'strong fit based on your profile'}`,
+        estimated_minutes: 30,
+        effort_level: 'medium',
+        source_type: 'opportunity',
+        source_id: s.opportunityId,
+        task_data: {
+          company: s.company,
+          matchScore: s.matchScore,
+          deadline: s.deadline,
+          reasons: s.reasons
+        }
       }
     }
 

@@ -86,8 +86,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   const visionRemaining = isPro ? Math.max(0, PRO_VISION_LIMIT - visionUsedToday) : null;
 
   useEffect(() => {
-    fetch("/api/admin/migrate", { method: "POST" }).catch(() => {});
-
     fetch("/api/user/profile")
       .then((r) => r.json())
       .then((data) => {
@@ -151,7 +149,6 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
     };
 
     try {
-      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

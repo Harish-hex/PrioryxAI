@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
-  GitBranch, Zap, Target, TrendingUp, AlertTriangle,
+  Zap, Target, TrendingUp, AlertTriangle,
   CheckCircle2, Clock, ExternalLink, RefreshCw, Award,
   Code2, ChevronRight, Loader2, Flame, Terminal, Check, Copy
 } from 'lucide-react';
+import { GitHubLogo } from '@/components/icons/github-logo';
 
 interface ProjectScore {
   repoName: string; repoUrl: string; totalScore: number;
@@ -198,7 +199,8 @@ export default function GitHubIntelligencePage() {
               <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
               <span>AI Career Guidance</span>
             </div>
-            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+            <h1 className="mt-1.5 flex items-center gap-2.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+              <GitHubLogo size={26} className="shrink-0" />
               GitHub Intelligence
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -251,7 +253,7 @@ export default function GitHubIntelligencePage() {
       {!report && !analysing && (
         <div className="neu-card rounded-[28px] p-10 md:p-14 text-center space-y-4 max-w-xl mx-auto">
           <div className="neu-pill-inset h-16 w-16 rounded-2xl flex items-center justify-center text-cyan-500 mx-auto">
-            <GitBranch size={32} />
+            <GitHubLogo size={32} />
           </div>
           <h2 className="text-xl font-bold text-slate-950 dark:text-white">No GitHub analysis yet</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">

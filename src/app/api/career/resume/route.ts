@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+import { withFallback, redis } from '@/lib/redis'
 
 export const maxDuration = 20
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+const RESUME_CACHE_TTL = 120 // seconds
+
 export async function GET() {
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const cacheKey = `career-resume:${user.id}`
+  const cached = await withFallback(() => redis.get(cacheKey), null)
+  if (cached) {
+    return NextResponse.json(cached)
+  }
 
   // Was reading `career_resumes` — a table nothing else in the codebase writes
   // to. Every other call site (20+) uses `user_resumes`, including the upload
@@ -27,5 +36,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Could not load resume' }, { status: 500 })
   }
 
-  return NextResponse.json({ data: data || null })
+  const responseBody = { data: data || null }
+  await withFallback(() => redis.set(cacheKey, responseBody, { ex: RESUME_CACHE_TTL }), undefined)
+  return NextResponse.json(responseBody)
 }

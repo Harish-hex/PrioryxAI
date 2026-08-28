@@ -229,11 +229,12 @@ export function DashboardView({
           onSnooze={onSnoozeTask}
           onOpenPricing={onOpenPricing}
         />
+
+        <DailyGrowthPanel />
       </section>
 
       <aside className="space-y-6">
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
-        <DailyGrowthPanel />
         <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
       </aside>

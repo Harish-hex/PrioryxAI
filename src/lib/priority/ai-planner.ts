@@ -5,6 +5,8 @@ import { collectGitHubSignals } from './collectors/github-collector'
 import { collectResumeSignals } from './collectors/resume-collector'
 import { collectProjectSignals } from './collectors/project-collector'
 import { collectSubjectSignals } from './collectors/subject-collector'
+import { collectTimetableSignals } from './collectors/timetable-collector'
+import { collectJobSignals } from './collectors/job-collector'
 import { signalToTask, PriorityTaskRow } from './task-generator'
 
 export interface DailyPlan {
@@ -58,14 +60,16 @@ export async function generateDailyPlan(
   })
 
   // ── Collect all signals in parallel ──────────────────────
-  const [examRes, dsaRes, githubRes, resumeRes2, projectRes, subjectRes] =
+  const [examRes, dsaRes, githubRes, resumeRes2, projectRes, timetableRes, subjectRes, jobRes] =
     await Promise.allSettled([
       collectExamSignals(db, userId),
       collectDSASignals(db, userId, lcWeakTopics, companies, 3),
       collectGitHubSignals(db, userId),
       collectResumeSignals(db, userId, companies),
       collectProjectSignals(db, userId),
-      collectSubjectSignals(db, userId)
+      collectTimetableSignals(db, userId),
+      collectSubjectSignals(db, userId),
+      collectJobSignals(db, userId)
     ])
 
   const exams = examRes.status === 'fulfilled' ? examRes.value : []
@@ -73,16 +77,27 @@ export async function generateDailyPlan(
   const github = githubRes.status === 'fulfilled' ? githubRes.value : []
   const resumeGaps = resumeRes2.status === 'fulfilled' ? resumeRes2.value : []
   const projects = projectRes.status === 'fulfilled' ? projectRes.value : []
-  const subjects = subjectRes.status === 'fulfilled' ? subjectRes.value : []
+  const timetableSubjects = timetableRes.status === 'fulfilled' ? timetableRes.value : []
+  const jobs = jobRes.status === 'fulfilled' ? jobRes.value : []
+  if (jobRes.status === 'rejected') {
+    console.error('[AI Planner] Job matching failed:', jobRes.reason)
+  }
+  // Prefer a study block from the user's actual uploaded class timetable;
+  // fall back to a random profile subject only if no timetable exists.
+  const subjects = timetableSubjects.length > 0
+    ? timetableSubjects
+    : (subjectRes.status === 'fulfilled' ? subjectRes.value : [])
 
   console.log('[AI Planner] Signals:', {
     exams: exams.length, dsa: dsa.length,
-    github: github.length, gaps: resumeGaps.length, projects: projects.length, subjects: subjects.length
+    github: github.length, gaps: resumeGaps.length, projects: projects.length,
+    subjects: subjects.length, jobs: jobs.length
   })
 
   // ── Convert signals to task rows ─────────────────────────
   const allTasks: PriorityTaskRow[] = [
     ...exams.map(s => signalToTask(s, userId, todayStr)),
+    ...jobs.map(s => signalToTask(s, userId, todayStr)),
     ...dsa.map(s => signalToTask(s, userId, todayStr)),
     ...github.slice(0, 2).map(s => signalToTask(s, userId, todayStr)),
     ...resumeGaps.slice(0, 1).map(s => signalToTask(s, userId, todayStr)),
@@ -110,6 +125,14 @@ export async function generateDailyPlan(
         `(${new Date(e.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})`
       )
     })
+  jobs
+    .filter(j => j.deadline && (new Date(j.deadline).getTime() - Date.now()) / 86_400_000 <= 3)
+    .forEach(j => {
+      urgentAlerts.push(
+        `${j.matchScore}% match: ${j.title}${j.company ? ` at ${j.company}` : ''} — apply before ` +
+        `${new Date(j.deadline as string).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+      )
+    })
 
   // ── Build insights (deterministic — no GPT cost) ──────────
   const insights: string[] = []
@@ -129,6 +152,12 @@ export async function generateDailyPlan(
   }
   if (github.length > 0) {
     insights.push(`${github.length} GitHub ${github.length === 1 ? 'repo needs' : 'repos need'} attention — fixing them improves recruiter visibility`)
+  }
+  if (jobs.length > 0) {
+    insights.push(
+      `${jobs.length} open ${jobs.length === 1 ? 'role matches' : 'roles match'} your profile at 75%+ — ` +
+      `top pick: ${jobs[0].title}${jobs[0].company ? ` at ${jobs[0].company}` : ''} (${jobs[0].matchScore}%)`
+    )
   }
   if (dsa.length > 0 && lcWeakTopics.length > 0) {
     insights.push(`Weak topics detected: ${lcWeakTopics.slice(0, 3).join(', ')} — today's DSA picks target these`)

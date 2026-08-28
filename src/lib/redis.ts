@@ -30,8 +30,13 @@ export async function withFallback<T>(fn: () => Promise<T>, fallback: T, timeout
   }
 }
 
-// For security-critical rate limits: fail CLOSED (block request) if Redis is unreachable.
-// Returns true if the request should be blocked (limit exceeded OR Redis down).
+// These are soft usage limiters (spam/cost control), not an auth boundary —
+// fail OPEN (allow the request) if Redis is unreachable. Failing closed here
+// previously meant any Redis outage took the assistant, interview prep,
+// resume autodraft, and vision ingest completely offline for every user
+// (worse than temporarily not rate-limiting, which self-heals once Redis is
+// back). Mirrors the fail-open reasoning already used by withFallback().
+// Returns true if the request should be blocked (limit exceeded only).
 export async function checkRateLimit(
   limiter: Ratelimit,
   identifier: string
@@ -41,8 +46,9 @@ export async function checkRateLimit(
     if (!result.success) return { blocked: true, reason: 'limit_exceeded' };
     return { blocked: false, reason: null };
   } catch {
-    // Redis is down — block to prevent abuse during outage
-    return { blocked: true, reason: 'redis_error' };
+    // Redis is down — let the request through rather than taking the whole
+    // feature offline. 'redis_error' is still reported so callers can log it.
+    return { blocked: false, reason: 'redis_error' };
   }
 }
 

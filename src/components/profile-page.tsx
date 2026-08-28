@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { LoadingLine } from "@/components/loading-skeletons";
 import { calculateStreakFromDays, getTodayDateStr } from "@/lib/activity-tracker";
 import { ReadinessScoreCard } from "@/components/readiness-score-card";
+import { LeetCodeLogo } from "@/components/icons/leetcode-logo";
+import { HackerRankLogo } from "@/components/icons/hackerrank-logo";
 
 interface GithubRepo {
   name: string;
@@ -510,6 +512,30 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
                     <ArrowUpRight size={10} className="opacity-60" />
                   </a>
                 )}
+                {profile.coding_profiles?.leetcode?.username && (
+                  <a
+                    href={`https://leetcode.com/u/${profile.coding_profiles.leetcode.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] dark:text-slate-300 dark:hover:text-white dark:focus-visible:ring-offset-[#172030]"
+                  >
+                    <LeetCodeLogo size={12} className="text-amber-500 dark:text-amber-400" />
+                    @{profile.coding_profiles.leetcode.username}
+                    <ArrowUpRight size={10} className="opacity-60" />
+                  </a>
+                )}
+                {profile.coding_profiles?.hackerrank?.username && (
+                  <a
+                    href={`https://www.hackerrank.com/profile/${profile.coding_profiles.hackerrank.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8edf4] dark:text-slate-300 dark:hover:text-white dark:focus-visible:ring-offset-[#172030]"
+                  >
+                    <HackerRankLogo size={12} className="text-emerald-600 dark:text-emerald-400" />
+                    @{profile.coding_profiles.hackerrank.username}
+                    <ArrowUpRight size={10} className="opacity-60" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -687,7 +713,10 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
             {profile.coding_profiles.leetcode && (
               <div className="neu-raised-sm rounded-[22px] p-4 sm:rounded-[28px] sm:p-5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-base font-bold text-slate-950 dark:text-white">LeetCode</h4>
+                  <h4 className="flex items-center gap-2 text-base font-bold text-slate-950 dark:text-white">
+                    <LeetCodeLogo size={18} className="text-amber-500 dark:text-amber-400" />
+                    LeetCode
+                  </h4>
                   <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                     @{profile.coding_profiles.leetcode.username}
                   </span>
@@ -715,7 +744,10 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
             {profile.coding_profiles.hackerrank && (
               <div className="neu-raised-sm rounded-[22px] p-4 sm:rounded-[28px] sm:p-5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-base font-bold text-slate-950 dark:text-white">HackerRank</h4>
+                  <h4 className="flex items-center gap-2 text-base font-bold text-slate-950 dark:text-white">
+                    <HackerRankLogo size={18} className="text-emerald-600 dark:text-emerald-400" />
+                    HackerRank
+                  </h4>
                   <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                     @{profile.coding_profiles.hackerrank.username}
                   </span>

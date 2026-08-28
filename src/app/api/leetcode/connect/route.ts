@@ -181,6 +181,9 @@ export async function POST(req: Request) {
         await withFallback(() => redis.del(`profile:${userRow.username}`), 0);
       }
       await withFallback(() => redis.del(`user-profile:${user.id}`), 0);
+      await withFallback(() => redis.del(`leetcode-profile:${user.id}`), 0);
+      await withFallback(() => redis.del(`leetcode-analysis:${user.id}`), 0);
+      await withFallback(() => redis.del(`leetcode-recommendations:${user.id}`), 0);
     } catch (e) {
       console.warn('[leetcode connect] profile cache invalidation warn:', e);
     }

@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Code2,
   FileText,
-  GitBranch,
   GraduationCap,
   Hammer,
   LayoutDashboard,
@@ -26,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { GitHubLogo } from "@/components/icons/github-logo";
 
 const primaryNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/feed" },
@@ -37,7 +37,7 @@ const careerNavItems = [
   { id: "resume", label: "Resume Intelligence", icon: FileText, path: "/career/resume/upload" },
   { id: "foundry", label: "Project Foundry", icon: Hammer, path: "/career/foundry/dashboard" },
   { id: "unified", label: "Unified Profile", icon: Code2, path: "/career/coding/unified" },
-  { id: "github", label: "GitHub Intelligence", icon: GitBranch, path: "/career/coding/github" },
+  { id: "github", label: "GitHub Intelligence", icon: GitHubLogo, path: "/career/coding/github" },
   { id: "market", label: "Job Market", icon: Briefcase, path: "/career/market/jobs" },
 ];
 

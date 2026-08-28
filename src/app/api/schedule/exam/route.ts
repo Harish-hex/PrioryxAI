@@ -4,9 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { readFile, extractWithAI, parseAIJson, parseUploadedFile } from '@/lib/file-processor'
+import { withFallback, redis } from '@/lib/redis'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+const EXAM_SCHEDULE_CACHE_TTL = 300 // seconds — exam schedule rarely changes; upload invalidates it
 
 // ── PROMPTS ────────────────────────────────────────────────────
 
@@ -215,6 +218,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    await withFallback(() => redis.del(`schedule-exams:${user.id}`), 0)
+
     // Also insert into tasks table so exams immediately appear on Priority Feed / Calendar
     const taskRows = validEntries.map(e => ({
       user_id: user.id,
@@ -259,10 +264,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const cacheKey = `schedule-exams:${user.id}`;
+    const cached = await withFallback(() => redis.get(cacheKey), null);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const { data, error } = await createServiceRoleClient()
       .from('schedule_exams')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('date', { ascending: true });
 
     if (error) {
       console.error('[ExamSchedule API] DB Fetch Error:', error);
@@ -287,7 +299,10 @@ export async function GET(req: NextRequest) {
       notes: row.notes,
     }));
 
-    return NextResponse.json({ entries });
+    const responseBody = { entries };
+    await withFallback(() => redis.set(cacheKey, responseBody, { ex: EXAM_SCHEDULE_CACHE_TTL }), undefined);
+
+    return NextResponse.json(responseBody);
   } catch (error: any) {
     console.error('[ExamSchedule API] GET API Error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

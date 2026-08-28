@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+import { withFallback, redis } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 20
+
+const RESUME_SAVED_CACHE_TTL = 120 // seconds
 
 export async function GET() {
   const user = await getAuthUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const cacheKey = `career-resume-saved:${user.id}`
+  const cached = await withFallback(() => redis.get(cacheKey), null)
+  if (cached) {
+    return NextResponse.json(cached)
   }
 
   const db = createServiceRoleClient()
@@ -41,5 +50,7 @@ export async function GET() {
   console.log('[Resume Saved GET] Found resume for user:', user.id,
     '| skills:', (data.skill_entities as { skills?: string[] })?.skills?.length ?? 0)
 
-  return NextResponse.json({ resume: data })
+  const responseBody = { resume: data }
+  await withFallback(() => redis.set(cacheKey, responseBody, { ex: RESUME_SAVED_CACHE_TTL }), undefined)
+  return NextResponse.json(responseBody)
 }

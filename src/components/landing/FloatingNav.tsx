@@ -91,7 +91,7 @@ export function FloatingNav() {
                 className="h-full w-full object-contain drop-shadow-[0_0_8px_rgba(90,210,244,0.5)]"
               />
             </motion.div>
-            <span className="text-sm font-black tracking-tight text-white sm:text-base">
+            <span className="text-sm font-semibold tracking-[-0.01em] text-white sm:text-base">
               PrioryxAI
             </span>
           </Link>
@@ -147,7 +147,7 @@ export function FloatingNav() {
               href="/login"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
-              className="rounded-xl bg-gradient-to-r from-violet-600 via-cyan-500 to-emerald-400 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/35 sm:text-sm"
+              className="rounded-xl bg-gradient-to-r from-violet-600 via-cyan-500 to-emerald-400 px-4 py-1.5 text-xs font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/35 sm:text-sm"
             >
               Get started
             </motion.a>
@@ -244,7 +244,7 @@ export function FloatingNav() {
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-center text-sm font-bold text-white shadow-lg shadow-cyan-500/20"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-cyan-500/20"
                   >
                     Get started
                     <ArrowRight size={14} />

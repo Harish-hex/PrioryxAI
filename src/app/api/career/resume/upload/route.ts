@@ -403,6 +403,10 @@ export async function POST(req: NextRequest) {
   console.log('[Resume API] Total time:', Date.now() - startTime, 'ms')
   console.log('[Resume API] ════════════════════════════════\n')
 
+    const { withFallback, redis } = await import('@/lib/redis')
+    await withFallback(() => redis.del(`career-resume:${user.id}`), 0)
+    await withFallback(() => redis.del(`career-resume-saved:${user.id}`), 0)
+
     return NextResponse.json({
       success: true,
       saved: !!savedId,
