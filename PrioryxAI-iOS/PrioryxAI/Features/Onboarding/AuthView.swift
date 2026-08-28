@@ -7,6 +7,8 @@ struct AuthView: View {
   @State private var password = ""
   @State private var fullName = ""
   @State private var isLoading = false
+  @State private var errorMessage: String?
+  @State private var infoMessage: String?
   
   var body: some View {
     ScrollView {
@@ -23,9 +25,13 @@ struct AuthView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 24)
         
-        // Social OAuth
+        // Social OAuth — not wired to real GitHub/Google sign-in yet (needs
+        // ASWebAuthenticationSession + a redirect URI registered with
+        // Supabase; ran out of scope for this pass). Shown disabled rather
+        // than silently faking a signed-in session as the previous
+        // "demo_google_jwt"/"demo_github_jwt" placeholders did.
         VStack(spacing: 12) {
-          Button(action: handleGoogleAuth) {
+          Button(action: { infoMessage = "Google sign-in is coming soon — use email for now." }) {
             HStack(spacing: 10) {
               Text("🌐")
               Text("Continue with Google")
@@ -35,12 +41,12 @@ struct AuthView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(Color.surface1)
-            .foregroundColor(Color.labelPrimary)
+            .foregroundColor(Color.labelTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.separator, lineWidth: 1))
           }
-          
-          Button(action: handleGitHubAuth) {
+
+          Button(action: { infoMessage = "GitHub sign-in is coming soon — use email for now." }) {
             HStack(spacing: 10) {
               Text("🐙")
               Text("Continue with GitHub")
@@ -50,12 +56,18 @@ struct AuthView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(Color.surface1)
-            .foregroundColor(Color.labelPrimary)
+            .foregroundColor(Color.labelTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.separator, lineWidth: 1))
           }
         }
         .padding(.top, 8)
+
+        if let infoMessage {
+          Text(infoMessage)
+            .font(.captionSM)
+            .foregroundColor(Color.labelSecondary)
+        }
         
         // Divider
         HStack {
@@ -85,7 +97,14 @@ struct AuthView: View {
             .padding()
             .background(Color.surface2)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-          
+
+          if let errorMessage {
+            Text(errorMessage)
+              .font(.captionSM)
+              .foregroundColor(.brandRed)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+
           PXButton(
             title: isSignUp ? "Create Free Account →" : "Sign In ⚡",
             variant: .gradient,
@@ -117,46 +136,31 @@ struct AuthView: View {
     }
   }
   
-  private func handleGoogleAuth() {
-    // Authenticate via OAuth
-    auth.signIn(token: "demo_google_jwt", userProfile: Profile(
-      id: UUID(),
-      fullName: "Engineering Student",
-      name: "Student",
-      email: "user@gmail.com",
-      college: "IIT Bombay",
-      semester: 6,
-      subscriptionStatus: "free"
-    ))
-  }
-  
-  private func handleGitHubAuth() {
-    auth.signIn(token: "demo_github_jwt", userProfile: Profile(
-      id: UUID(),
-      fullName: "GitHub Developer",
-      name: "Developer",
-      email: "dev@github.com",
-      college: "Anna University",
-      semester: 6,
-      githubUsername: "codewithyug06",
-      subscriptionStatus: "free"
-    ))
-  }
-  
   private func handleEmailAuth() {
     guard !email.isEmpty && !password.isEmpty else { return }
+    errorMessage = nil
+    infoMessage = nil
     isLoading = true
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-      isLoading = false
-      auth.signIn(token: "demo_email_jwt", userProfile: Profile(
-        id: UUID(),
-        fullName: fullName.isEmpty ? "Rahul Sharma" : fullName,
-        name: fullName.isEmpty ? "Rahul" : fullName,
-        email: email,
-        college: "Engineering Institute",
-        semester: 6,
-        subscriptionStatus: "free"
-      ))
+
+    Task {
+      defer { isLoading = false }
+      do {
+        if isSignUp {
+          if let session = try await SupabaseAuthService.signUp(email: email, password: password, fullName: fullName) {
+            await auth.signIn(token: session.accessToken, refreshToken: session.refreshToken)
+          } else {
+            infoMessage = "Account created — check your email to confirm, then sign in."
+            isSignUp = false
+          }
+        } else {
+          let session = try await SupabaseAuthService.signIn(email: email, password: password)
+          await auth.signIn(token: session.accessToken, refreshToken: session.refreshToken)
+        }
+      } catch let authError as SupabaseAuthService.AuthError {
+        errorMessage = authError.localizedDescriptionText
+      } catch {
+        errorMessage = "Something went wrong. Check your connection and try again."
+      }
     }
   }
 }

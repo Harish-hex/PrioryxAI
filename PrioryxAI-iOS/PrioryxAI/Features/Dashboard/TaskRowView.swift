@@ -12,16 +12,16 @@ struct TaskRowView: View {
         onDone()
       }) {
         RoundedRectangle(cornerRadius: 6)
-          .stroke(task.priority == .urgent ? Color.brandRed : Color.brandViolet, lineWidth: 2)
+          .stroke(task.effectivePriority == .urgent ? Color.brandRed : Color.brandViolet, lineWidth: 2)
           .frame(width: 20, height: 20)
       }
       .padding(.top, 2)
-      
+
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
-          PXBadge(text: task.priority.label, style: badgeStyle(task.priority))
-          if let category = task.category {
-            PXBadge(text: category, style: .secondary)
+          PXBadge(text: task.effectivePriority.label, style: badgeStyle(task.effectivePriority))
+          if let subject = task.subject {
+            PXBadge(text: subject, style: .secondary)
           }
         }
         

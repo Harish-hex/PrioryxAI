@@ -97,10 +97,11 @@ struct SetupProfileView: View {
           }
           
           PXButton(title: "Save & Enter Command Center →", variant: .gradient, size: .lg) {
-            var updated = auth.profile ?? Profile(id: UUID())
+            var updated = auth.profile ?? Profile(id: UUID().uuidString)
             updated.college = college.isEmpty ? "IIT Bombay" : college
             updated.semester = semester
-            updated.targetRole = targetRole
+            // targetRole isn't part of the /user/profile schema (no server field
+            // for it yet) — kept as local-only UI state for now.
             auth.profile = updated
             showComplete = true
           }
@@ -144,7 +145,7 @@ struct SetupCompleteView: View {
       
       PXButton(title: "Launch PrioryxAI Command Center ⚡", variant: .gradient, size: .lg) {
         // Triggers navigation to MainTabView
-        var updated = auth.profile ?? Profile(id: UUID())
+        var updated = auth.profile ?? Profile(id: UUID().uuidString)
         if updated.college == nil { updated.college = "IIT Bombay" }
         auth.profile = updated
       }

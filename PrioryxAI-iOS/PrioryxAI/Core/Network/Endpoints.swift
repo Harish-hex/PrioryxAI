@@ -2,8 +2,23 @@ import Foundation
 
 struct Endpoints {
   static let baseURL = "https://www.prioryxai.in/api"
-  
+
+  // Auth / profile
+  static let userProfile = "/user/profile"
+  static let userStatus = "/user/status"
+  static let authLogout = "/auth/logout"
+
+  // Dashboard — there is no GET /tasks; the task list + stats come from
+  // /feed and /stats respectively (matches the web app's dashboard fetch).
+  // POST /tasks (structured create) does exist and is used by Add Task.
   static let tasks = "/tasks"
+  static let feed = "/feed"
+  static let stats = "/stats"
+  static let ingestManual = "/ingest/manual" // POST { text } — AI-parses a plain-English task
+  static func taskComplete(_ id: String) -> String { "/tasks/\(id)/complete" } // PATCH
+  static func taskDelete(_ id: String) -> String { "/tasks/\(id)" } // DELETE
+  static func taskSnooze(_ id: String) -> String { "/tasks/\(id)/snooze" } // POST { hours }
+
   static let priority = "/priority"
   static let assistant = "/assistant"
   static let resumeUpload = "/career/resume/upload"

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Intentionally minimal — no special capabilities are wired up yet.
+	     Real GitHub/Google OAuth (currently disabled in AuthView, see its
+	     comments) will need Associated Domains here once implemented via
+	     ASWebAuthenticationSession + a registered redirect URI. -->
+</dict>
+</plist>

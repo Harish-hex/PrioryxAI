@@ -84,15 +84,15 @@ struct AddTaskSheet: View {
           
           PXButton(title: "Save Priority Task ⚡", variant: .gradient, size: .lg) {
             guard !title.isEmpty else { return }
+            // The tasks table has no separate description column — fold it
+            // into the title the way the web app's single free-text capture
+            // effectively does, rather than silently dropping what the user typed.
+            let fullTitle = description.isEmpty ? title : "\(title) — \(description)"
             let newTask = TaskItem(
-              id: UUID(),
-              title: title,
-              description: description.isEmpty ? nil : description,
-              priority: priority,
-              status: .pending,
-              category: category,
-              source: "manual",
-              createdAt: Date()
+              title: fullTitle,
+              type: "manual",
+              subject: category,
+              priority: priority
             )
             onAdd(newTask)
             dismiss()

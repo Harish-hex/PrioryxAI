@@ -1,14 +1,9 @@
 import Foundation
 
-class SupabaseManager {
-  static let shared = SupabaseManager()
-  
-  let supabaseURL = URL(string: "https://wgvswyatbrdggrdadqss.supabase.co")!
-  let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnN3eWF0YnJkZ2dyZGFkcXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4ODgyNDgsImV4cCI6MjA5MTQ2NDI0OH0.oZxLP9TjeuyYz1XOCBsrytcM7re514RErKDBk6BIHw0"
-  
-  private init() {}
-}
-
+// Note: Supabase project URL/anon key now live in SupabaseAuthService.swift
+// (used for real email/password auth via the GoTrue REST API). This client
+// only talks to the Next.js API routes at Endpoints.baseURL, authenticated
+// with the Bearer token that auth flow produces.
 class APIClient {
   static let shared = APIClient()
   let baseURL = Endpoints.baseURL

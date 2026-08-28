@@ -6,7 +6,10 @@ class AuthManager: ObservableObject {
   @Published var isAuthenticated: Bool = false
   @Published var isPro: Bool = false
   @Published var isLoading: Bool = true
-  
+  /// Set when loadProfile() fails while a session token exists — the UI
+  /// should show a real error + retry, not silently pretend everything's fine.
+  @Published var profileLoadError: String?
+
   static let shared = AuthManager()
   
   init() {
@@ -31,40 +34,35 @@ class AuthManager: ObservableObject {
   
   func loadProfile() async {
     do {
-      let fetched: Profile = try await APIClient.shared.request("/user/profile")
-      self.profile = fetched
-      self.isPro = fetched.isPro
+      let envelope: ProfileEnvelope = try await APIClient.shared.request(Endpoints.userProfile)
+      self.profile = envelope.profile
+      self.isPro = envelope.profile.isPro
+      self.profileLoadError = nil
     } catch {
-      // Use fallback profile
-      if profile == nil {
-        self.profile = Profile(
-          id: UUID(),
-          fullName: "Engineering Student",
-          name: "Student",
-          email: "user@prioryxai.in",
-          college: "Engineering College",
-          semester: 6,
-          cgpa: 8.8,
-          targetRole: "Fullstack SDE",
-          githubUsername: "codewithyug06",
-          subscriptionStatus: "free",
-          placementScore: 82,
-          githubStreakDays: 14,
-          githubHealthScore: 88
-        )
-      }
+      // A real backend failure must be visible, not papered over with fake
+      // data — a user who's actually unauthenticated or offline needs to
+      // know that, not see a convincing-looking mock "Engineering Student"
+      // profile that silently doesn't match their real account.
+      self.profileLoadError = "Couldn't load your profile. Check your connection and try again."
     }
   }
   
-  func signIn(token: String, userProfile: Profile) {
+  /// Stores a real Supabase access token and loads the caller's actual
+  /// profile from the backend — there is no client-supplied `userProfile`
+  /// anymore, since the only place that data can legitimately come from
+  /// is the server itself (see `loadProfile()`).
+  func signIn(token: String, refreshToken: String? = nil) async {
     KeychainHelper.standard.save(token, service: "in.prioryxai.app", account: "access_token")
-    self.profile = userProfile
+    if let refreshToken {
+      KeychainHelper.standard.save(refreshToken, service: "in.prioryxai.app", account: "refresh_token")
+    }
     self.isAuthenticated = true
-    self.isPro = userProfile.isPro
+    await loadProfile()
   }
-  
+
   func signOut() {
     KeychainHelper.standard.delete(service: "in.prioryxai.app", account: "access_token")
+    KeychainHelper.standard.delete(service: "in.prioryxai.app", account: "refresh_token")
     self.isAuthenticated = false
     self.profile = nil
     self.isPro = false

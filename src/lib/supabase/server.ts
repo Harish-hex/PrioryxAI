@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createTimeoutFetch } from '@/lib/supabase/fetch-with-timeout';
 
 function shouldUseSecureCookies() {
@@ -17,11 +17,29 @@ export function createClient() {
     // Outside of request scope (e.g. background worker, MCP server, testing)
   }
 
+  // Native clients (iOS/Android) have no cookie jar — they authenticate with
+  // a plain `Authorization: Bearer <supabase_access_token>` header instead.
+  // Cookie-based web sessions are unaffected: this only takes effect when a
+  // Bearer header is actually present, and it's forwarded to Supabase's own
+  // auth verification (getUser()) rather than trusted directly.
+  let bearerToken: string | null = null;
+  try {
+    const authHeader = headers().get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      bearerToken = authHeader.slice(7).trim();
+    }
+  } catch {
+    // Outside of request scope
+  }
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: { fetch: createTimeoutFetch() },
+      global: {
+        fetch: createTimeoutFetch(),
+        ...(bearerToken ? { headers: { Authorization: `Bearer ${bearerToken}` } } : {}),
+      },
       cookies: {
         getAll() {
           try {

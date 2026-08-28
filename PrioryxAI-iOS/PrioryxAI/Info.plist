@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>PrioryxAI</string>
+	<key>CFBundleName</key>
+	<string>PrioryxAI</string>
+	<key>CFBundleIdentifier</key>
+	<string>in.prioryxai.app</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.education</string>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIRequiresFullScreen</key>
+	<true/>
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
+
+	<!-- Resume upload will let students photograph/pick their resume or
+	     timetable, matching the web app's /career/resume/upload and
+	     /settings vision-ingest flows — usage strings present ahead of that
+	     screen being wired up so the app doesn't need an Info.plist change
+	     (and App Store review re-check) later just to add them. -->
+	<key>NSCameraUsageDescription</key>
+	<string>PrioryxAI uses your camera to scan your resume, timetable, or exam schedule and turn it into prioritized tasks.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PrioryxAI needs access to your photo library so you can upload a resume, timetable, or exam schedule image.</string>
+</dict>
+</plist>

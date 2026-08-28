@@ -22,16 +22,16 @@ struct NextPriorityCard: View {
         
         Spacer()
         
-        PXBadge(text: task.priority.label, style: badgeStyle(task.priority))
+        PXBadge(text: task.effectivePriority.label, style: badgeStyle(task.effectivePriority))
       }
-      
+
       Text(task.title)
         .font(.titleMD)
         .foregroundColor(Color.labelPrimary)
         .padding(.top, 14)
         .lineLimit(2)
-      
-      if let desc = task.description {
+
+      if let desc = task.reason {
         Text(desc)
           .font(.bodyMD)
           .foregroundColor(Color.labelSecondary)

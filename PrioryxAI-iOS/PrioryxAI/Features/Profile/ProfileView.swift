@@ -107,7 +107,10 @@ struct ProfileView: View {
           
           // Recruiter Readiness
           HStack(spacing: 20) {
-            ScoreRingView(score: auth.profile?.placementScore ?? 82, size: 84, label: "ATS Score")
+            // TODO: wire to GET /api/readiness-score (not part of the /user/profile
+            // payload) — out of scope for this pass, showing GitHub health as a
+            // stand-in rather than a fabricated placement score.
+            ScoreRingView(score: auth.profile?.githubHealthScore ?? 0, size: 84, label: "GitHub Health")
             
             VStack(alignment: .leading, spacing: 10) {
               VStack(alignment: .leading, spacing: 2) {

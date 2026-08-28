@@ -144,12 +144,19 @@ struct UpgradeView: View {
     }
   }
   
+  // TODO: this simulates a purchase locally — it does not charge anything or
+  // call the real backend. The web app uses a Razorpay hosted payment link
+  // (see src/app/api/payments/verify/route.ts + src/app/api/webhooks/razorpay);
+  // wiring real payments on iOS needs either that same hosted-link flow via
+  // SFSafariViewController, or a StoreKit in-app-purchase product, neither of
+  // which is implemented yet. Left as local-only so the demo flow still works,
+  // but this must not ship to the App Store claiming to sell Pro.
   private func handlePurchase() {
     isLoading = true
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
       isLoading = false
-      var updated = auth.profile ?? Profile(id: UUID())
-      updated.subscriptionStatus = "pro"
+      var updated = auth.profile ?? Profile(id: UUID().uuidString)
+      updated.proStatus = true
       auth.profile = updated
       auth.isPro = true
       UINotificationFeedbackGenerator().notificationOccurred(.success)

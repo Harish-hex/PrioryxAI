@@ -20,6 +20,22 @@ struct ContentView: View {
         .background(Color.bgPrimary)
       } else if !auth.isAuthenticated {
         OnboardingView()
+      } else if let error = auth.profileLoadError, auth.profile == nil {
+        // Signed in, but the real profile fetch failed — show a retry, not
+        // the setup wizard (which would look like a fresh/empty account).
+        VStack(spacing: 16) {
+          Text("⚠️").font(.system(size: 40))
+          Text(error)
+            .font(.bodyMD)
+            .foregroundColor(Color.labelSecondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 32)
+          PXButton(title: "Retry", variant: .gradient, size: .md) {
+            Task { await auth.loadProfile() }
+          }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.bgPrimary)
       } else if auth.profile?.college == nil || auth.profile?.college?.isEmpty == true {
         SetupProfileView()
       } else {

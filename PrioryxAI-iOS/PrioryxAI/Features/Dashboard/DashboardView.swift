@@ -1,5 +1,31 @@
 import SwiftUI
 
+private struct FeedResponse: Decodable {
+  let feed: [TaskItem]
+}
+
+private struct StatsResponse: Decodable {
+  let pending_tasks: Int?
+  let completed_this_week: Int?
+  let overdue: Int?
+  let github: GithubStats?
+
+  struct GithubStats: Decodable {
+    let streak_days: Int?
+  }
+}
+
+private struct APIAck: Decodable {
+  let success: Bool?
+}
+
+private struct NewTaskBody: Encodable {
+  let title: String
+  let type: String?
+  let priority: String?
+  let subject: String?
+}
+
 @MainActor
 class DashboardViewModel: ObservableObject {
   @Published var tasks: [TaskItem] = []
@@ -7,62 +33,51 @@ class DashboardViewModel: ObservableObject {
   @Published var projectIdeas: [Project] = []
   @Published var isLoading = false
   @Published var showAddTask = false
-  
+  @Published var loadError: String?
+
   func load() async {
     isLoading = true
     defer { isLoading = false }
-    
-    // Sample tasks & project ideas
-    self.tasks = [
-      TaskItem(
-        id: UUID(),
-        title: "Complete Operating Systems Lab Assignment 3",
-        description: "Implement multi-threaded producer-consumer problem with mutex in C++.",
-        priority: .urgent,
-        status: .pending,
-        category: "Assignment",
-        source: "timetable"
-      ),
-      TaskItem(
-        id: UUID(),
-        title: "Solve 2 LeetCode Mediums on Graph BFS/DFS",
-        description: "Target Course Schedule and Number of Islands.",
-        priority: .high,
-        status: .pending,
-        category: "DSA Practice",
-        source: "ai"
-      ),
-      TaskItem(
-        id: UUID(),
-        title: "Review Distributed Rate Limiter Go Architecture",
-        description: "Add Docker Compose and Redis cluster caching primitives.",
-        priority: .medium,
-        status: .pending,
-        category: "Project",
-        source: "foundry"
+    loadError = nil
+
+    async let feedResult: FeedResponse? = try? APIClient.shared.request(Endpoints.feed)
+    async let statsResult: StatsResponse? = try? APIClient.shared.request(Endpoints.stats)
+
+    let (feed, stats) = await (feedResult, statsResult)
+
+    if let feed {
+      self.tasks = feed.feed.filter { !$0.completed }
+    } else if tasks.isEmpty {
+      loadError = "Couldn't load your tasks. Pull to refresh to try again."
+    }
+
+    if let stats {
+      self.stats = WeekStats(
+        pending: stats.pending_tasks ?? tasks.count,
+        completed: stats.completed_this_week ?? 0,
+        overdue: stats.overdue ?? 0,
+        streak: stats.github?.streak_days ?? 0
       )
-    ]
-    
-    self.projectIdeas = [
-      Project(
-        id: UUID(),
-        title: "Distributed Rate Limiter in Go",
-        description: "High-throughput token bucket algorithm with Redis cluster & Docker.",
-        tier: "intermediate",
-        techStack: ["Go", "Redis", "Docker"]
-      ),
-      Project(
-        id: UUID(),
-        title: "Real-Time Collaborative Code Editor",
-        description: "CRDT and WebSocket multiplayer document sync with Node.js.",
-        tier: "advanced",
-        techStack: ["TypeScript", "WebSockets", "Node.js"]
-      )
-    ]
-    
-    self.stats = WeekStats(pending: tasks.count, completed: 6, overdue: 1, streak: 14)
+    }
+
+    // Project ideas widget uses the same endpoint the web dashboard's
+    // ProjectIdeasPanel does (see src/app/api/projects/ideas/route.ts).
+    struct IdeasResponse: Decodable {
+      struct Idea: Decodable {
+        let title: String
+        let description: String
+        let difficulty: String
+        let techStack: [String]
+      }
+      let ideas: [Idea]
+    }
+    if let ideasResult: IdeasResponse = try? await APIClient.shared.request(Endpoints.foundryIdeas) {
+      self.projectIdeas = ideasResult.ideas.map {
+        Project(id: UUID(), title: $0.title, description: $0.description, tier: $0.difficulty.lowercased(), techStack: $0.techStack)
+      }
+    }
   }
-  
+
   func markDone(_ task: TaskItem) {
     withAnimation {
       tasks.removeAll { $0.id == task.id }
@@ -70,22 +85,38 @@ class DashboardViewModel: ObservableObject {
       stats.pending = max(0, stats.pending - 1)
     }
     UINotificationFeedbackGenerator().notificationOccurred(.success)
+    Task {
+      let _: APIAck? = try? await APIClient.shared.request(Endpoints.taskComplete(task.id), method: "PATCH")
+    }
   }
-  
+
   func deleteTask(_ task: TaskItem) {
     withAnimation {
       tasks.removeAll { $0.id == task.id }
       stats.pending = max(0, stats.pending - 1)
     }
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-  }
-  
-  func addTask(_ task: TaskItem) {
-    withAnimation {
-      tasks.insert(task, at: 0)
-      stats.pending += 1
+    Task {
+      let _: APIAck? = try? await APIClient.shared.request(Endpoints.taskDelete(task.id), method: "DELETE")
     }
+  }
+
+  func addTask(_ draft: TaskItem) {
     UINotificationFeedbackGenerator().notificationOccurred(.success)
+    Task {
+      let body = NewTaskBody(title: draft.title, type: draft.type, priority: draft.priority?.rawValue, subject: draft.subject)
+      struct CreatedTaskResponse: Decodable { let task: TaskItem }
+      if let created: CreatedTaskResponse = try? await APIClient.shared.request(Endpoints.tasks, method: "POST", body: body) {
+        withAnimation {
+          tasks.insert(created.task, at: 0)
+          stats.pending += 1
+        }
+      } else {
+        // Server didn't confirm — refresh from source of truth rather than
+        // showing a task that may not actually exist.
+        await load()
+      }
+    }
   }
 }
 
