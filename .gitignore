@@ -44,7 +44,9 @@ MCP_CONNECTOR_SETUP.md
 PRIORYXAI_DESCRIPTION.md
 AGENTS.md
 CLAUDE.md
+GEMINI.md
 .agents/
+.gemini/
 
 # certificates and keys
 *.pem
@@ -56,6 +58,9 @@ CLAUDE.md
 # Temporary tool output and artifacts
 .playwright-mcp/
 .serena/
+.token-optimizer/
 graphify-out/
 *.zip
 supabase/.temp/
+tempCodeRunnerFile*
+

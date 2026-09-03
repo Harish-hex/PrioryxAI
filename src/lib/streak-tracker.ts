@@ -3,7 +3,7 @@
  * Cycle: Starts on Sunday (0) and ends on Saturday (6).
  * Automatically resets for the new week after Saturday (starting fresh on Sunday).
  * If a user signs in or completes at least 1 task on a day, that day gets marked as completed.
- * Users can also click any day to manually toggle the tick option.
+ * The tick reflects real activity only — there is no manual toggle.
  */
 
 export const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -82,27 +82,6 @@ export function recordDailyActivity(dateStr?: string) {
       localStorage.setItem("prioryx_completed_days", JSON.stringify(list));
     }
     window.dispatchEvent(new CustomEvent("prioryx_activity_updated", { detail: { date: targetDate, completed: true } }));
-  } catch {}
-}
-
-/**
- * Toggle tick option for a specific day (allows user to manually tick/untick).
- */
-export function toggleDailyActivity(dateStr: string) {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = localStorage.getItem("prioryx_completed_days");
-    let list: string[] = raw ? JSON.parse(raw) : [];
-    const exists = list.includes(dateStr);
-
-    if (exists) {
-      list = list.filter((d) => d !== dateStr);
-    } else {
-      list.push(dateStr);
-    }
-
-    localStorage.setItem("prioryx_completed_days", JSON.stringify(list));
-    window.dispatchEvent(new CustomEvent("prioryx_activity_updated", { detail: { date: dateStr, completed: !exists } }));
   } catch {}
 }
 

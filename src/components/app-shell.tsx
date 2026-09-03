@@ -67,7 +67,7 @@ const WavesBackground = dynamic(() => import("@/components/ui/waves-background")
   ssr: false,
 });
 
-import { getCurrentWeekDays, recordDailyActivity, toggleDailyActivity } from "@/lib/streak-tracker";
+import { getCurrentWeekDays, recordDailyActivity } from "@/lib/streak-tracker";
 import { recordUserActivity } from "@/lib/activity-tracker";
 
 const pageTitles: Record<string, string> = {
@@ -137,39 +137,29 @@ function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
 
   const { days, completedCount, weekRange } = weekData;
 
-  const handleDayClick = (dateStr: string, isFuture: boolean) => {
-    if (isFuture) return;
-    toggleDailyActivity(dateStr);
-  };
-
   return (
     <>
-      {/* Desktop 7-Day Interactive Row */}
+      {/* Desktop 7-Day Row (reflects real activity only — not manually toggleable) */}
       <div
         className="hidden md:flex items-center gap-1.5 rounded-[24px] neu-inset px-4 py-2 transition-all"
         title={`Weekly Streak: ${completedCount} / 7 days completed (${weekRange}) · Resets after Saturday (Sunday)`}
       >
         <div className="flex items-center gap-2 sm:gap-2.5">
           {days.map((item) => {
-            const { day, dateStr, isToday, isCompleted, isPast, isFuture } = item;
+            const { day, isToday, isCompleted, isPast, isFuture } = item;
 
             return (
-              <button
+              <div
                 key={day}
-                type="button"
-                onClick={() => handleDayClick(dateStr, isFuture)}
-                disabled={isFuture}
-                className={`group flex flex-col items-center gap-1 min-w-[28px] focus:outline-none transition-transform ${
-                  isFuture ? "cursor-default" : "cursor-pointer active:scale-95"
-                }`}
+                className="group flex flex-col items-center gap-1 min-w-[28px]"
                 title={
                   isFuture
                     ? `${day}: Upcoming`
                     : isCompleted
-                    ? `${day}: Completed (Click to toggle)`
+                    ? `${day}: Completed`
                     : isToday
-                    ? `${day}: Today - Click to mark completed`
-                    : `${day}: Click to mark completed`
+                    ? `${day}: Today - complete a task to mark it`
+                    : `${day}: No activity`
                 }
               >
                 <span
@@ -202,25 +192,20 @@ function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
                 >
                   {day}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Mobile Streak Badge */}
-      <button
-        type="button"
-        onClick={() => {
-          const today = new Date().toISOString().split("T")[0];
-          toggleDailyActivity(today);
-        }}
-        className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 active:scale-95 transition"
-        title="Weekly Streak (Tap to toggle today)"
+      {/* Mobile Streak Badge (display-only) */}
+      <div
+        className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200"
+        title="Weekly Streak"
       >
         <Zap size={13} className="text-cyan-500 fill-cyan-500/20" />
         <span>{completedCount}/7</span>
-      </button>
+      </div>
     </>
   );
 }
