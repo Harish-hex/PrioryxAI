@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthUser, createServiceRoleClient } from '@/lib/supabase-server'
+import { redis } from '@/lib/redis'
 
 export const maxDuration = 15
 export const dynamic = 'force-dynamic'
@@ -57,6 +58,14 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const cacheKey = `peer-profile:${user.id}`
+  try {
+    const cached = await redis.get(cacheKey)
+    if (cached) {
+      return NextResponse.json({ created: false, profile: cached })
+    }
+  } catch {}
+
   const db = createServiceRoleClient()
 
   // Check if profile already exists
@@ -68,6 +77,7 @@ export async function POST() {
 
   if (existing) {
     console.log('[EnsureProfile] Profile already exists:', existing.connect_code)
+    try { await redis.set(cacheKey, existing, { ex: 300 }) } catch {}
     return NextResponse.json({
       created: false,
       profile: existing
@@ -134,6 +144,7 @@ export async function POST() {
   }
 
   console.log('[EnsureProfile] Created profile with code:', newProfile.connect_code)
+  try { await redis.set(cacheKey, newProfile, { ex: 300 }) } catch {}
 
   return NextResponse.json({
     created: true,

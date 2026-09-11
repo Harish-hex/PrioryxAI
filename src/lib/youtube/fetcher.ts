@@ -69,7 +69,12 @@ export async function searchYouTubeVideos(
     const currentQuotaStr = await redis.get(quotaKey);
     const currentQuota = currentQuotaStr ? parseInt(currentQuotaStr as string, 10) : 0;
     
-    if (currentQuota > 80) {
+    // Leave headroom under the real 10,000-unit daily quota for other callers.
+    const DAILY_UNIT_BUDGET = 9000;
+    const SEARCH_COST = 100; // search.list costs 100 units
+    const LIST_COST = 1; // videos.list costs 1 unit
+
+    if (currentQuota + SEARCH_COST + LIST_COST > DAILY_UNIT_BUDGET) {
       console.warn('YouTube API Quota exceeded for today, using fallback');
       return [FALLBACK_VIDEOS[signal.category]];
     }
@@ -77,14 +82,14 @@ export async function searchYouTubeVideos(
     // Step 1: Search
     const searchUrl = `${YT_BASE}/search?part=snippet&q=${encodeURIComponent(signal.searchQuery)}&type=video&videoDuration=medium&videoDefinition=high&relevanceLanguage=en&order=relevance&maxResults=10&key=${API_KEY}`;
     const searchRes = await fetch(searchUrl);
-    
+
     if (!searchRes.ok) {
        console.error('YouTube Search API failed', await searchRes.text());
        return [FALLBACK_VIDEOS[signal.category]];
     }
-    
-    // Increment quota (roughly 100 units per search call)
-    await redis.incr(quotaKey);
+
+    // Increment quota by the real search.list cost (100 units)
+    await redis.incrby(quotaKey, SEARCH_COST);
     // Rough estimation: if it's new key, set expire to 24h
     if (currentQuota === 0) await redis.expire(quotaKey, 60 * 60 * 24);
 
@@ -104,8 +109,8 @@ export async function searchYouTubeVideos(
        return [FALLBACK_VIDEOS[signal.category]];
     }
 
-    // Increment quota (1 unit per list request)
-    await redis.incr(quotaKey);
+    // Increment quota by the real videos.list cost (1 unit)
+    await redis.incrby(quotaKey, LIST_COST);
     
     const detailsData = await detailsRes.json();
     const videos = detailsData.items || [];

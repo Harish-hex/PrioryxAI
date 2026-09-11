@@ -422,48 +422,14 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
 
   const stats = [
     { label: "Active streak", value: `${calculatedStreak}d`, icon: Flame },
-    { label: "Health score", value: `${profile.github_health_score ?? (profile.github_username ? 33 : 0)}`, icon: GitFork },
-    { label: "Tasks done", value: String(profile.completed_tasks > 0 ? profile.completed_tasks : (profile.total_tasks > 0 ? profile.total_tasks : 1)), icon: Trophy },
-    { label: "Semester", value: profile.semester ? `Sem ${profile.semester}` : "Sem 5", icon: BriefcaseBusiness },
+    { label: "Health score", value: `${profile.github_health_score ?? 0}`, icon: GitFork },
+    { label: "Tasks done", value: String(profile.completed_tasks ?? 0), icon: Trophy },
+    { label: "Semester", value: profile.semester ? `Sem ${profile.semester}` : "Not set", icon: BriefcaseBusiness },
   ];
 
-  const fallbackBullets = [
-    "Built a Physics-Informed Neural Network using Jupyter Notebook — Solved fluid-structure interaction problems around airfoils.",
-    "Built PrioryxAI using Next.js & TypeScript — Full-stack AI academic and career intelligence platform.",
-    "Built a distributed AI model training system using Go — Facilitated LLM fine-tuning on Kubernetes."
-  ];
+  const recruiterBullets: string[] = profile.project_bullets ?? [];
 
-  const recruiterBullets = (profile.project_bullets && profile.project_bullets.length > 0)
-    ? profile.project_bullets
-    : fallbackBullets;
-
-  const fallbackProjects: GithubRepo[] = [
-    {
-      name: "Pinn-FSI-Airfoil",
-      description: "Pinn-FSI developed in a Physics-Informed Neural Network implementation for solving fluid-structure interaction problems around airfoils.",
-      language: "Jupyter Notebook",
-      stars: 0,
-      url: profile.github_username ? `https://github.com/${profile.github_username}/Pinn-FSI-Airfoil` : "https://github.com",
-    },
-    {
-      name: "PrioryxAI",
-      description: "AI-Powered Academic & Career Copilot for Engineering Students.",
-      language: "TypeScript",
-      stars: 0,
-      url: profile.github_username ? `https://github.com/${profile.github_username}/PrioryxAI` : "https://github.com",
-    },
-    {
-      name: "trainer",
-      description: "Distributed AI Model Training and LLM Fine-Tuning on Kubernetes.",
-      language: "Go",
-      stars: 0,
-      url: profile.github_username ? `https://github.com/${profile.github_username}/trainer` : "https://github.com",
-    },
-  ];
-
-  const projectsToDisplay = (profile.top_repos && profile.top_repos.length > 0)
-    ? profile.top_repos.slice(0, 3)
-    : fallbackProjects;
+  const projectsToDisplay: GithubRepo[] = (profile.top_repos ?? []).slice(0, 3);
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -596,7 +562,7 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
         transition={{ duration: 0.35, delay: 0.05, ease: "easeOut" }}
         className="grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
       >
-        <div className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-7">
+        <div className="neu-card min-w-0 rounded-[28px] p-5 sm:rounded-[32px] sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
@@ -615,7 +581,7 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
           <ContributionGraph days={profile.contribution_days || []} />
         </div>
 
-        <div className="neu-card rounded-[28px] p-5 sm:rounded-[32px] sm:p-6">
+        <div className="neu-card min-w-0 rounded-[28px] p-5 sm:rounded-[32px] sm:p-6">
           <div className="flex items-center gap-2.5">
             <div className="neu-pill rounded-xl p-2 text-slate-900 sm:rounded-2xl sm:p-2.5 dark:text-white">
               <BriefcaseBusiness size={15} />
@@ -656,6 +622,11 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
             Focused summaries that read well in under thirty seconds.
           </p>
         </div>
+        {projectsToDisplay.length === 0 ? (
+          <p className="neu-inset mt-5 rounded-[18px] px-4 py-5 text-center text-xs leading-5 text-slate-500 dark:text-slate-400 sm:mt-6 sm:rounded-[22px] sm:text-sm sm:leading-6">
+            Connect GitHub to show your projects here.
+          </p>
+        ) : (
         <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projectsToDisplay.map((repo, index) => (
             <motion.a
@@ -693,6 +664,7 @@ export function ProfilePage({ username, isOwnProfile = true }: ProfilePageProps)
             </motion.a>
           ))}
         </div>
+        )}
       </motion.section>
 
       {/* Coding Platforms Section */}

@@ -75,8 +75,12 @@ const allDays: ContributionDay[] =
       .sort((a: ContributionDay, b: ContributionDay) => b.date.localeCompare(a.date));
 
   let streak = 0;
-  for (const day of allDays) {
-    if (day.contributionCount > 0) streak++;
+  let startIdx = 0;
+  if (allDays.length > 0 && allDays[0].contributionCount === 0) {
+    startIdx = 1; // today hasn't happened yet — don't let it break the streak
+  }
+  for (let i = startIdx; i < allDays.length; i++) {
+    if (allDays[i].contributionCount > 0) streak++;
     else break;
   }
 

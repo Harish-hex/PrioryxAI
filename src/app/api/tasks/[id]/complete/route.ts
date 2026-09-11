@@ -17,7 +17,7 @@ export async function PATCH(
 
   const { error } = await supabase
     .from('tasks')
-    .update({ completed: true })
+    .update({ completed: true, completed_at: new Date().toISOString() })
     .eq('id', params.id)
     .eq('user_id', user.id); // Ensure user owns the task
 

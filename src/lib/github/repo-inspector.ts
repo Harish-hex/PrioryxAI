@@ -14,6 +14,8 @@ export interface RepoStructureSignals {
   hasOrganizedStructure: boolean; // real folders (src/lib/app/etc) rather than a flat file dump
   fileCount: number;
   truncated: boolean; // GitHub truncates very large trees — treat signals as a lower bound
+  /** Path to the repo's most architecturally significant source file, for deep-dive content analysis */
+  keySourceFilePath: string | null;
 }
 
 interface GitTreeEntry {
@@ -85,6 +87,14 @@ export async function inspectRepoStructure(repoUrl: string | null): Promise<Repo
   const notebookCount = paths.filter(p => p.endsWith('.ipynb')).length;
   const sourceCodeCount = paths.filter(p => /\.(py|js|jsx|ts|tsx|go|java|rb|rs|cpp|c|cs)$/i.test(p) && !p.endsWith('.ipynb')).length;
 
+  // Pick the single most architecturally telling file to read for deep analysis:
+  // prefer a model/training entry point (the core ML logic), else the largest
+  // non-notebook source file (usually the main module/entry point).
+  const modelFiles = blobs.filter(e => MODEL_PATTERN.test(e.path) && /\.(py|ipynb)$/i.test(e.path));
+  const sourceBlobs = blobs.filter(e => /\.(py|js|jsx|ts|tsx|go|java|rb|rs|cpp|c|cs)$/i.test(e.path));
+  const keySourceFile = (modelFiles.length > 0 ? modelFiles : sourceBlobs)
+    .sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
+
   return {
     hasReadme: !!readmeEntry,
     readmeSizeBytes: readmeEntry?.size ?? 0,
@@ -97,5 +107,30 @@ export async function inspectRepoStructure(repoUrl: string | null): Promise<Repo
     hasOrganizedStructure: paths.some(p => ORGANIZED_DIR_PATTERN.test(p)),
     fileCount: paths.length,
     truncated: tree.truncated,
+    keySourceFilePath: keySourceFile?.path ?? null,
   };
+}
+
+/**
+ * Fetches and decodes the text content of one file in a repo via the GitHub
+ * Contents API, truncated to a safe prompt size. Used to ground GitHub
+ * Intelligence's architecture critique in actual code instead of file names
+ * alone. Fails soft (returns null) on any error.
+ */
+export async function fetchFileContent(repoUrl: string | null, path: string, maxChars = 6000): Promise<string | null> {
+  const parsed = parseOwnerRepo(repoUrl);
+  if (!parsed) return null;
+  const { owner, repo } = parsed;
+
+  const file = await githubRestFetch<{ content?: string; encoding?: string }>(
+    `/repos/${owner}/${repo}/contents/${path}`
+  );
+  if (!file?.content || file.encoding !== 'base64') return null;
+
+  try {
+    const decoded = Buffer.from(file.content, 'base64').toString('utf-8');
+    return decoded.slice(0, maxChars);
+  } catch {
+    return null;
+  }
 }

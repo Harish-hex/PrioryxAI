@@ -150,7 +150,7 @@ function ChallengeModal({
 
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="neu-card rounded-[28px] w-full max-w-md shadow-2xl p-6 space-y-4">
+      <div className="neu-card rounded-[28px] w-full max-w-md shadow-2xl p-6 space-y-4 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 2rem)" }}>
         <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
           <h3 className="font-bold text-lg text-slate-950 dark:text-white">Challenge {friend.profile?.display_name ?? 'Peer'}</h3>
           <button onClick={onClose} className="neu-btn p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white">
@@ -225,7 +225,7 @@ function SubmitResultModal({
 
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="neu-card rounded-[28px] w-full max-w-sm shadow-2xl p-6 space-y-4">
+      <div className="neu-card rounded-[28px] w-full max-w-sm shadow-2xl p-6 space-y-4 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 2rem)" }}>
         <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
           <h3 className="font-bold text-base text-slate-950 dark:text-white">Submit Result</h3>
           <button onClick={onClose} className="neu-btn p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white">
@@ -532,7 +532,7 @@ function CollabContent() {
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-1">
-            <div className="neu-inset rounded-2xl px-5 py-2.5 font-mono text-2xl font-black tracking-[0.2em] text-purple-700 dark:text-purple-300">
+            <div className="allow-select neu-inset rounded-2xl px-5 py-2.5 font-mono text-2xl font-black tracking-[0.2em] text-purple-700 dark:text-purple-300">
               {myProfile?.connect_code ?? '------'}
             </div>
             <button

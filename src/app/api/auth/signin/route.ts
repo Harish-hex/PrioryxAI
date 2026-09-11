@@ -92,6 +92,21 @@ export async function POST(request: NextRequest) {
   }
 
   if (signInError || !authData?.user) {
+    let noAccount = false;
+    try {
+      const { data: userList } = await serviceSupabase.auth.admin.listUsers();
+      noAccount = !userList?.users?.some(
+        (u) => u.email?.toLowerCase() === email
+      );
+    } catch {}
+
+    if (noAccount) {
+      return NextResponse.json(
+        { error: 'No account found for this email.', noAccount: true },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Incorrect email or password.' },
       { status: 401 }

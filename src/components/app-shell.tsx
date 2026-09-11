@@ -67,7 +67,7 @@ const WavesBackground = dynamic(() => import("@/components/ui/waves-background")
   ssr: false,
 });
 
-import { getCurrentWeekDays, recordDailyActivity } from "@/lib/streak-tracker";
+import { getCurrentWeekDays, recordDailyActivity, toggleDailyActivity } from "@/lib/streak-tracker";
 import { recordUserActivity } from "@/lib/activity-tracker";
 
 const pageTitles: Record<string, string> = {
@@ -137,29 +137,39 @@ function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
 
   const { days, completedCount, weekRange } = weekData;
 
+  const handleDayClick = (dateStr: string, isFuture: boolean) => {
+    if (isFuture) return;
+    toggleDailyActivity(dateStr);
+  };
+
   return (
     <>
-      {/* Desktop 7-Day Row (reflects real activity only — not manually toggleable) */}
+      {/* Desktop 7-Day Interactive Row */}
       <div
         className="hidden md:flex items-center gap-1.5 rounded-[24px] neu-inset px-4 py-2 transition-all"
         title={`Weekly Streak: ${completedCount} / 7 days completed (${weekRange}) · Resets after Saturday (Sunday)`}
       >
         <div className="flex items-center gap-2 sm:gap-2.5">
           {days.map((item) => {
-            const { day, isToday, isCompleted, isPast, isFuture } = item;
+            const { day, dateStr, isToday, isCompleted, isPast, isFuture } = item;
 
             return (
-              <div
+              <button
                 key={day}
-                className="group flex flex-col items-center gap-1 min-w-[28px]"
+                type="button"
+                onClick={() => handleDayClick(dateStr, isFuture)}
+                disabled={isFuture}
+                className={`group flex flex-col items-center gap-1 min-w-[28px] focus:outline-none transition-transform ${
+                  isFuture ? "cursor-default" : "cursor-pointer active:scale-95"
+                }`}
                 title={
                   isFuture
                     ? `${day}: Upcoming`
                     : isCompleted
-                    ? `${day}: Completed`
+                    ? `${day}: Completed (Click to toggle)`
                     : isToday
-                    ? `${day}: Today - complete a task to mark it`
-                    : `${day}: No activity`
+                    ? `${day}: Today - Click to mark completed`
+                    : `${day}: Click to mark completed`
                 }
               >
                 <span
@@ -192,20 +202,25 @@ function StreakCalendar({ stats, isPro }: { stats: any; isPro: boolean }) {
                 >
                   {day}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Mobile Streak Badge (display-only) */}
-      <div
-        className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200"
-        title="Weekly Streak"
+      {/* Mobile Streak Badge */}
+      <button
+        type="button"
+        onClick={() => {
+          const today = new Date().toISOString().split("T")[0];
+          toggleDailyActivity(today);
+        }}
+        className="flex md:hidden items-center gap-1.5 rounded-2xl neu-inset px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 active:scale-95 transition"
+        title="Weekly Streak (Tap to toggle today)"
       >
         <Zap size={13} className="text-cyan-500 fill-cyan-500/20" />
         <span>{completedCount}/7</span>
-      </div>
+      </button>
     </>
   );
 }
@@ -764,7 +779,7 @@ export default function AppShell({ username, initialView = "dashboard", initialF
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-[28px] neu-card sm:w-96"
+                      className="absolute right-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-[28px] neu-card sm:w-96"
                     >
                       <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/10 px-4 py-3">
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">

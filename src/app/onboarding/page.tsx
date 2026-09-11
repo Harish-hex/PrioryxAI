@@ -20,7 +20,16 @@ interface ProfilePayload {
   college: string | null;
   semester: number | null;
   subjects: string[] | null;
+  stream: string | null;
 }
+
+const STREAM_OPTIONS = [
+  { value: "ai-engineer", label: "AI Engineer" },
+  { value: "frontend", label: "Frontend Developer" },
+  { value: "backend", label: "Backend Developer" },
+  { value: "python", label: "Python / Data" },
+  { value: "other", label: "Other / Not sure yet" },
+];
 
 type Step = 1 | 2 | 3;
 
@@ -38,6 +47,7 @@ function OnboardingFlow() {
   const [college, setCollege] = useState("");
   const [semester, setSemester] = useState("");
   const [subjects, setSubjects] = useState("");
+  const [stream, setStream] = useState("");
   const [savingStep1, setSavingStep1] = useState(false);
   const [step1Error, setStep1Error] = useState<string | null>(null);
 
@@ -59,6 +69,7 @@ function OnboardingFlow() {
         setCollege(p.college ?? "");
         setSemester(p.semester ? String(p.semester) : "");
         setSubjects(p.subjects?.join(", ") ?? "");
+        setStream(p.stream ?? "");
       })
       .catch(() => {});
   }, []);
@@ -82,6 +93,7 @@ function OnboardingFlow() {
           college,
           semester: semester ? Number(semester) : undefined,
           subjects: subjectList.length ? subjectList : undefined,
+          stream: stream || undefined,
         }),
       });
       if (!res.ok) {
@@ -115,7 +127,6 @@ function OnboardingFlow() {
     try {
       const form = new FormData();
       form.append("file", timetableFile);
-      await fetch("/api/admin/migrate", { method: "POST" }).catch(() => null);
       const res = await fetch("/api/ingest/vision", { method: "POST", body: form });
       const text = await res.text();
       let data: any = null;
@@ -167,10 +178,10 @@ function OnboardingFlow() {
           First-time setup
         </div>
 
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
           Let&apos;s set up your workspace.
         </h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">
+        <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
           Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
         </p>
 
@@ -186,8 +197,8 @@ function OnboardingFlow() {
               transition={{ duration: 0.2 }}
               className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 1 — The basics</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 1 — The basics</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Helps the AI rank tasks for your semester and subjects.
               </p>
 
@@ -236,6 +247,24 @@ function OnboardingFlow() {
                   />
                 </Field>
 
+                <Field label="Stream / career track">
+                  <select
+                    value={stream}
+                    onChange={(e) => setStream(e.target.value)}
+                    className="input-base"
+                  >
+                    <option value="">Select a stream…</option>
+                    {STREAM_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                    Unlocks a personalized learning roadmap in the sidebar.
+                  </p>
+                </Field>
+
                 {step1Error && (
                   <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
                     {step1Error}
@@ -263,23 +292,23 @@ function OnboardingFlow() {
               transition={{ duration: 0.2 }}
               className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 2 — Connect GitHub</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 2 — Connect GitHub</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 PrioryxAI uses your repos, languages, and activity streak to rank tasks and match you with Internshala openings automatically.
               </p>
 
-              <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-5">
+              <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200">
                     <GitBranch size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-950">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white">
                       {profile?.github_username
                         ? `Connected: @${profile.github_username}`
                         : "Authorize GitHub"}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {profile?.github_username
                         ? "You can continue to the next step."
                         : "Read-only access. We never push or modify your repos."}
@@ -313,7 +342,7 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={skipGithub}
-                  className="text-sm text-slate-500 underline-offset-4 hover:text-slate-800 hover:underline"
+                  className="text-sm text-slate-500 underline-offset-4 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
                 >
                   Skip for now
                 </button>
@@ -321,7 +350,7 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="ml-auto text-sm text-slate-400 hover:text-slate-700"
+                  className="ml-auto text-sm text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   Back
                 </button>
@@ -338,14 +367,14 @@ function OnboardingFlow() {
               transition={{ duration: 0.2 }}
               className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">Step 3 — Add your schedule</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 3 — Add your schedule</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Upload a photo of your printed timetable, whiteboard schedule, or any image with exam dates. PrioryxAI extracts every date and adds it to your feed.
               </p>
 
               <div className="mt-5 space-y-3">
-                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
-                  <ImagePlus size={18} className="shrink-0 text-slate-400" />
+                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/25 dark:hover:bg-white/10">
+                  <ImagePlus size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
                   <span className="min-w-0 flex-1 truncate">
                     {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, or HEIC — up to 5 MB"}
                   </span>
@@ -401,13 +430,13 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="ml-auto text-sm text-slate-400 hover:text-slate-700"
+                  className="ml-auto text-sm text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   Back
                 </button>
               </div>
 
-              <p className="mt-4 text-xs text-slate-400">
+              <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
                 No image handy? You can add tasks later from your feed — PrioryxAI will nudge you when something important is missing.
               </p>
             </motion.div>
@@ -430,18 +459,18 @@ function StepIndicator({ current }: { current: Step }) {
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition ${
                 active
-                  ? "bg-slate-950 text-white"
+                  ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
                   : done
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-slate-100 text-slate-400"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+                    : "bg-slate-100 text-slate-400 dark:bg-white/10 dark:text-slate-500"
               }`}
             >
               {done ? <CheckCircle2 size={14} /> : n}
             </div>
-            <span className={`text-xs font-medium ${active ? "text-slate-950" : "text-slate-400"}`}>
+            <span className={`text-xs font-medium ${active ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
               {labels[n]}
             </span>
-            {i < 2 && <div className="mx-1 h-px w-8 bg-slate-200" />}
+            {i < 2 && <div className="mx-1 h-px w-8 bg-slate-200 dark:bg-white/10" />}
           </div>
         );
       })}
@@ -452,7 +481,7 @@ function StepIndicator({ current }: { current: Step }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-slate-500">{label}</label>
+      <label className="mb-1.5 block text-sm font-medium text-slate-500 dark:text-slate-400">{label}</label>
       {children}
     </div>
   );

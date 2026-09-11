@@ -7,6 +7,7 @@ import { ProblemCard } from "@/components/leetcode/ProblemCard";
 import { ProblemRecommendation } from "@/lib/leetcode/types";
 import { friendlyError } from '@/components/ui/feedback';
 import { recordUserActivity } from "@/lib/activity-tracker";
+import { WeeklyPlanWidget } from "@/components/planning/WeeklyPlanWidget";
 
 interface HRPracticeRec {
   domain: string;
@@ -171,6 +172,9 @@ export default function StudyPlan() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 space-y-12">
+
+      {/* ══════════ WEEKLY PLAN ══════════ */}
+      <WeeklyPlanWidget />
 
       {/* ══════════ LEETCODE SECTION ══════════ */}
       <section className="flex flex-col md:flex-row gap-8">

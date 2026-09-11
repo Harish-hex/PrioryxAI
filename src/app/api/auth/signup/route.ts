@@ -99,37 +99,13 @@ export async function POST(request: NextRequest) {
       adminError.message.toLowerCase().includes('exists');
 
     if (isAlreadyRegistered) {
-      // Find existing user in auth.users and update password / confirmation
-      try {
-        const { data: userList } = await serviceSupabase.auth.admin.listUsers();
-        const existingUser = userList?.users?.find(
-          (u) => u.email?.toLowerCase() === email.toLowerCase()
-        );
-
-        if (existingUser) {
-          const { data: updatedUserData, error: updateErr } = await serviceSupabase.auth.admin.updateUserById(
-            existingUser.id,
-            {
-              password,
-              email_confirm: true,
-              user_metadata: {
-                ...(existingUser.user_metadata || {}),
-                ...(name ? { name } : {}),
-              },
-            }
-          );
-          if (!updateErr && updatedUserData?.user) {
-            user = updatedUserData.user;
-          } else {
-            user = existingUser;
-          }
-        }
-      } catch (err: any) {
-        console.error('[auth/signup] Existing user recovery error:', err?.message);
-      }
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Please sign in instead.' },
+        { status: 409 }
+      );
     }
 
-    if (!user) {
+    {
       // Fallback to standard signUp if admin API is restricted
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -142,18 +118,6 @@ export async function POST(request: NextRequest) {
 
       if (signUpError) {
         console.error('[auth/signup]', signUpError.message);
-        // Attempt direct sign in with password in case account exists
-        const { data: directSignIn } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (directSignIn?.session) {
-          return new NextResponse(JSON.stringify({ redirect: '/feed' }), {
-            status: 200,
-            headers: response.headers,
-          });
-        }
 
         if (
           signUpError.message.toLowerCase().includes('already registered') ||
@@ -177,9 +141,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 });
   }
 
-  // Insert user row into users and profiles tables using service role
-  try {
-    await serviceSupabase.from('users').upsert(
+  // Insert user row into users and profiles tables, and establish the session,
+  // all in parallel — none of these depend on each other completing first.
+  const [usersResult, profilesResult, signInResult] = await Promise.allSettled([
+    serviceSupabase.from('users').upsert(
       {
         id: user.id,
         email: user.email!,
@@ -189,13 +154,8 @@ export async function POST(request: NextRequest) {
         last_active_at: new Date().toISOString(),
       },
       { onConflict: 'id', ignoreDuplicates: false }
-    );
-  } catch (err: any) {
-    console.error('[auth/signup] users upsert:', err?.message);
-  }
-
-  try {
-    await serviceSupabase.from('profiles').upsert(
+    ),
+    serviceSupabase.from('profiles').upsert(
       {
         id: user.id,
         email: user.email!,
@@ -204,16 +164,21 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'id', ignoreDuplicates: false }
-    );
-  } catch {}
+    ),
+    supabase.auth.signInWithPassword({ email, password }),
+  ]);
 
-  // Automatically sign in the user to establish real session cookies
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  if (usersResult.status === 'rejected') {
+    console.error('[auth/signup] users upsert:', usersResult.reason?.message);
+  }
+  if (profilesResult.status === 'rejected') {
+    console.error('[auth/signup] profiles upsert:', profilesResult.reason?.message);
+  }
 
-  if (signInError || !signInData.session) {
+  const signInData = signInResult.status === 'fulfilled' ? signInResult.value.data : null;
+  const signInError = signInResult.status === 'fulfilled' ? signInResult.value.error : signInResult.reason;
+
+  if (signInError || !signInData?.session) {
     // If session could not be established immediately, redirect to login
     return NextResponse.json(
       { message: 'Account created! Please sign in with your password.', redirect: '/login' },

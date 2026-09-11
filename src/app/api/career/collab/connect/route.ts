@@ -42,13 +42,6 @@ export async function POST(req: NextRequest) {
   // 3. Use SERVICE ROLE to find the peer (bypasses RLS)
   const db = createServiceRoleClient()
 
-  // DIAGNOSTIC: First check if peer_profiles has ANY rows
-  const { count: totalRows } = await db
-    .from('peer_profiles')
-    .select('*', { count: 'exact', head: true })
-
-  console.log('[Collab Connect] Total peer_profiles rows:', totalRows)
-
   // 4. Look up the code — try exact match first, then case-insensitive
   let peerProfile = null
 
@@ -82,21 +75,8 @@ export async function POST(req: NextRequest) {
   if (!peerProfile) {
     console.log('[Collab Connect] No peer found for code:', code)
 
-    // Debug: show what codes DO exist
-    const { data: allCodes } = await db
-      .from('peer_profiles')
-      .select('connect_code, user_id')
-      .limit(10)
-
-    console.log('[Collab Connect] Existing codes in DB:',
-      allCodes?.map(r => r.connect_code) ?? [])
-
     return NextResponse.json(
-      {
-        error: 'No user found with that connect code. Make sure you\'ve entered all 6 characters correctly.',
-        debug_code_searched: code,
-        debug_total_profiles: totalRows
-      },
+      { error: 'No user found with that connect code. Make sure you\'ve entered all 6 characters correctly.' },
       { status: 404 }
     )
   }

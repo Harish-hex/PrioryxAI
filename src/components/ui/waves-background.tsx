@@ -329,20 +329,6 @@ export default function WavesBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Reused as-is at night, but the bright cyan/white end of the palette
-    // glares against light-mode's white cards, so damp it down when the
-    // "dark" class isn't on <html>.
-    function applyThemeDamping() {
-      const isDark = document.documentElement.classList.contains("dark");
-      if (canvas) {
-        canvas.style.opacity = isDark ? "1" : "0.38";
-        canvas.style.filter = isDark ? "none" : "saturate(0.75) brightness(0.88)";
-      }
-    }
-    applyThemeDamping();
-    const themeObserver = new MutationObserver(applyThemeDamping);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-
     const gl = canvas.getContext("webgl", {
       antialias: false,
       alpha: false,
@@ -433,7 +419,6 @@ export default function WavesBackground() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
-      themeObserver.disconnect();
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
     };

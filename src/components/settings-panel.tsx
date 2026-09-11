@@ -344,7 +344,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       {/* Main column */}
-      <section className="space-y-6">
+      <section className="min-w-0 space-y-6">
         {/* Profile form */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -773,7 +773,7 @@ export function SettingsPanel({ onOpenPricing, isPro, visionUsedToday, onVisionU
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
-        className="space-y-6"
+        className="min-w-0 space-y-6"
       >
         {profile && (
           <div className="neu-card rounded-[28px] p-5 sm:p-6">

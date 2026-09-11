@@ -38,7 +38,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   overscroll-behavior-y: none;
 }
 
@@ -55,6 +54,17 @@ body {
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+.allow-select {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Mobile Touch & Momentum Scrolling */
@@ -677,7 +687,4 @@ input:-webkit-autofill:active {
   border-radius: 9999px;
 }
 
-section {
-  will-change: transform;
-}
 

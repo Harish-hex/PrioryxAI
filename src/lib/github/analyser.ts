@@ -2,7 +2,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 import { scoreProject, scorePortfolio } from './scorer';
-import { inspectRepoStructure, type RepoStructureSignals } from './repo-inspector';
+import { inspectRepoStructure, fetchFileContent, type RepoStructureSignals } from './repo-inspector';
 import type { CachedRepo, GitHubIntelligenceReport, PriorityAction, ProjectScore } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -139,14 +139,44 @@ export async function runGitHubIntelligence(
         return `${r.name} (${r.language ?? 'unknown lang'}): ${r.description ?? 'no description'}${structureNote}`;
       }).join('\n');
 
+      // Read actual source code (not just file names) for a handful of the
+      // strongest-scoring repos, so the critique can point at real
+      // architecture problems (e.g. no separation between data loading,
+      // model definition, and training loop) instead of guessing from
+      // structure flags alone.
+      const codeExcerptTargets = scored
+        .map((ps, i) => ({ ps, i }))
+        .sort((a, b) => b.ps.totalScore - a.ps.totalScore)
+        .filter(({ i }) => structures[i]?.keySourceFilePath)
+        .slice(0, 3);
+
+      const codeExcerptResults = await Promise.allSettled(
+        codeExcerptTargets.map(({ i }) =>
+          fetchFileContent(repos[i].url, structures[i]!.keySourceFilePath!)
+        )
+      );
+
+      const codeExcerpts = codeExcerptTargets
+        .map(({ ps, i }, idx) => {
+          const content = codeExcerptResults[idx].status === 'fulfilled' ? codeExcerptResults[idx].value : null;
+          if (!content) return null;
+          return `--- ${ps.repoName} :: ${structures[i]!.keySourceFilePath} ---\n${content}`;
+        })
+        .filter(Boolean)
+        .join('\n\n');
+
       const stream = (user as { stream?: string } | null)?.stream ?? 'software engineering';
 
       const narrative = await openai.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 500,
+        max_tokens: 700,
         messages: [{
           role: 'user',
-          content: `Analyze this student's GitHub portfolio for a ${stream} career. Where a repo has a [structure: ...] tag, that reflects its ACTUAL file tree (tests, CI, folder organization, whether it's a notebook-only ML project vs a properly structured one) — prioritize those real signals over the description text, and call out specific architecture/code-organization gaps (e.g. "model training code has no separation between data loading, model definition, and training loop", "no test coverage on the core logic", "ML work is notebook-only, never productionized") rather than generic README/documentation feedback.\n\nRepos:\n${repoSummaries}\n\nReturn ONLY raw JSON (no markdown):\n{\n  "strengths": ["2-3 concise strengths, grounded in actual repo structure where available"],\n  "weaknesses": ["2-3 specific gaps in architecture, testing, or code organization — not just documentation"]\n}`
+          content: `Analyze this student's GitHub portfolio for a ${stream} career. Where a repo has a [structure: ...] tag, that reflects its ACTUAL file tree (tests, CI, folder organization, whether it's a notebook-only ML project vs a properly structured one) — prioritize those real signals over the description text, and call out specific architecture/code-organization gaps (e.g. "model training code has no separation between data loading, model definition, and training loop", "no test coverage on the core logic", "ML work is notebook-only, never productionized") rather than generic README/documentation feedback.${
+            codeExcerpts
+              ? `\n\nBelow are real source-code excerpts from this student's highest-scoring repos. Use them to give SPECIFIC, code-grounded architecture feedback (e.g. name an actual missing abstraction, a hardcoded value that should be config, a training loop that doesn't checkpoint, missing validation split) — not generic advice:\n\n${codeExcerpts}`
+              : ''
+          }\n\nRepos:\n${repoSummaries}\n\nReturn ONLY raw JSON (no markdown):\n{\n  "strengths": ["2-3 concise strengths, grounded in actual repo structure/code where available"],\n  "weaknesses": ["2-3 specific gaps in architecture, testing, or code organization — reference actual code/files when excerpts were provided"]\n}`
         }]
       });
 

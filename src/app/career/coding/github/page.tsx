@@ -408,8 +408,8 @@ export default function GitHubIntelligencePage() {
                         </button>
 
                         {showCommands === act.id && (
-                          <div className="neu-card rounded-xl p-3 mt-2 flex items-center justify-between font-mono text-xs text-cyan-600 dark:text-cyan-400">
-                            <code className="truncate">{act.aiSuggestedCommands}</code>
+                          <div className="neu-card rounded-xl p-3 mt-2 flex items-center justify-between font-mono text-xs text-cyan-600 dark:text-cyan-400 gap-2">
+                            <code className="truncate min-w-0 flex-1">{act.aiSuggestedCommands}</code>
                             <button
                               onClick={() => copyCommand(act.aiSuggestedCommands!, act.id)}
                               className="neu-btn p-1.5 rounded-lg text-slate-600 dark:text-slate-300 ml-2"

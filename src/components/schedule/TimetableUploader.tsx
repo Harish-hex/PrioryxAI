@@ -52,7 +52,9 @@ export function TimetableUploader({ isPro, visionRemaining }: { isPro: boolean, 
 
       // Step 2: Upload to Supabase Storage via our new API route to bypass RLS issues
       setStatus('uploading');
-      const storagePath = `${user.id}/timetable-${Date.now()}.jpg`;
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf', 'docx', 'doc', 'txt'].includes(ext) ? ext : 'jpg';
+      const storagePath = `${user.id}/timetable-${Date.now()}.${safeExt}`;
 
       const formData = new FormData();
       formData.append('file', uploadBlob);

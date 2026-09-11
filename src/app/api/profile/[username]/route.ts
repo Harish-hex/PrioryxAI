@@ -33,25 +33,18 @@ export async function GET(
 
   const supabase = createServiceClient();
 
-  let { data: user, error } = await supabase
+  const { data: user, error } = await supabase
     .from('users')
     .select(PUBLIC_FIELDS)
-    .ilike('username', username)
+    .or(`username.ilike.${username},github_username.ilike.${username}`)
+    .limit(1)
     .maybeSingle();
-
-  if (!user) {
-    ({ data: user, error } = await supabase
-      .from('users')
-      .select(PUBLIC_FIELDS)
-      .ilike('github_username', username)
-      .maybeSingle());
-  }
 
   if (error || !user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  const [{ data: github }, { data: tasks }, { data: leetcode }, { data: multiPlatform }] = await Promise.all([
+  const [{ data: github }, { data: tasks }, { data: leetcode }, { data: multiPlatform }, aggregated] = await Promise.all([
     supabase
       .from('github_cache')
       .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
@@ -68,9 +61,15 @@ export async function GET(
       .select('hackerrank_username, hackerrank_data, hackerrank_score, codechef_username, codeforces_username, gfg_username, last_synced_at')
       .eq('user_id', user.id)
       .maybeSingle(),
+    (async () => {
+      const { data: ghForAgg } = await supabase
+        .from('github_cache')
+        .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return getAggregatedUserContributions(user.id, supabase, ghForAgg);
+    })(),
   ]);
-
-  const aggregated = await getAggregatedUserContributions(user.id, supabase, github);
 
   let projectBullets: string[] = [];
   const repos: any[] = Array.isArray(github?.repos) ? [...github.repos] : [];
@@ -104,22 +103,29 @@ export async function GET(
 
   if (repos.length > 0) {
     const topRepos = repos.slice(0, 3);
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: `Write one concise resume-style bullet for each of these GitHub repos. Format: "Built X using Y — Z". Return a JSON array of strings only.
+    const bulletsCacheKey = `project-bullets:${user.id}:${topRepos.map((r: any) => r.name).join(',')}`;
+    const cachedBullets = await withFallback(() => redis.get(bulletsCacheKey), null);
+    if (cachedBullets && Array.isArray(cachedBullets)) {
+      projectBullets = cachedBullets as string[];
+    } else {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: `Write one concise resume-style bullet for each of these GitHub repos. Format: "Built X using Y — Z". Return a JSON array of strings only.
 Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), description: sanitize(r.description), language: sanitize(r.language) })))}`,
-          },
-        ],
-        max_tokens: 300,
-      });
-      const raw = response.choices[0].message.content ?? '[]';
-      projectBullets = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    } catch {
-      projectBullets = topRepos.map((r: any) => `Built ${sanitize(r.name)}${r.language ? ` using ${r.language}` : ''}`);
+            },
+          ],
+          max_tokens: 300,
+        });
+        const raw = response.choices[0].message.content ?? '[]';
+        projectBullets = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        await withFallback(() => redis.set(bulletsCacheKey, projectBullets, { ex: 60 * 60 * 24 * 7 }), undefined);
+      } catch {
+        projectBullets = topRepos.map((r: any) => `Built ${sanitize(r.name)}${r.language ? ` using ${r.language}` : ''}`);
+      }
     }
   }
 
@@ -139,43 +145,13 @@ Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), desc
           stars: repo.stargazerCount ?? repo.stars ?? 0,
           url: repo.url,
         }))
-    : [
-        {
-          name: 'Pinn-FSI-Airfoil',
-          description: 'Pinn-FSI developed in a Physics-Informed Neural Network implementation for solving fluid-structure interaction problems around airfoils.',
-          language: 'Jupyter Notebook',
-          stars: 0,
-          url: user.github_username ? `https://github.com/${user.github_username}/Pinn-FSI-Airfoil` : 'https://github.com',
-        },
-        {
-          name: 'PrioryxAI',
-          description: 'AI-Powered Academic & Career Copilot for Engineering Students.',
-          language: 'TypeScript',
-          stars: 0,
-          url: user.github_username ? `https://github.com/${user.github_username}/PrioryxAI` : 'https://github.com',
-        },
-        {
-          name: 'trainer',
-          description: 'Distributed AI Model Training and LLM Fine-Tuning on Kubernetes.',
-          language: 'Go',
-          stars: 0,
-          url: user.github_username ? `https://github.com/${user.github_username}/trainer` : 'https://github.com',
-        },
-      ];
-
-  if (projectBullets.length === 0) {
-    projectBullets = [
-      "Built a Physics-Informed Neural Network using Jupyter Notebook — Solved fluid-structure interaction problems around airfoils.",
-      "Built PrioryxAI using Next.js & TypeScript — Full-stack AI academic and career intelligence platform.",
-      "Built a distributed AI model training system using Go — Facilitated LLM fine-tuning on Kubernetes."
-    ];
-  }
+    : [];
 
   const result = {
     profile: {
       ...publicUser,
       subjects: null,
-      github_health_score: github?.health_score ?? (user.github_username ? 33 : 0),
+      github_health_score: github?.health_score ?? 0,
       github_streak_days: aggregated.streak_days,
       top_repos: topReposList,
       project_bullets: projectBullets,

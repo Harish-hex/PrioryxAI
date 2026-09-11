@@ -88,6 +88,12 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.noAccount) {
+          setTab("signup");
+          setInfo("No account found for this email — let's create one.");
+          setError(null);
+          return;
+        }
         setError(data.error ?? "Something went wrong.");
         return;
       }

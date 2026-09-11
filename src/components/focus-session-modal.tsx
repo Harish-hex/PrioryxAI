@@ -77,7 +77,8 @@ export function FocusSessionModal({ onAskAssistant, onClose, onComplete, task }:
         >
           <motion.section
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="neu-card w-full max-w-2xl rounded-[32px] p-6 sm:p-8 shadow-2xl"
+            className="neu-card w-full max-w-2xl overflow-y-auto rounded-[32px] p-6 sm:p-8 shadow-2xl"
+            style={{ maxHeight: "calc(100dvh - 2rem)" }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             initial={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={{ duration: 0.2 }}

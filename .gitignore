@@ -63,4 +63,9 @@ graphify-out/
 *.zip
 supabase/.temp/
 tempCodeRunnerFile*
+/PrioryxAI-main/
+/*.sql
+/*.jpeg
+/*.png
+oauth-oauth-debug-log.md
 

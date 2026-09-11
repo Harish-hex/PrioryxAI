@@ -56,9 +56,9 @@ export default function CollabRoomPage({ params }: { params: { sessionId: string
       </header>
 
       {/* Two Panel Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[560px]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[560px]">
         {/* Code Editor Panel */}
-        <div className="lg:col-span-8 neu-card rounded-[28px] p-5 flex flex-col h-full">
+        <div className="lg:col-span-8 neu-card rounded-[28px] p-5 flex flex-col h-[420px] lg:h-full">
           <div className="pb-3 border-b border-slate-200/60 dark:border-white/10 text-xs font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
             <Code size={15} className="text-purple-500" />
             <span>Shared Real-Time Editor</span>
@@ -89,7 +89,7 @@ function solution(input) {
         </div>
 
         {/* Right Sidebar: Chat + Notes */}
-        <div className="lg:col-span-4 neu-card rounded-[28px] p-5 flex flex-col h-full">
+        <div className="lg:col-span-4 neu-card rounded-[28px] p-5 flex flex-col h-[300px] lg:h-full">
           {/* Tab Switcher */}
           <div className="neu-inset rounded-2xl p-1 flex items-center gap-1">
             <button

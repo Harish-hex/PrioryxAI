@@ -43,7 +43,10 @@ export async function POST() {
       .maybeSingle(),
   ])
 
-  if (!resume) {
+  const semester = profile?.semester ?? 0
+  const isEarlySemester = semester > 0 && semester <= 2
+
+  if (!resume && !isEarlySemester) {
     return NextResponse.json(
       { error: 'No resume found. Please upload a valid resume first.' },
       { status: 400 }
@@ -61,6 +64,13 @@ export async function POST() {
     if (skills.length === 0 && resume.parsed_data) {
       skills = (resume.parsed_data as { skills?: string[] }).skills ?? []
     }
+  }
+
+  // First/second-semester students rarely have a resume yet — fall back to
+  // their coursework (stream/branch subjects) so they still get relevant,
+  // beginner-appropriate project ideas instead of a hard block.
+  if (skills.length === 0 && isEarlySemester) {
+    skills = profile?.subjects ?? []
   }
 
   const effectiveSkills = skills.length > 0 ? skills : ['Python', 'AI', 'Machine Learning'];
@@ -110,7 +120,7 @@ export async function POST() {
 
       const result = await executeTool('foundry.generate9TailoredProjects', {
         skills: effectiveSkills.map(s => ({ name: s })) as SkillEntity[],
-        swot: (resume.swot ?? {}) as SWOTAnalysis,
+        swot: (resume?.swot ?? {}) as SWOTAnalysis,
         targetRoles: profile?.target_roles ?? ['Software Engineer'],
         codingContext,
         githubContext,
@@ -150,7 +160,7 @@ export async function GET() {
 
   const { data: profile } = await db
     .from('users')
-    .select('resume_uploaded')
+    .select('resume_uploaded, semester')
     .eq('id', user.id)
     .single()
 
@@ -164,7 +174,9 @@ export async function GET() {
     
   // Double check profile flag against actual table record
   const hasResume = !!resume || (profile?.resume_uploaded ?? false)
-  
+  const semester = profile?.semester ?? 0
+  const isEarlySemester = semester > 0 && semester <= 2
+
   let skillsCount = 0
   if (resume) {
     skillsCount = (resume.skill_entities as { skills?: string[] })?.skills?.length ?? 0
@@ -173,7 +185,7 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ 
+  return NextResponse.json({
     projects: (projects ?? []).map((p: any) => ({
       ...p,
       // Derive completion_pct from current_phase if DB value is missing
@@ -181,5 +193,8 @@ export async function GET() {
     })),
     resumeUploaded: hasResume,
     resumeValid: hasResume && skillsCount > 0,
+    // Sem 1/2 students can generate beginner projects from coursework alone,
+    // without a resume — the UI should not gate them behind an upload prompt.
+    canGenerateWithoutResume: !hasResume && isEarlySemester,
   })
 }

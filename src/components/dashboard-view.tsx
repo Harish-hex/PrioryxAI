@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, Flame, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, Check, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, Flame, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
@@ -197,7 +197,7 @@ export function DashboardView({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <section className="space-y-6">
+      <section className="min-w-0 space-y-6">
         <NextMoveCard
           loading={loading}
           task={nextTask}
@@ -233,7 +233,7 @@ export function DashboardView({
         <DailyGrowthPanel />
       </section>
 
-      <aside className="space-y-6">
+      <aside className="min-w-0 space-y-6">
         <StatsPanel stats={stats} loading={loading} isPro={isPro} onOpenPricing={onOpenPricing} />
         <ProjectIdeasPanel isPro={isPro} onOpenPricing={onOpenPricing} />
         <FocusPanel onOpenPricing={onOpenPricing} stats={stats} isPro={isPro} />
@@ -364,14 +364,14 @@ function NextMoveCard({
           ) : (
             <>
               <div className="mt-5 grid gap-5 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_240px]">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Do this next</p>
                   <h2 className="mt-2 max-w-3xl text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl dark:text-white">
                     {task.title}
                   </h2>
                   <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">{task.reason}</p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <div className="min-w-0 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                   <InfoTile icon={Clock3} label="Deadline" value={task.deadline} />
                   <InfoTile icon={Target} label="Focus block" value={task.estimate} />
                   <InfoTile icon={Brain} label="Mode" value={modeLabel} />
@@ -459,6 +459,13 @@ function PriorityFeed({
   const [dailyChallenges, setDailyChallenges] = useState<CodingProblem[]>([]);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [todayKey, setTodayKey] = useState<string>("");
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+
+  function handleComplete(id: string) {
+    if (completingIds.has(id)) return;
+    setCompletingIds((prev) => new Set(prev).add(id));
+    onComplete(id);
+  }
 
   useEffect(() => {
     const today = new Date();
@@ -689,10 +696,12 @@ function PriorityFeed({
                       )}
                       <button
                         type="button"
-                        onClick={() => onComplete(task.id)}
-                        className="neu-btn rounded-xl px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400"
+                        onClick={() => handleComplete(task.id)}
+                        disabled={completingIds.has(task.id)}
+                        className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-60"
                       >
-                        Done
+                        {completingIds.has(task.id) ? <CheckCircle2 size={13} className="animate-pulse" /> : <Check size={13} />}
+                        {completingIds.has(task.id) ? "Marking…" : "Mark Done"}
                       </button>
                     </div>
                   </div>
@@ -756,10 +765,12 @@ function PriorityFeed({
                       )}
                       <button
                         type="button"
-                        onClick={() => onComplete(task.id)}
-                        className="neu-btn rounded-xl px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400"
+                        onClick={() => handleComplete(task.id)}
+                        disabled={completingIds.has(task.id)}
+                        className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-60"
                       >
-                        Done
+                        {completingIds.has(task.id) ? <CheckCircle2 size={13} className="animate-pulse" /> : <Check size={13} />}
+                        {completingIds.has(task.id) ? "Marking…" : "Mark Done"}
                       </button>
                     </div>
                   </div>
@@ -909,11 +920,11 @@ function JobCard({
 
           <h3 className="mt-2.5 text-base font-bold text-slate-950 dark:text-white">{role}</h3>
           {company && (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
               <MapPin size={12} className="shrink-0" />
               {gated ? (
-                <span className="inline-block rounded bg-slate-200 px-3 text-transparent blur-[5px] select-none dark:bg-white/20">{company}</span>
-              ) : company}
+                <span className="inline-block min-w-0 truncate rounded bg-slate-200 px-3 text-transparent blur-[5px] select-none dark:bg-white/20">{company}</span>
+              ) : <span className="min-w-0 truncate">{company}</span>}
             </p>
           )}
           <p className="mt-2 text-sm leading-5 text-slate-600 dark:text-slate-300">{task.reason}</p>
@@ -1425,7 +1436,7 @@ function SetupStrip({
             return (
               <div
                 key={item.id}
-                className="neu-raised-sm group flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 transition hover:neu-card"
+                className="neu-raised-sm group flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 transition hover:neu-card"
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />

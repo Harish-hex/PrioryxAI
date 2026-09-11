@@ -43,6 +43,7 @@ export default function FoundryDashboard() {
   const [generating, setGenerating] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(true);
   const [resumeValid, setResumeValid] = useState(true);
+  const [canGenerateWithoutResume, setCanGenerateWithoutResume] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
 
@@ -53,6 +54,7 @@ export default function FoundryDashboard() {
         setProjects(data.projects ?? []);
         if (data.resumeUploaded !== undefined) setResumeUploaded(data.resumeUploaded);
         if (data.resumeValid !== undefined) setResumeValid(data.resumeValid);
+        if (data.canGenerateWithoutResume !== undefined) setCanGenerateWithoutResume(data.canGenerateWithoutResume);
       })
       .catch((err) => console.error("[Foundry UI] Error fetching projects:", err))
       .finally(() => setLoading(false));
@@ -118,7 +120,7 @@ export default function FoundryDashboard() {
     );
   }
 
-  if (!resumeUploaded) {
+  if (!resumeUploaded && !canGenerateWithoutResume) {
     return (
       <div className="space-y-6">
         <header className="neu-card rounded-[28px] p-6 sm:p-7">
@@ -150,6 +152,48 @@ export default function FoundryDashboard() {
               <span>Upload Resume</span>
               <ArrowRight size={14} />
             </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!resumeUploaded && canGenerateWithoutResume && projects.length === 0) {
+    return (
+      <div className="space-y-6">
+        <header className="neu-card rounded-[28px] p-6 sm:p-7">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 sm:text-sm">
+            <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
+            <span>AI Career Guidance</span>
+          </div>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+            Project Foundry
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            No resume yet — no problem. We&apos;ll build beginner projects from your coursework instead.
+          </p>
+        </header>
+
+        <div className="neu-card rounded-[28px] p-10 md:p-14 text-center space-y-4 max-w-xl mx-auto">
+          <div className="neu-pill-inset h-16 w-16 rounded-2xl flex items-center justify-center text-emerald-500 mx-auto">
+            <Sparkles size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-slate-950 dark:text-white">Get started with beginner projects</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            You&apos;re early in your degree, so we&apos;ll generate projects based on your stream&apos;s subjects instead of a resume — perfect for building your first portfolio.
+          </p>
+          {generateError && (
+            <p className="text-sm font-medium text-rose-500">{generateError}</p>
+          )}
+          <div className="pt-2">
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+            >
+              {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              <span>{generating ? "Generating…" : "Generate beginner projects"}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -253,6 +297,8 @@ export default function FoundryDashboard() {
     );
   }
 
+  const FREE_PROJECT_LIMIT = 2;
+
   const filteredProjects = activeTab === "all"
     ? projects
     : projects.filter((p) => p.difficulty.toLowerCase() === activeTab);
@@ -310,19 +356,61 @@ export default function FoundryDashboard() {
         ))}
       </div>
 
+      {/* Pro upsell banner */}
+      {projects.length > FREE_PROJECT_LIMIT && (
+        <div className="neu-card rounded-[24px] p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-amber-400/30 bg-amber-50/40 dark:bg-amber-500/5">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Sparkles size={16} className="shrink-0 text-amber-500" />
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+              <span className="font-bold">{projects.length - FREE_PROJECT_LIMIT} projects locked</span> — Upgrade to Pro to unlock all {projects.length} personalized projects.
+            </p>
+          </div>
+          <Link
+            href="/pricing"
+            className="neu-btn shrink-0 inline-flex items-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600"
+          >
+            <Sparkles size={12} />
+            Upgrade to Pro
+          </Link>
+        </div>
+      )}
+
       {/* Projects Grid */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {filteredProjects.map((project, i) => {
           const diffCfg = DIFFICULTY_CONFIG[project.difficulty] ?? DIFFICULTY_CONFIG.foundation;
+          const globalIndex = projects.indexOf(project);
+          const isLocked = globalIndex >= FREE_PROJECT_LIMIT;
+
           return (
             <motion.div
               key={project.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i, 12) * 0.04, duration: 0.35 }}
-              whileHover={{ y: -3 }}
-              className="neu-card rounded-[28px] p-6 flex flex-col justify-between transition-shadow hover:shadow-lg"
+              whileHover={{ y: isLocked ? 0 : -3 }}
+              className={`neu-card rounded-[28px] p-6 flex flex-col justify-between transition-shadow relative overflow-hidden ${isLocked ? "opacity-70" : "hover:shadow-lg"}`}
             >
+              {/* Locked overlay */}
+              {isLocked && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-[28px] bg-slate-900/65 dark:bg-slate-950/75 backdrop-blur-[2px] p-6 text-center gap-3">
+                  <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+                    <Lock size={22} className="text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Pro Project</p>
+                    <p className="text-xs text-slate-300 mt-0.5">Upgrade to Pro to unlock this project and all remaining projects.</p>
+                  </div>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600"
+                  >
+                    <Sparkles size={12} />
+                    Upgrade to Pro
+                  </Link>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-bold text-base text-slate-950 dark:text-white leading-snug">
@@ -337,7 +425,6 @@ export default function FoundryDashboard() {
                   {project.description}
                 </p>
 
-                {/* Skill Gaps Addressed */}
                 {project.skill_gaps_addressed && project.skill_gaps_addressed.length > 0 && (
                   <div className="pt-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
@@ -353,7 +440,6 @@ export default function FoundryDashboard() {
                   </div>
                 )}
 
-                {/* Tech Stack */}
                 <div className="flex flex-wrap gap-1 pt-1">
                   {project.tech_stack.map((tech) => (
                     <span key={tech} className="neu-pill rounded-lg px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-300">
@@ -363,14 +449,12 @@ export default function FoundryDashboard() {
                 </div>
               </div>
 
-              {/* Progress & Actions */}
               <div className="mt-6 pt-4 border-t border-slate-200/60 dark:border-white/10 space-y-3">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
                   <span>Phase {project.current_phase}/6 · {PHASE_LABELS[project.current_phase - 1]}</span>
                   <span className="font-bold text-slate-900 dark:text-white">{project.completion_pct}%</span>
                 </div>
 
-                {/* Inset progress bar */}
                 <div className="neu-inset h-2 rounded-full overflow-hidden p-0.5">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-500"
@@ -378,7 +462,6 @@ export default function FoundryDashboard() {
                   />
                 </div>
 
-                {/* Phase Steps Indicator */}
                 <div className="grid grid-cols-6 gap-1 pt-1">
                   {PHASE_LABELS.map((_, idx) => (
                     <div key={idx} className="flex justify-center">
@@ -387,17 +470,17 @@ export default function FoundryDashboard() {
                       ) : idx === project.current_phase - 1 ? (
                         <Clock size={13} className="text-cyan-500" />
                       ) : (
-                        <Lock size={11} className="text-slate-400 dark:text-slate-600" />
+                        <Lock size={11} className="text-slate-400 dark:text-slate-400" />
                       )}
                     </div>
                   ))}
                 </div>
 
                 <Link
-                  href={`/career/foundry/project/${project.id}`}
+                  href={isLocked ? "/pricing" : `/career/foundry/project/${project.id}`}
                   className="neu-btn mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
                 >
-                  <span>Enter Workspace</span>
+                  <span>{isLocked ? "Unlock with Pro" : "Enter Workspace"}</span>
                   <ArrowRight size={13} />
                 </Link>
               </div>

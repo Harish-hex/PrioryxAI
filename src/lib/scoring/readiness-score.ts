@@ -9,7 +9,7 @@
  * The function is fully unit-testable with plain objects.
  */
 
-export const SCORE_VERSION = 2;
+export const SCORE_VERSION = 3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Input types
@@ -227,6 +227,14 @@ function scoreResume(r: ResumeInputs): { raw: number; explanation: string; unava
 }
 
 function scoreTasks(t: TaskInputs): { raw: number; explanation: string; unavailable: boolean } {
+  if (t.completedLast7Days === 0 && t.overdueCount === 0 && t.upcomingDeadlineCount === 0) {
+    return {
+      raw: 0,
+      unavailable: true,
+      explanation: 'No tasks created yet — add tasks to your feed to score this component.',
+    };
+  }
+
   let raw = 50; // Neutral baseline
 
   // Completed tasks in last 7 days: +5 per task, capped at +35
@@ -252,6 +260,14 @@ function scoreTasks(t: TaskInputs): { raw: number; explanation: string; unavaila
 }
 
 function scoreStreak(s: StreakInputs): { raw: number; explanation: string; unavailable: boolean } {
+  if (s.contributionDays30 === 0 && s.leetcodeSolvedLast7 === 0) {
+    return {
+      raw: 0,
+      unavailable: true,
+      explanation: 'No GitHub or LeetCode activity yet — connect and stay active to score this component.',
+    };
+  }
+
   // GitHub contribution days: up to 60 points (2 pts per day, max 30 days)
   const githubContrib = Math.min(60, s.contributionDays30 * 2);
 

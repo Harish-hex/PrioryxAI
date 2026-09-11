@@ -129,12 +129,40 @@ export async function extractWithAI(
           }
         ]
       })
+    } else if (fileResult.method === 'vision_pdf') {
+      // PDF PATH: OpenAI's image_url content type only accepts png/jpeg/webp/gif,
+      // not PDF — sending a PDF there fails with "Invalid MIME type." PDFs must
+      // go through the Responses API's input_file content type instead.
+      const responsesResult = await openai.responses.create({
+        model: 'gpt-4o',
+        max_output_tokens: maxTokens,
+        input: [
+          {
+            role: 'user',
+            content: [
+              { type: 'input_text', text: `${systemPrompt}\n\n${userPromptPrefix}` },
+              {
+                type: 'input_file',
+                filename: 'document.pdf',
+                file_data: `data:application/pdf;base64,${fileResult.base64}`
+              }
+            ]
+          }
+        ]
+      } as any)
+
+      const rawContent = (responsesResult as any).output_text ?? ''
+      console.log(`[FileProcessor] AI response length: ${rawContent.length} chars`)
+      console.log(`[FileProcessor] AI response preview: ${rawContent.slice(0, 200)}`)
+
+      if (!rawContent) {
+        return { success: false, content: '', error: 'AI returned empty response' }
+      }
+
+      return { success: true, content: rawContent }
     } else {
-      // VISION PATH: send image or PDF as base64
-      // Works for: vision_image, vision_pdf
-      const imageUrl = fileResult.method === 'vision_pdf'
-        ? `data:application/pdf;base64,${fileResult.base64}`
-        : `data:${fileResult.mimeType};base64,${fileResult.base64}`
+      // VISION PATH: send image as base64 (method: vision_image)
+      const imageUrl = `data:${fileResult.mimeType};base64,${fileResult.base64}`
 
       response = await openai.chat.completions.create({
         model: 'gpt-4o',

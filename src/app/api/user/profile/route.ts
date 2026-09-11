@@ -4,14 +4,15 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { withFallback, redis } from '@/lib/redis';
 import { errorMentionsColumn } from '@/lib/schema-migrations';
 import { getAggregatedUserContributions } from '@/lib/activity-aggregator';
+import { openai, sanitize } from '@/lib/openai';
 
 export const runtime = 'nodejs';
 
 // Fields the user can read about themselves (includes private fields)
-const SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, cgpa, pro_status, pro_expires_at, last_active_at';
+const SELF_FIELDS = 'id, name, username, email, avatar_url, github_username, college, semester, subjects, cgpa, pro_status, pro_expires_at, last_active_at, stream';
 
 // Fields the user is allowed to update
-const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'subjects', 'github_username', 'cgpa']);
+const UPDATABLE_FIELDS = new Set(['name', 'username', 'college', 'semester', 'subjects', 'github_username', 'cgpa', 'stream']);
 
 // Username: alphanumeric + hyphens, 1–39 chars (GitHub convention)
 const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
@@ -52,7 +53,7 @@ export async function GET() {
     ({ data, error } = await db.from('users').select(safeFields).eq('id', user.id).maybeSingle());
   }
 
-  const [{ data: github }, { data: tasks }, { data: leetcode }, { data: multiPlatform }] = await Promise.all([
+  const [{ data: github }, { data: tasks }, { data: leetcode }, { data: multiPlatform }, aggregated] = await Promise.all([
     db
       .from('github_cache')
       .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
@@ -69,9 +70,15 @@ export async function GET() {
       .select('hackerrank_username, hackerrank_data, hackerrank_score, codechef_username, codeforces_username, gfg_username, last_synced_at')
       .eq('user_id', user.id)
       .maybeSingle(),
+    (async () => {
+      const { data: ghForAgg } = await db
+        .from('github_cache')
+        .select('repos, languages, last_commit_at, streak_days, health_score, contribution_days')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return getAggregatedUserContributions(user.id, db, ghForAgg);
+    })(),
   ]);
-
-  const aggregated = await getAggregatedUserContributions(user.id, db, github);
 
   const repos: any[] = Array.isArray(github?.repos) ? [...github.repos] : [];
   const topReposList = repos.length > 0
@@ -85,43 +92,47 @@ export async function GET() {
           stars: repo.stargazerCount ?? repo.stars ?? 0,
           url: repo.url,
         }))
-    : [
-        {
-          name: 'Pinn-FSI-Airfoil',
-          description: 'Pinn-FSI developed in a Physics-Informed Neural Network implementation for solving fluid-structure interaction problems around airfoils.',
-          language: 'Jupyter Notebook',
-          stars: 0,
-          url: data?.github_username ? `https://github.com/${data.github_username}/Pinn-FSI-Airfoil` : 'https://github.com',
-        },
-        {
-          name: 'PrioryxAI',
-          description: 'AI-Powered Academic & Career Copilot for Engineering Students.',
-          language: 'TypeScript',
-          stars: 0,
-          url: data?.github_username ? `https://github.com/${data.github_username}/PrioryxAI` : 'https://github.com',
-        },
-        {
-          name: 'trainer',
-          description: 'Distributed AI Model Training and LLM Fine-Tuning on Kubernetes.',
-          language: 'Go',
-          stars: 0,
-          url: data?.github_username ? `https://github.com/${data.github_username}/trainer` : 'https://github.com',
-        },
-      ];
+    : [];
 
-  const projectBullets = [
-    "Built a Physics-Informed Neural Network using Jupyter Notebook — Solved fluid-structure interaction problems around airfoils.",
-    "Built PrioryxAI using Next.js & TypeScript — Full-stack AI academic and career intelligence platform.",
-    "Built a distributed AI model training system using Go — Facilitated LLM fine-tuning on Kubernetes."
-  ];
+  let projectBullets: string[] = [];
+  if (repos.length > 0) {
+    const topRepos = topReposList.slice(0, 3);
+    const bulletsCacheKey = `project-bullets:${user.id}:${topRepos.map((r: any) => r.name).join(',')}`;
+    const deterministicBullets = () => topRepos.map((r: any) => `Built ${sanitize(r.name)}${r.language ? ` using ${r.language}` : ''}`);
 
+    const cachedBullets = await withFallback(() => redis.get(bulletsCacheKey), null);
+    if (cachedBullets && Array.isArray(cachedBullets)) {
+      projectBullets = cachedBullets as string[];
+    } else {
+      // Keyed by repo names, so this only regenerates when the user's top
+      // repos actually change — not on every 60s profile-cache expiry.
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: `Write one concise resume-style bullet for each of these GitHub repos. Format: "Built X using Y — Z". Return a JSON array of strings only.
+Repos: ${JSON.stringify(topRepos.map((r: any) => ({ name: sanitize(r.name), description: sanitize(r.description), language: sanitize(r.language) })))}`,
+            },
+          ],
+          max_tokens: 300,
+        });
+        const raw = response.choices[0].message.content ?? '[]';
+        projectBullets = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        await withFallback(() => redis.set(bulletsCacheKey, projectBullets, { ex: 60 * 60 * 24 * 7 }), undefined);
+      } catch {
+        projectBullets = deterministicBullets();
+      }
+    }
+  }
   const totalTasks = tasks?.length ?? 0;
   const completedTasks = tasks?.filter((task: any) => task.completed).length ?? 0;
 
   const responseBody = {
     profile: {
       ...data,
-      github_health_score: github?.health_score ?? (data?.github_username ? 33 : 0),
+      github_health_score: github?.health_score ?? 0,
       github_streak_days: aggregated.streak_days,
       top_repos: topReposList,
       project_bullets: projectBullets,

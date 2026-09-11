@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Map,
   Settings,
   Swords,
   Trophy,
@@ -34,6 +35,7 @@ const primaryNavItems = [
 ];
 
 const careerNavItems = [
+  { id: "roadmap", label: "Roadmap", icon: Map, path: "/career/roadmap" },
   { id: "resume", label: "Resume Intelligence", icon: FileText, path: "/career/resume/upload" },
   { id: "foundry", label: "Project Foundry", icon: Hammer, path: "/career/foundry/dashboard" },
   { id: "unified", label: "Unified Profile", icon: Code2, path: "/career/coding/unified" },
