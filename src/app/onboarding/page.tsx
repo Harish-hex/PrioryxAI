@@ -171,17 +171,17 @@ function OnboardingFlow() {
             alt="PrioryxAI"
             className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
           />
-          <span className="text-base font-extrabold text-slate-950 dark:text-white tracking-tight">PrioryxAI</span>
+          <span className="text-base font-black text-black tracking-tight">PrioryxAI</span>
         </div>
 
-        <div className="mt-7 inline-flex items-center rounded-full border border-slate-400/80 bg-white/95 px-3.5 py-1.5 text-xs sm:text-sm font-black uppercase tracking-wider text-slate-950 dark:border-white/20 dark:bg-slate-900/90 dark:text-white shadow-sm">
+        <div className="mt-7 inline-flex items-center rounded-full border border-black/30 bg-white/95 px-3.5 py-1.5 text-xs sm:text-sm font-black uppercase tracking-wider text-black shadow-sm">
           First-time setup
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-black tracking-tight text-black sm:text-4xl">
           Let&apos;s set up your workspace.
         </h1>
-        <p className="mt-3 text-sm leading-6 font-semibold text-slate-800 dark:text-slate-200">
+        <p className="mt-3 text-sm leading-6 font-bold text-black">
           Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
         </p>
 
@@ -195,10 +195,10 @@ function OnboardingFlow() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7 shadow-xl border border-slate-300 dark:border-white/15"
+              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Step 1 — The basics</h2>
-              <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 1 — The basics</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Helps the AI rank tasks for your semester and subjects.
               </p>
 
@@ -207,7 +207,7 @@ function OnboardingFlow() {
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input-base text-slate-950 dark:text-white font-semibold placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                    className="input-base"
                     placeholder="Your name"
                   />
                 </Field>
@@ -216,7 +216,7 @@ function OnboardingFlow() {
                   <input
                     value={college}
                     onChange={(e) => setCollege(e.target.value)}
-                    className="input-base text-slate-950 dark:text-white font-semibold placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                    className="input-base"
                     placeholder="e.g. Anna University"
                     required
                   />
@@ -227,7 +227,7 @@ function OnboardingFlow() {
                     <input
                       value={semester}
                       onChange={(e) => setSemester(e.target.value)}
-                      className="input-base text-slate-950 dark:text-white font-semibold placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                      className="input-base"
                       type="number"
                       min="1"
                       max="12"
@@ -241,7 +241,7 @@ function OnboardingFlow() {
                   <input
                     value={subjects}
                     onChange={(e) => setSubjects(e.target.value)}
-                    className="input-base text-slate-950 dark:text-white font-semibold placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                    className="input-base"
                     placeholder="e.g. DBMS, React, Node.js, Python"
                     required
                   />
@@ -251,22 +251,22 @@ function OnboardingFlow() {
                   <select
                     value={stream}
                     onChange={(e) => setStream(e.target.value)}
-                    className="input-base text-slate-950 dark:text-white font-semibold cursor-pointer"
+                    className="input-base"
                   >
-                    <option value="" className="text-slate-900 dark:text-white dark:bg-slate-900">Select a stream…</option>
+                    <option value="">Select a stream…</option>
                     {STREAM_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value} className="text-slate-900 dark:text-white dark:bg-slate-900">
+                      <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
                     Unlocks a personalized learning roadmap in the sidebar.
                   </p>
                 </Field>
 
                 {step1Error && (
-                  <p className="rounded-[18px] border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">
+                  <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
                     {step1Error}
                   </p>
                 )}
@@ -274,7 +274,7 @@ function OnboardingFlow() {
                 <button
                   type="submit"
                   disabled={savingStep1}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-md"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
                   {savingStep1 ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                   {savingStep1 ? "Saving…" : "Continue"}
@@ -290,32 +290,32 @@ function OnboardingFlow() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7 shadow-xl border border-slate-300 dark:border-white/15"
+              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Step 2 — Connect GitHub</h2>
-              <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 2 — Connect GitHub</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 PrioryxAI uses your repos, languages, and activity streak to rank tasks and match you with Internshala openings automatically.
               </p>
 
-              <div className="mt-5 rounded-[22px] border border-slate-300 bg-white/90 p-5 dark:border-white/15 dark:bg-white/5 shadow-sm">
+              <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200">
                     <GitBranch size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-950 dark:text-white">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white">
                       {profile?.github_username
                         ? `Connected: @${profile.github_username}`
                         : "Authorize GitHub"}
                     </p>
-                    <p className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {profile?.github_username
                         ? "You can continue to the next step."
                         : "Read-only access. We never push or modify your repos."}
                     </p>
                   </div>
                   {profile?.github_username && (
-                    <CheckCircle2 size={18} className="ml-auto shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <CheckCircle2 size={18} className="ml-auto shrink-0 text-emerald-500" />
                   )}
                 </div>
               </div>
@@ -325,7 +325,7 @@ function OnboardingFlow() {
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-md"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     Continue <ArrowRight size={16} />
                   </button>
@@ -333,7 +333,7 @@ function OnboardingFlow() {
                   <button
                     type="button"
                     onClick={handleGithubConnect}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-md"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <GitBranch size={16} /> Connect GitHub
                   </button>
@@ -342,7 +342,7 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={skipGithub}
-                  className="text-sm font-bold text-slate-900 underline underline-offset-4 hover:text-black dark:text-slate-100 dark:hover:text-white"
+                  className="text-sm text-slate-500 underline-offset-4 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
                 >
                   Skip for now
                 </button>
@@ -350,7 +350,7 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="ml-auto text-sm font-bold text-slate-800 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white"
+                  className="ml-auto text-sm text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   Back
                 </button>
@@ -365,17 +365,17 @@ function OnboardingFlow() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7 shadow-xl border border-slate-300 dark:border-white/15"
+              className="glass-strong mt-6 rounded-[28px] p-5 sm:p-7"
             >
-              <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Step 3 — Add your schedule</h2>
-              <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white">Step 3 — Add your schedule</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Upload a photo of your printed timetable, whiteboard schedule, or any image with exam dates. PrioryxAI extracts every date and adds it to your feed.
               </p>
 
               <div className="mt-5 space-y-3">
-                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border-2 border-dashed border-slate-400 bg-white/90 px-4 py-4 text-sm font-bold text-slate-950 transition hover:border-slate-500 hover:bg-white dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:border-white/30 shadow-sm">
-                  <ImagePlus size={20} className="shrink-0 text-slate-950 dark:text-white" />
-                  <span className="min-w-0 flex-1 truncate font-semibold">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/25 dark:hover:bg-white/10">
+                  <ImagePlus size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="min-w-0 flex-1 truncate">
                     {timetableFile ? timetableFile.name : "Choose JPG, PNG, WebP, or HEIC — up to 5 MB"}
                   </span>
                   <input
@@ -391,13 +391,13 @@ function OnboardingFlow() {
                 </label>
 
                 {uploadError && (
-                  <p className="rounded-[18px] border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">
+                  <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
                     {uploadError}
                   </p>
                 )}
                 {uploadResult && (
-                  <p className="flex items-center gap-2 rounded-[18px] border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800">
-                    <CheckCircle2 size={16} />
+                  <p className="flex items-center gap-2 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
+                    <CheckCircle2 size={15} />
                     {uploadResult}
                   </p>
                 )}
@@ -406,7 +406,7 @@ function OnboardingFlow() {
                   type="button"
                   onClick={handleTimetableUpload}
                   disabled={!timetableFile || uploading}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-40 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-sm"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
                 >
                   {uploading ? (
                     <><Loader2 size={15} className="animate-spin" /> Parsing image…</>
@@ -421,7 +421,7 @@ function OnboardingFlow() {
                   type="button"
                   onClick={handleFinish}
                   disabled={finishing}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-md"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
                   {finishing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                   {finishing ? "Opening your feed…" : "Finish & open feed"}
@@ -430,13 +430,13 @@ function OnboardingFlow() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="ml-auto text-sm font-bold text-slate-800 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white"
+                  className="ml-auto text-sm text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   Back
                 </button>
               </div>
 
-              <p className="mt-4 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
                 No image handy? You can add tasks later from your feed — PrioryxAI will nudge you when something important is missing.
               </p>
             </motion.div>
@@ -459,26 +459,22 @@ function StepIndicator({ current }: { current: Step }) {
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition-all ${
                 active
-                  ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-md ring-2 ring-slate-950/20 dark:ring-white/20"
+                  ? "bg-black text-white shadow-md ring-2 ring-black/20"
                   : done
-                    ? "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 shadow-sm"
-                    : "border-2 border-slate-500/80 bg-white/95 text-slate-950 dark:border-white/30 dark:bg-slate-800 dark:text-white"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "border-2 border-black bg-white text-black font-black shadow-sm"
               }`}
             >
               {done ? <CheckCircle2 size={16} className="stroke-[2.5]" /> : n}
             </div>
             <span
-              className={`text-xs font-bold tracking-tight ${
-                active
-                  ? "text-slate-950 dark:text-white"
-                  : done
-                    ? "text-emerald-700 dark:text-emerald-400"
-                    : "text-slate-900 dark:text-slate-100"
+              className={`text-xs font-black tracking-tight ${
+                done ? "text-emerald-700 dark:text-emerald-400" : "text-black"
               }`}
             >
               {labels[n]}
             </span>
-            {i < 2 && <div className="mx-1 h-0.5 w-8 bg-slate-400 dark:bg-white/30" />}
+            {i < 2 && <div className="mx-1 h-0.5 w-8 bg-black/60" />}
           </div>
         );
       })}
@@ -489,7 +485,7 @@ function StepIndicator({ current }: { current: Step }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-bold text-slate-950 dark:text-white">{label}</label>
+      <label className="mb-1.5 block text-sm font-medium text-slate-500 dark:text-slate-400">{label}</label>
       {children}
     </div>
   );
