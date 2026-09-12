@@ -202,7 +202,7 @@ function OnboardingFlow() {
               workspace.
             </span>
           </h1>
-          <p className="mt-2 text-sm sm:text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl">
+          <p className="mt-2.5 text-sm sm:text-base font-bold leading-relaxed text-slate-950 dark:text-white max-w-xl drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
             Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
           </p>
         </div>
@@ -500,8 +500,8 @@ function StepIndicator({ current }: { current: Step }) {
                 active
                   ? "neu-card ring-2 ring-cyan-500/50 -translate-y-0.5 shadow-md"
                   : done
-                    ? "neu-pill opacity-95"
-                    : "neu-inset opacity-65"
+                    ? "neu-pill"
+                    : "neu-inset"
               }`}
             >
               <div
@@ -510,7 +510,7 @@ function StepIndicator({ current }: { current: Step }) {
                     ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/35"
                     : done
                       ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
-                      : "neu-pill text-slate-500 dark:text-slate-400 font-bold"
+                      : "neu-pill text-slate-700 dark:text-slate-300 font-black"
                 }`}
               >
                 {done ? <CheckCircle2 size={16} className="stroke-[2.5]" /> : num}
@@ -521,13 +521,21 @@ function StepIndicator({ current }: { current: Step }) {
                     active
                       ? "text-slate-950 dark:text-white"
                       : done
-                        ? "text-emerald-700 dark:text-emerald-400"
-                        : "text-slate-500 dark:text-slate-400"
+                        ? "text-emerald-700 dark:text-emerald-300 font-extrabold"
+                        : "text-slate-800 dark:text-slate-200"
                   }`}
                 >
                   {title}
                 </p>
-                <p className="hidden sm:block text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                <p
+                  className={`hidden sm:block text-[10px] font-semibold truncate ${
+                    active
+                      ? "text-cyan-600 dark:text-cyan-400"
+                      : done
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-slate-600 dark:text-slate-400"
+                  }`}
+                >
                   {active ? "In progress" : done ? "Completed" : desc}
                 </p>
               </div>
