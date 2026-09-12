@@ -174,7 +174,10 @@ function OnboardingFlow() {
               className="h-9 w-9 shrink-0 object-contain drop-shadow-md"
             />
             <div className="flex flex-col">
-              <span className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white leading-none">
+              <span
+                className="text-base font-extrabold tracking-tight !text-black leading-none"
+                style={{ color: "#000000" }}
+              >
                 PrioryxAI
               </span>
               <span className="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 mt-0.5">
@@ -203,7 +206,7 @@ function OnboardingFlow() {
             </span>
           </h1>
           <p className="mt-2.5 text-sm sm:text-base font-bold leading-relaxed text-slate-950 dark:text-white max-w-xl drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-            Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
+            Three quick steps. <span className="font-extrabold !text-black" style={{ color: "#000000" }}>PrioryxAI</span> will pull your deadlines, rank them, and watch for internship openings automatically.
           </p>
         </div>
 
