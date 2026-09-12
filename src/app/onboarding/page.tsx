@@ -171,17 +171,31 @@ function OnboardingFlow() {
             alt="PrioryxAI"
             className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
           />
-          <span className="text-base font-black text-black tracking-tight">PrioryxAI</span>
+          <span
+            className="text-base font-black !text-black tracking-tight"
+            style={{ color: "#000000" }}
+          >
+            PrioryxAI
+          </span>
         </div>
 
-        <div className="mt-7 inline-flex items-center rounded-full border border-black/30 bg-white/95 px-3.5 py-1.5 text-xs sm:text-sm font-black uppercase tracking-wider text-black shadow-sm">
+        <div
+          className="mt-7 inline-flex items-center rounded-full border-2 border-black bg-black/10 px-3.5 py-1.5 text-xs sm:text-sm font-black uppercase tracking-wider !text-black shadow-sm backdrop-blur-sm"
+          style={{ color: "#000000", borderColor: "#000000" }}
+        >
           First-time setup
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight text-black sm:text-4xl">
+        <h1
+          className="mt-4 text-3xl font-black tracking-tight !text-black sm:text-4xl"
+          style={{ color: "#000000" }}
+        >
           Let&apos;s set up your workspace.
         </h1>
-        <p className="mt-3 text-sm leading-6 font-bold text-black">
+        <p
+          className="mt-3 text-sm leading-6 font-black !text-black"
+          style={{ color: "#000000" }}
+        >
           Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
         </p>
 
@@ -459,22 +473,26 @@ function StepIndicator({ current }: { current: Step }) {
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition-all ${
                 active
-                  ? "bg-black text-white shadow-md ring-2 ring-black/20"
+                  ? "border-2 border-black bg-amber-400 !text-black shadow-md ring-2 ring-black/20"
                   : done
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "border-2 border-black bg-white text-black font-black shadow-sm"
+                    ? "border-2 border-black bg-emerald-500 !text-black shadow-sm"
+                    : "border-2 border-black bg-black/10 !text-black font-black shadow-sm"
               }`}
+              style={{ color: "#000000", borderColor: "#000000" }}
             >
-              {done ? <CheckCircle2 size={16} className="stroke-[2.5]" /> : n}
+              {done ? (
+                <CheckCircle2 size={16} className="stroke-[2.5] !text-black" style={{ color: "#000000" }} />
+              ) : (
+                <span style={{ color: "#000000" }}>{n}</span>
+              )}
             </div>
             <span
-              className={`text-xs font-black tracking-tight ${
-                done ? "text-emerald-700 dark:text-emerald-400" : "text-black"
-              }`}
+              className="text-xs font-black tracking-tight !text-black"
+              style={{ color: "#000000" }}
             >
               {labels[n]}
             </span>
-            {i < 2 && <div className="mx-1 h-0.5 w-8 bg-black/60" />}
+            {i < 2 && <div className="mx-1 h-0.5 w-8 !bg-black" style={{ backgroundColor: "#000000" }} />}
           </div>
         );
       })}
