@@ -8,7 +8,6 @@ import {
   GitBranch,
   ImagePlus,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -194,8 +193,7 @@ function OnboardingFlow() {
 
         {/* Hero Headline & Subtitle */}
         <div className="mt-8">
-          <div className="inline-flex items-center gap-1.5 rounded-full neu-pill px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">
-            <Sparkles size={13} className="text-cyan-500" />
+          <div className="inline-flex items-center rounded-full neu-pill px-3.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">
             <span>First-time setup</span>
           </div>
 
