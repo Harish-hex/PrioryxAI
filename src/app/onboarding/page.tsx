@@ -175,8 +175,8 @@ function OnboardingFlow() {
             />
             <div className="flex flex-col">
               <span
-                className="text-base font-extrabold tracking-tight !text-black leading-none"
-                style={{ color: "#000000" }}
+                className="text-base font-extrabold tracking-tight leading-none"
+                style={{ color: "#212529" }}
               >
                 PrioryxAI
               </span>
@@ -206,7 +206,7 @@ function OnboardingFlow() {
             </span>
           </h1>
           <p className="mt-2.5 text-sm sm:text-base font-bold leading-relaxed text-slate-950 dark:text-white max-w-xl drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-            Three quick steps. <span className="font-extrabold !text-black" style={{ color: "#000000" }}>PrioryxAI</span> will pull your deadlines, rank them, and watch for internship openings automatically.
+            Three quick steps. <span className="font-extrabold" style={{ color: "#212529" }}>PrioryxAI</span> will pull your deadlines, rank them, and watch for internship openings automatically.
           </p>
         </div>
 
