@@ -8,6 +8,7 @@ import {
   GitBranch,
   ImagePlus,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -164,29 +165,47 @@ function OnboardingFlow() {
     <main className="app-background flex min-h-screen flex-col px-4 py-8 sm:px-6">
       <WavesBackground />
       <div className="mx-auto w-full max-w-2xl">
-        {/* Brand mark */}
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/logo.png"
-            alt="PrioryxAI"
-            className="h-9 w-9 shrink-0 object-contain drop-shadow-md"
-          />
-          <span className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
-            PrioryxAI
-          </span>
+        {/* Brand mark & Progress pill */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo.png"
+              alt="PrioryxAI"
+              className="h-9 w-9 shrink-0 object-contain drop-shadow-md"
+            />
+            <div className="flex flex-col">
+              <span className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white leading-none">
+                PrioryxAI
+              </span>
+              <span className="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 mt-0.5">
+                Student Career OS
+              </span>
+            </div>
+          </div>
+
+          <div className="neu-pill inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+            <span>Step {step} of 3</span>
+          </div>
         </div>
 
-        <div className="mt-7 inline-flex items-center gap-2 rounded-full neu-pill px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-          <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-          First-time setup
-        </div>
+        {/* Hero Headline & Subtitle */}
+        <div className="mt-8">
+          <div className="inline-flex items-center gap-1.5 rounded-full neu-pill px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">
+            <Sparkles size={13} className="text-cyan-500" />
+            <span>First-time setup</span>
+          </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
-          Let&apos;s set up your workspace.
-        </h1>
-        <p className="mt-2.5 text-sm sm:text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">
-          Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
-        </p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+            Let&apos;s set up your{" "}
+            <span className="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+              workspace.
+            </span>
+          </h1>
+          <p className="mt-2 text-sm sm:text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl">
+            Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
+          </p>
+        </div>
 
         <StepIndicator current={step} />
 
@@ -451,44 +470,71 @@ function OnboardingFlow() {
 }
 
 function StepIndicator({ current }: { current: Step }) {
-  const labels: Record<Step, string> = { 1: "Basics", 2: "GitHub", 3: "Schedule" };
+  const steps: { num: Step; title: string; desc: string }[] = [
+    { num: 1, title: "The Basics", desc: "Profile & stream" },
+    { num: 2, title: "Connect GitHub", desc: "Repo analysis" },
+    { num: 3, title: "Schedule", desc: "Timetable & dates" },
+  ];
+
+  const progressPercent = current === 1 ? 33 : current === 2 ? 66 : 100;
+
   return (
-    <div className="mt-7 inline-flex flex-wrap items-center gap-1.5 rounded-2xl neu-card p-1.5 shadow-sm">
-      {([1, 2, 3] as Step[]).map((n, i) => {
-        const active = current === n;
-        const done = current > n;
-        return (
-          <div key={n} className="flex items-center">
+    <div className="mt-7 space-y-3">
+      {/* Animated smooth progress bar track */}
+      <div className="relative h-2 w-full overflow-hidden rounded-full neu-inset p-0.5">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 shadow-sm transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
+      {/* 3 Step Cards in a responsive grid */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {steps.map(({ num, title, desc }) => {
+          const active = current === num;
+          const done = current > num;
+          return (
             <div
-              className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-all ${
+              key={num}
+              className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-2xl p-2.5 sm:p-3 transition-all duration-200 ${
                 active
-                  ? "neu-pill-inset bg-cyan-500/10 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300 font-bold"
+                  ? "neu-card ring-2 ring-cyan-500/50 -translate-y-0.5 shadow-md"
                   : done
-                    ? "text-emerald-700 dark:text-emerald-400 font-semibold"
-                    : "text-slate-600 dark:text-slate-400 font-medium"
+                    ? "neu-pill opacity-95"
+                    : "neu-inset opacity-65"
               }`}
             >
               <div
-                className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-all ${
                   active
-                    ? "bg-cyan-600 text-white shadow-sm shadow-cyan-600/30 dark:bg-cyan-500"
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/35"
                     : done
-                      ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 dark:bg-emerald-500"
-                      : "neu-inset text-slate-500 dark:text-slate-400"
+                      ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
+                      : "neu-pill text-slate-500 dark:text-slate-400 font-bold"
                 }`}
               >
-                {done ? <CheckCircle2 size={13} className="stroke-[2.5]" /> : n}
+                {done ? <CheckCircle2 size={16} className="stroke-[2.5]" /> : num}
               </div>
-              <span className="text-xs tracking-tight">
-                {labels[n]}
-              </span>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`text-xs font-bold truncate ${
+                    active
+                      ? "text-slate-950 dark:text-white"
+                      : done
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-slate-500 dark:text-slate-400"
+                  }`}
+                >
+                  {title}
+                </p>
+                <p className="hidden sm:block text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {active ? "In progress" : done ? "Completed" : desc}
+                </p>
+              </div>
             </div>
-            {i < 2 && (
-              <div className="mx-1 h-3.5 w-px bg-slate-300/80 dark:bg-slate-700/80" />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
