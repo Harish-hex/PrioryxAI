@@ -169,33 +169,22 @@ function OnboardingFlow() {
           <img
             src="/logo.png"
             alt="PrioryxAI"
-            className="h-9 w-9 shrink-0 object-contain drop-shadow-sm"
+            className="h-9 w-9 shrink-0 object-contain drop-shadow-md"
           />
-          <span
-            className="text-base font-black !text-black tracking-tight"
-            style={{ color: "#000000" }}
-          >
+          <span className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
             PrioryxAI
           </span>
         </div>
 
-        <div
-          className="mt-7 inline-flex items-center rounded-full border-2 border-black bg-black/10 px-3.5 py-1.5 text-xs sm:text-sm font-black uppercase tracking-wider !text-black shadow-sm backdrop-blur-sm"
-          style={{ color: "#000000", borderColor: "#000000" }}
-        >
+        <div className="mt-7 inline-flex items-center gap-2 rounded-full neu-pill px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+          <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
           First-time setup
         </div>
 
-        <h1
-          className="mt-4 text-3xl font-black tracking-tight !text-black sm:text-4xl"
-          style={{ color: "#000000" }}
-        >
+        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
           Let&apos;s set up your workspace.
         </h1>
-        <p
-          className="mt-3 text-sm leading-6 font-black !text-black"
-          style={{ color: "#000000" }}
-        >
+        <p className="mt-2.5 text-sm sm:text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">
           Three quick steps. PrioryxAI will pull your deadlines, rank them, and watch for internship openings automatically.
         </p>
 
@@ -464,35 +453,39 @@ function OnboardingFlow() {
 function StepIndicator({ current }: { current: Step }) {
   const labels: Record<Step, string> = { 1: "Basics", 2: "GitHub", 3: "Schedule" };
   return (
-    <div className="mt-7 flex items-center gap-2.5">
+    <div className="mt-7 inline-flex flex-wrap items-center gap-1.5 rounded-2xl neu-card p-1.5 shadow-sm">
       {([1, 2, 3] as Step[]).map((n, i) => {
         const active = current === n;
         const done = current > n;
         return (
-          <div key={n} className="flex items-center gap-2">
+          <div key={n} className="flex items-center">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition-all ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-all ${
                 active
-                  ? "border-2 border-black bg-amber-400 !text-black shadow-md ring-2 ring-black/20"
+                  ? "neu-pill-inset bg-cyan-500/10 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300 font-bold"
                   : done
-                    ? "border-2 border-black bg-emerald-500 !text-black shadow-sm"
-                    : "border-2 border-black bg-black/10 !text-black font-black shadow-sm"
+                    ? "text-emerald-700 dark:text-emerald-400 font-semibold"
+                    : "text-slate-600 dark:text-slate-400 font-medium"
               }`}
-              style={{ color: "#000000", borderColor: "#000000" }}
             >
-              {done ? (
-                <CheckCircle2 size={16} className="stroke-[2.5] !text-black" style={{ color: "#000000" }} />
-              ) : (
-                <span style={{ color: "#000000" }}>{n}</span>
-              )}
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                  active
+                    ? "bg-cyan-600 text-white shadow-sm shadow-cyan-600/30 dark:bg-cyan-500"
+                    : done
+                      ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 dark:bg-emerald-500"
+                      : "neu-inset text-slate-500 dark:text-slate-400"
+                }`}
+              >
+                {done ? <CheckCircle2 size={13} className="stroke-[2.5]" /> : n}
+              </div>
+              <span className="text-xs tracking-tight">
+                {labels[n]}
+              </span>
             </div>
-            <span
-              className="text-xs font-black tracking-tight !text-black"
-              style={{ color: "#000000" }}
-            >
-              {labels[n]}
-            </span>
-            {i < 2 && <div className="mx-1 h-0.5 w-8 !bg-black" style={{ backgroundColor: "#000000" }} />}
+            {i < 2 && (
+              <div className="mx-1 h-3.5 w-px bg-slate-300/80 dark:bg-slate-700/80" />
+            )}
           </div>
         );
       })}
