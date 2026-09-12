@@ -9,6 +9,7 @@ export interface RepoStructureSignals {
   hasCI: boolean;
   hasDockerfile: boolean;
   hasDependencyManifest: boolean; // requirements.txt, package.json, pyproject.toml, environment.yml, Pipfile, go.mod, pom.xml
+  dependencyManifestPath: string | null; // path to the manifest above, for security scanning
   isNotebookHeavy: boolean;       // mostly/only .ipynb, little to no modular source
   hasModelArtifacts: boolean;     // model.py/train.py/models dir/checkpoints — ML-shaped repo
   hasOrganizedStructure: boolean; // real folders (src/lib/app/etc) rather than a flat file dump
@@ -94,6 +95,10 @@ export async function inspectRepoStructure(repoUrl: string | null): Promise<Repo
   const sourceBlobs = blobs.filter(e => /\.(py|js|jsx|ts|tsx|go|java|rb|rs|cpp|c|cs)$/i.test(e.path));
   const keySourceFile = (modelFiles.length > 0 ? modelFiles : sourceBlobs)
     .sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
+  // Prefer root-level manifests (rarely more than one per repo anyway).
+  const manifestEntry = [...blobs]
+    .filter(e => DEPENDENCY_MANIFESTS.includes(e.path.split('/').pop() ?? ''))
+    .sort((a, b) => a.path.split('/').length - b.path.split('/').length)[0];
 
   return {
     hasReadme: !!readmeEntry,
@@ -101,7 +106,8 @@ export async function inspectRepoStructure(repoUrl: string | null): Promise<Repo
     hasTests: paths.some(p => TEST_PATTERN.test(p)),
     hasCI: paths.some(p => CI_PATTERN.test(p)),
     hasDockerfile: paths.some(p => /(^|\/)Dockerfile$/i.test(p)),
-    hasDependencyManifest: paths.some(p => DEPENDENCY_MANIFESTS.includes(p.split('/').pop() ?? '')),
+    hasDependencyManifest: !!manifestEntry,
+    dependencyManifestPath: manifestEntry?.path ?? null,
     isNotebookHeavy: notebookCount > 0 && notebookCount >= sourceCodeCount,
     hasModelArtifacts: paths.some(p => MODEL_PATTERN.test(p)),
     hasOrganizedStructure: paths.some(p => ORGANIZED_DIR_PATTERN.test(p)),

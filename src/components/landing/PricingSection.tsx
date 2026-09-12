@@ -3,21 +3,9 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Zap, Check, Lock } from 'lucide-react';
+import { PRO_FEATURES as PRO_FEATURE_ITEMS } from '@/lib/pro-features';
 
-const PRO_FEATURES = [
-  'Unlimited tasks in priority feed',
-  'Unlimited AI assistant messages',
-  '10 timetable scans per day',
-  'Auto GitHub sync every 6 hours',
-  'Resume Intelligence — 64+ skills & SWOT',
-  'Project Foundry — 9 AI project roadmaps',
-  'Job market skill matching',
-  'LeetCode + HackerRank tracking',
-  'Peer Collaboration & 1v1 challenges',
-  'Full GitHub health & streak analytics',
-  'Placement readiness score card',
-  'AI-generated resume PDF',
-];
+const PRO_FEATURES = PRO_FEATURE_ITEMS.map((f) => f.label);
 
 export function PricingSection() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);

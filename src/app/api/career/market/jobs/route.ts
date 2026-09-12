@@ -158,6 +158,236 @@ async function fetchFromArbeitnow(): Promise<RawJob[]> {
   }
 }
 
+async function fetchFromAdzuna(query: string): Promise<RawJob[]> {
+  const appId = process.env.ADZUNA_API_KEY;
+  const appKey = process.env.ADZUNA_APP_KEY;
+  if (!appId || !appKey) return [];
+  try {
+    // India + US in parallel — same app_id/app_key work across Adzuna's country endpoints.
+    const countries = ['in', 'us'];
+    const results = await Promise.allSettled(
+      countries.map((c) =>
+        fetch(
+          `https://api.adzuna.com/v1/api/jobs/${c}/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=25&what=${encodeURIComponent(query)}&content-type=application/json`,
+          { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) }
+        ).then((r) => r.json())
+      )
+    );
+    return results
+      .filter((r) => r.status === 'fulfilled')
+      .flatMap((r) => (r as PromiseFulfilledResult<{ results?: unknown[] }>).value.results ?? [])
+      .map((job: unknown) => {
+        const j = job as Record<string, unknown>;
+        const loc = j.location as Record<string, unknown> | undefined;
+        const company = j.company as Record<string, unknown> | undefined;
+        return {
+          id: `adz-${j.id}`,
+          title: String(j.title ?? ''),
+          company: String(company?.display_name ?? ''),
+          location: String(loc?.display_name ?? 'Remote'),
+          salary: j.salary_min ? `${j.salary_min}-${j.salary_max ?? j.salary_min}` : '',
+          description: String(j.description ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+          url: String(j.redirect_url ?? ''),
+          tags: [],
+          postedAt: String(j.created ?? ''),
+          source: 'Adzuna',
+        };
+      });
+  } catch (e) {
+    console.error('[Jobs] Adzuna fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromJooble(query: string): Promise<RawJob[]> {
+  const key = process.env.JOOBLE_API_KEY;
+  if (!key) return [];
+  try {
+    const res = await fetch(`https://jooble.org/api/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords: query }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { jobs?: unknown[] };
+    return (data.jobs ?? []).map((job: unknown) => {
+      const j = job as Record<string, unknown>;
+      return {
+        id: `job-${String(j.id ?? j.link ?? '').slice(0, 60)}`,
+        title: String(j.title ?? ''),
+        company: String(j.company ?? ''),
+        location: String(j.location ?? 'Remote'),
+        salary: String(j.salary ?? ''),
+        description: String(j.snippet ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+        url: String(j.link ?? ''),
+        tags: [],
+        postedAt: String(j.updated ?? ''),
+        source: 'Jooble',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] Jooble fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromCareerjet(query: string): Promise<RawJob[]> {
+  const affid = process.env.CAREERJET_AFFID;
+  if (!affid) return [];
+  try {
+    const url =
+      `https://public.api.careerjet.net/search?affid=${affid}&keywords=${encodeURIComponent(query)}` +
+      `&location=&user_ip=1.1.1.1&user_agent=Mozilla%2F5.0&url=${encodeURIComponent('https://prioryxai.com/career/market/jobs')}&pagesize=25`;
+    const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { jobs?: unknown[] };
+    return (data.jobs ?? []).map((job: unknown) => {
+      const j = job as Record<string, unknown>;
+      return {
+        id: `cj-${String(j.url ?? '').slice(-40)}`,
+        title: String(j.title ?? ''),
+        company: String(j.company ?? ''),
+        location: String(j.locations ?? 'Remote'),
+        salary: String(j.salary ?? ''),
+        description: String(j.description ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+        url: String(j.url ?? ''),
+        tags: [],
+        postedAt: String(j.date ?? ''),
+        source: 'Careerjet',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] Careerjet fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromFindwork(query: string): Promise<RawJob[]> {
+  const key = process.env.FINDWORK_API_KEY;
+  if (!key) return [];
+  try {
+    const res = await fetch(`https://findwork.dev/api/jobs/?search=${encodeURIComponent(query)}`, {
+      headers: { Authorization: `Token ${key}` },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results?: unknown[] };
+    return (data.results ?? []).map((job: unknown) => {
+      const j = job as Record<string, unknown>;
+      return {
+        id: `fw-${j.id}`,
+        title: String(j.role ?? ''),
+        company: String(j.company_name ?? ''),
+        location: String(j.location ?? 'Remote'),
+        salary: '',
+        description: String(j.text ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+        url: String(j.url ?? ''),
+        tags: Array.isArray(j.keywords) ? (j.keywords as string[]) : [],
+        postedAt: String(j.date_posted ?? ''),
+        source: 'Findwork',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] Findwork fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromUSAJobs(query: string): Promise<RawJob[]> {
+  const key = process.env.USAJOBS_API_KEY;
+  if (!key) return [];
+  try {
+    const res = await fetch(`https://data.usajobs.gov/api/search?Keyword=${encodeURIComponent(query)}&ResultsPerPage=25`, {
+      headers: {
+        Host: 'data.usajobs.gov',
+        // USAJOBS requires the User-Agent to be the email registered for the key.
+        'User-Agent': 'yugendhars06@gmail.com',
+        'Authorization-Key': key,
+      },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { SearchResult?: { SearchResultItems?: unknown[] } };
+    const items = data.SearchResult?.SearchResultItems ?? [];
+    return items.map((item: unknown) => {
+      const desc = ((item as Record<string, unknown>)?.MatchedObjectDescriptor ?? {}) as Record<string, any>;
+      const pay = desc.PositionRemuneration?.[0];
+      return {
+        id: `usa-${desc.PositionID ?? desc.PositionURI ?? Math.random()}`,
+        title: String(desc.PositionTitle ?? ''),
+        company: String(desc.OrganizationName ?? ''),
+        location: String(desc.PositionLocationDisplay ?? 'USA'),
+        salary: pay ? `${pay.MinimumRange}-${pay.MaximumRange} ${pay.RateIntervalCode ?? ''}`.trim() : '',
+        description: String(desc.UserArea?.Details?.JobSummary ?? desc.QualificationSummary ?? '')
+          .replace(/<[^>]*>/g, '')
+          .slice(0, 300),
+        url: String(desc.PositionURI ?? ''),
+        tags: [],
+        postedAt: String(desc.PublicationStartDate ?? ''),
+        source: 'USAJOBS',
+      };
+    });
+  } catch (e) {
+    console.error('[Jobs] USAJOBS fetch failed:', e);
+    return [];
+  }
+}
+
+async function fetchFromTheMuse(): Promise<RawJob[]> {
+  const key = process.env.THEMUSE_API_KEY;
+  if (!key) return [];
+  try {
+    const categories = ['Software Engineering', 'Data Science', 'Data and Analytics', 'IT'];
+    const results = await Promise.allSettled(
+      categories.map((cat) =>
+        fetch(`https://www.themuse.com/api/public/jobs?category=${encodeURIComponent(cat)}&page=0&api_key=${key}`, {
+          next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(8000),
+        }).then((r) => r.json())
+      )
+    );
+    return results
+      .filter((r) => r.status === 'fulfilled')
+      .flatMap((r) => (r as PromiseFulfilledResult<{ results?: unknown[] }>).value.results ?? [])
+      .map((job: unknown) => {
+        const j = job as Record<string, unknown>;
+        const locations = Array.isArray(j.locations)
+          ? (j.locations as Array<{ name?: string }>).map((l) => l.name).filter(Boolean).join(', ')
+          : '';
+        const company = j.company as Record<string, unknown> | undefined;
+        const refs = j.refs as Record<string, unknown> | undefined;
+        return {
+          id: `muse-${j.id}`,
+          title: String(j.name ?? ''),
+          company: String(company?.name ?? ''),
+          location: locations || 'Remote',
+          salary: '',
+          description: String(j.contents ?? '').replace(/<[^>]*>/g, '').slice(0, 300),
+          url: String(refs?.landing_page ?? ''),
+          tags: Array.isArray(j.tags) ? (j.tags as string[]) : [],
+          postedAt: String(j.publication_date ?? ''),
+          source: 'The Muse',
+        };
+      });
+  } catch (e) {
+    console.error('[Jobs] The Muse fetch failed:', e);
+    return [];
+  }
+}
+
+// JobDataLake — kept as an explicit no-op rather than a guessed integration.
+// The key exists in the environment but the API has no publicly documented
+// endpoint/response schema we could verify; wiring it up on a guess risks
+// silently returning nothing (or breaking) with no way to tell why. Ask
+// whoever issued this key for the base URL + request/response shape and this
+// slots in exactly like the fetchers above.
+async function fetchFromJobDataLake(): Promise<RawJob[]> {
+  return [];
+}
+
 // ── Tech-only job filter ─────────────────────────────────────────
 const TECH_TITLE_KEYWORDS = [
   'software', 'engineer', 'developer', 'programmer', 'coding',
@@ -274,13 +504,30 @@ export async function GET(request: NextRequest) {
   const userSkillsArray = Array.from(userSkillsSet);
   console.log(`[Jobs] userSkills count: ${userSkillsArray.length}`);
 
+  // The keyed sources below (Adzuna, Jooble, Careerjet, Findwork, USAJOBS,
+  // The Muse) take a search query — bias it toward the user's own strongest
+  // skills so these sources return jobs actually relevant to them, instead of
+  // a generic "software developer" firehose.
+  const querySkills = userSkillsArray.slice(0, 3);
+  const searchQuery = querySkills.length > 0 ? querySkills.join(' ') : 'software developer';
+
   // Fetch from all sources in parallel — more sources means more real
   // candidates for a genuinely good match to actually surface.
-  const [remotiveJobs, arbeitnowJobs, remoteOkJobs, jobicyJobs] = await Promise.allSettled([
+  const [
+    remotiveJobs, arbeitnowJobs, remoteOkJobs, jobicyJobs,
+    adzunaJobs, joobleJobs, careerjetJobs, findworkJobs, usaJobsJobs, museJobs, jobDataLakeJobs,
+  ] = await Promise.allSettled([
     fetchFromRemotive(),
     fetchFromArbeitnow(),
     fetchFromRemoteOK(),
     fetchFromJobicy(),
+    fetchFromAdzuna(searchQuery),
+    fetchFromJooble(searchQuery),
+    fetchFromCareerjet(searchQuery),
+    fetchFromFindwork(searchQuery),
+    fetchFromUSAJobs(searchQuery),
+    fetchFromTheMuse(),
+    fetchFromJobDataLake(),
   ]);
 
   const allJobs: RawJob[] = [
@@ -288,11 +535,31 @@ export async function GET(request: NextRequest) {
     ...(arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value : []),
     ...(remoteOkJobs.status === 'fulfilled' ? remoteOkJobs.value : []),
     ...(jobicyJobs.status === 'fulfilled' ? jobicyJobs.value : []),
+    ...(adzunaJobs.status === 'fulfilled' ? adzunaJobs.value : []),
+    ...(joobleJobs.status === 'fulfilled' ? joobleJobs.value : []),
+    ...(careerjetJobs.status === 'fulfilled' ? careerjetJobs.value : []),
+    ...(findworkJobs.status === 'fulfilled' ? findworkJobs.value : []),
+    ...(usaJobsJobs.status === 'fulfilled' ? usaJobsJobs.value : []),
+    ...(museJobs.status === 'fulfilled' ? museJobs.value : []),
+    ...(jobDataLakeJobs.status === 'fulfilled' ? jobDataLakeJobs.value : []),
   ];
 
+  console.log(`[Jobs] Sources fulfilled: remotive=${remotiveJobs.status} arbeitnow=${arbeitnowJobs.status} remoteok=${remoteOkJobs.status} jobicy=${jobicyJobs.status} adzuna=${adzunaJobs.status} jooble=${joobleJobs.status} careerjet=${careerjetJobs.status} findwork=${findworkJobs.status} usajobs=${usaJobsJobs.status} muse=${museJobs.status}`);
+
+  // Multiple aggregators frequently surface the exact same posting (a job
+  // board syndicated to several of these APIs) — dedupe by URL before
+  // scoring so the user doesn't see the same listing repeated.
+  const seenUrls = new Set<string>();
+  const dedupedJobs = allJobs.filter((job) => {
+    if (!job.url || !job.title) return false;
+    if (seenUrls.has(job.url)) return false;
+    seenUrls.add(job.url);
+    return true;
+  });
+
   // Filter to tech jobs only — remove Sales, Marketing, Design, etc.
-  const techJobs = allJobs.filter(isTechJob);
-  console.log(`[Jobs] Total: ${allJobs.length}, Tech only: ${techJobs.length}`);
+  const techJobs = dedupedJobs.filter(isTechJob);
+  console.log(`[Jobs] Total: ${allJobs.length}, Deduped: ${dedupedJobs.length}, Tech only: ${techJobs.length}`);
 
   // Escape a skill string for safe use inside a RegExp
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

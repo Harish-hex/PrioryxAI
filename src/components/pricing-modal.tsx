@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, CreditCard, Loader2, Lock, X } from "lucide-react";
 import { useState } from "react";
+import { PRO_FEATURES, FREE_TIER_ITEMS } from "@/lib/pro-features";
 
 interface PricingModalProps {
   open: boolean;
@@ -107,7 +108,7 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                     <span className="pb-1 text-sm font-medium text-slate-500 dark:text-slate-400">/month</span>
                   </div>
                   <ul className="mt-6 space-y-3">
-                    {freeItems.map(({ label, locked }) => (
+                    {FREE_TIER_ITEMS.map(({ label, locked }) => (
                       <li key={label} className="flex gap-3 text-sm leading-6 text-slate-700 dark:text-slate-200">
                         {locked ? (
                           <Lock className="mt-0.5 shrink-0 text-slate-400" size={15} />
@@ -150,7 +151,7 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
                     <span className="ml-2 rounded-full bg-emerald-400 px-2 py-0.5 text-xs font-bold text-black">40% off</span>
                   </div>
                   <ul className="mt-6 space-y-3">
-                    {proFeatures.map((f) => (
+                    {PRO_FEATURES.map((f) => (
                       <li key={f.label} className="flex gap-3 text-sm leading-6 text-slate-200 dark:text-slate-800">
                         <Check className="mt-0.5 shrink-0 text-emerald-400 dark:text-emerald-600 stroke-[3]" size={15} />
                         <span className="font-medium">
@@ -194,22 +195,3 @@ export function PricingModal({ open, onClose, isPro }: PricingModalProps) {
   );
 }
 
-const proFeatures: { label: string; sub?: string }[] = [
-  { label: "Unlimited AI messages", sub: "No daily cap, context aware" },
-  { label: "Full task feed", sub: "All matches ranked, no 5-task cap" },
-  { label: "Plan with AI on any task", sub: "Instant action plan per deadline" },
-  { label: "Priority scoring (0–100)", sub: "See which task to do first and why" },
-  { label: "Auto-scheduled focus blocks", sub: "AI slots tasks into your calendar" },
-  { label: "10 timetable uploads/day", sub: "PDF, DOC, image — all formats" },
-  { label: "Pro badge on public profile", sub: "Visible to recruiters" },
-];
-
-const freeItems: { label: string; locked: boolean }[] = [
-  { label: "5 AI-ranked tasks visible", locked: false },
-  { label: "3 AI messages/day", locked: false },
-  { label: "Unlimited timetable uploads", locked: false },
-  { label: "Basic public profile", locked: false },
-  { label: "Plan with AI", locked: true },
-  { label: "Priority scoring", locked: true },
-  { label: "Auto-scheduling", locked: true },
-];

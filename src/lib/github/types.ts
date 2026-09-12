@@ -17,7 +17,8 @@ export type WeaknessCategory =
   | 'forked_only'
   | 'notebook_only'
   | 'no_dependency_manifest'
-  | 'unorganized_structure';
+  | 'unorganized_structure'
+  | 'vulnerable_dependency';
 
 export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type ImpactArea =
@@ -63,6 +64,10 @@ export interface ProjectScore {
     interviewTopics: string[];
     skillsShowcased: string[];
   };
+  /** Specific, code-grounded implementation critique for this repo (architecture,
+   *  model design, error handling, etc.) — distinct from the generic structural
+   *  weaknesses above, and only present when the repo's key source file was readable. */
+  implementationFeedback?: string[];
   lastAnalysedAt: string;
 }
 
@@ -102,6 +107,8 @@ export interface GitHubIntelligenceReport {
   profileWeaknesses: string[];
   topProjects: ProjectScore[];
   weakestProjects: ProjectScore[];
+  /** Every analyzed repo, sorted by score descending — the full "all repos" list. */
+  allProjects: ProjectScore[];
   priorityActions: PriorityAction[];
   careerReadiness: {
     resumeReadyProjects: string[];

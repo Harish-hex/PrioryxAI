@@ -11,6 +11,10 @@ import { syncInternshalaJobsForUser, deriveJobRoles, buildInternshalaSearchUrl }
 import { buildPriorityContext, computeExplainablePriority } from '@/lib/scoring/explainable-priority';
 import { normalizeCountryCode } from '@/lib/context/global-config';
 import { errorMentionsColumn } from '@/lib/schema-migrations';
+import { collectRoadmapSignals } from '@/lib/priority/collectors/roadmap-collector';
+import { collectTimetableSignals } from '@/lib/priority/collectors/timetable-collector';
+import { collectSubjectSignals } from '@/lib/priority/collectors/subject-collector';
+import { collectResumeSignals } from '@/lib/priority/collectors/resume-collector';
 
 const FEED_CACHE_TTL = 180; // 3 minutes for sub-50ms instant response
 
@@ -323,6 +327,79 @@ async function buildRepoGuidanceTask({
   };
 }
 
+/** One "what to learn next" task from the roadmap that best matches the
+ * user's stream/resume skills — see collectRoadmapSignals. */
+async function buildRoadmapGuidanceTask(supabase: SupabaseClient, userId: string): Promise<FeedTask | null> {
+  try {
+    const [signal] = await collectRoadmapSignals(supabase, userId);
+    if (!signal) return null;
+    return {
+      id: `roadmap-${signal.topicId}`,
+      type: 'manual',
+      title: `Roadmap: ${signal.topicTitle}`,
+      due_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 100,
+      source: 'system',
+      estimate: '45 min',
+      action_label: 'Open Roadmap',
+      external_url: `/career/roadmap/${signal.roadmapId}`,
+      reason: `Next step on your ${signal.roadmapLabel} roadmap journey — ${signal.sectionTitle}.`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** One subject study-hour task, preferring the user's actual class timetable
+ * over a generic profile subject — see collectTimetableSignals. */
+async function buildSubjectStudyTask(supabase: SupabaseClient, userId: string): Promise<FeedTask | null> {
+  try {
+    const timetableSignals = await collectTimetableSignals(supabase, userId);
+    const [signal] = timetableSignals.length > 0 ? timetableSignals : await collectSubjectSignals(supabase, userId);
+    if (!signal) return null;
+    return {
+      id: `subject-${signal.subject}`,
+      type: 'manual',
+      title: signal.actionTitle,
+      due_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 95,
+      source: 'system',
+      estimate: `${signal.estimatedMinutes} min`,
+      action_label: 'View Syllabus',
+      action_view: 'settings',
+      reason: signal.actionDescription,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** One "improve this skill" task from the user's resume SWOT critical gaps —
+ * see collectResumeSignals. Distinct from the one-time setup nudges. */
+async function buildSkillGapTask(supabase: SupabaseClient, userId: string): Promise<FeedTask | null> {
+  try {
+    const [signal] = await collectResumeSignals(supabase, userId, []);
+    if (!signal) return null;
+    return {
+      id: `skill-gap-${signal.gapSkill}`,
+      type: 'manual',
+      title: `Improve: ${signal.gapSkill}`,
+      due_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+      completed: false,
+      score: 90,
+      source: 'system',
+      estimate: `${signal.estimatedMinutes} min`,
+      action_label: 'View Resume Gaps',
+      external_url: signal.actionUrl,
+      reason: signal.whyNow,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function buildJobReason(task: FeedTask, userSubjects: string[]): string {
   const skills: string[] = task.subject
     ? task.subject.split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -439,9 +516,12 @@ export async function getFeedData(
   // These two do independent I/O (Supabase + Redis respectively) and neither
   // depends on the other's result — they were previously awaited one after
   // another, paying two network round-trips in series for no reason.
-  const [priorityContext, repoGuidanceTask] = await Promise.all([
+  const [priorityContext, repoGuidanceTask, roadmapGuidanceTask, subjectStudyTask, skillGapTask] = await Promise.all([
     buildPriorityContext(supabase, userId).catch(() => ({})),
     buildRepoGuidanceTask({ userId, githubCache, userProfile }),
+    buildRoadmapGuidanceTask(supabase, userId),
+    buildSubjectStudyTask(supabase, userId),
+    buildSkillGapTask(supabase, userId),
   ]);
 
   // Enrich job tasks with a specific match reason (skills + stipend + urgency)
@@ -463,10 +543,14 @@ export async function getFeedData(
     })
     .filter(t => t.score > 0);
 
-  // Real feed: only actual work tasks + AI repo guidance.
+  // Real feed: actual work tasks + one each of the daily system-generated
+  // variety (GitHub fix, roadmap next-step, subject study block, skill gap).
   // Setup nudges are returned separately so they never displace real next moves.
   const realFeed = [
     ...(repoGuidanceTask ? [repoGuidanceTask] : []),
+    ...(roadmapGuidanceTask ? [roadmapGuidanceTask] : []),
+    ...(subjectStudyTask ? [subjectStudyTask] : []),
+    ...(skillGapTask ? [skillGapTask] : []),
     ...scored,
   ].sort((a, b) => b.score - a.score);
 

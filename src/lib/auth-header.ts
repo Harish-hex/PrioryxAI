@@ -56,3 +56,23 @@ export async function verifyUserId(userId: string, signature: string): Promise<b
 }
 
 export const AUTH_HEADER_NAMES = { id: HEADER_ID, sig: HEADER_SIG } as const;
+
+/** Sign an arbitrary string payload with the same server-only secret. Used to
+ * make a short-TTL "recently verified by getUser()" cache cookie tamper-proof —
+ * see the getUser() cache in src/lib/supabase/middleware.ts. */
+export async function signPayload(payload: string): Promise<string | null> {
+  const secret = getSecret();
+  if (!secret) return null;
+  const key = await getHmacKey(secret);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return bufToBase64Url(sig);
+}
+
+/** Verify a signature produced by signPayload. Fails closed on any mismatch or missing secret. */
+export async function verifyPayload(payload: string, signature: string): Promise<boolean> {
+  const secret = getSecret();
+  if (!secret || !payload || !signature) return false;
+  const expected = await signPayload(payload);
+  if (!expected) return false;
+  return expected === signature;
+}

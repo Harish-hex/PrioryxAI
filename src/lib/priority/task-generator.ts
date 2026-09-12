@@ -5,8 +5,9 @@ import { ResumeSignal } from './collectors/resume-collector'
 import { ProjectSignal } from './collectors/project-collector'
 import { SubjectSignal } from './collectors/subject-collector'
 import { JobSignal } from './collectors/job-collector'
+import { RoadmapSignal } from './collectors/roadmap-collector'
 
-type AnySignal = ExamSignal | DSASignal | GitHubSignal | ResumeSignal | ProjectSignal | SubjectSignal | JobSignal
+type AnySignal = ExamSignal | DSASignal | GitHubSignal | ResumeSignal | ProjectSignal | SubjectSignal | JobSignal | RoadmapSignal
 
 export interface PriorityTaskRow {
   user_id: string
@@ -163,6 +164,26 @@ export function signalToTask(
         source_type: 'resume_gap',
         source_id: s.gapSkill,
         task_data: { gapSkill: s.gapSkill }
+      }
+    }
+
+    case 'roadmap': {
+      const s = signal as RoadmapSignal
+      return {
+        ...base,
+        title: `Roadmap: ${s.topicTitle}`,
+        description: `${s.sectionTitle} · ${s.roadmapLabel} — ${s.topicDescription}`,
+        category: 'learning',
+        priority: s.priority,
+        urgency_score: s.urgencyScore,
+        action_url: `/career/roadmap/${s.roadmapId}`,
+        action_label: 'Open Roadmap',
+        why_now: `Next step on your ${s.roadmapLabel} roadmap journey`,
+        estimated_minutes: 45,
+        effort_level: 'medium',
+        source_type: 'roadmap_topic',
+        source_id: s.topicId,
+        task_data: { roadmapId: s.roadmapId, topicId: s.topicId }
       }
     }
 

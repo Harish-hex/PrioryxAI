@@ -1,7 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { AUTH_HEADER_NAMES, signUserId } from '@/lib/auth-header';
+import { AUTH_HEADER_NAMES, signUserId, signPayload, verifyPayload } from '@/lib/auth-header';
 import { createTimeoutFetch } from '@/lib/supabase/fetch-with-timeout';
+
+// How long a real getUser() revalidation is trusted for, keyed to the exact
+// access-token hash it was performed on. Bounds the network round-trip to at
+// most once per this window per session instead of once per navigation, while
+// keeping the revocation/deletion window this small (unlike getSession(),
+// which never re-checks with Supabase at all).
+const VERIFIED_CACHE_TTL_MS = 45_000;
+const VERIFIED_COOKIE_NAME = 'sb-verified-cache';
+
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 function shouldUseSecureCookies(request: NextRequest) {
   const forwardedProto = request.headers.get('x-forwarded-proto');
@@ -83,17 +96,66 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired — required for Server Components. A timed-out
-  // or network-failed check must fail closed (treat as unauthenticated) but
-  // must NOT throw and crash the whole request — every protected navigation
-  // goes through here, so an unhandled rejection here would 500 the entire
-  // site on a transient network blip instead of just prompting a re-login.
-  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'] = null;
+  // getUser() re-validates the token against Supabase's Auth server on every
+  // call — doing that on EVERY navigation to EVERY protected route (feed,
+  // career/*, learning, ...) was what caused multi-second (up to the 15s
+  // timeout) delays on every sidebar click. getSession() alone would fix the
+  // latency but never re-checks revocation/deletion with Supabase at all, so
+  // instead: decode the local session (no network) to get the access token,
+  // and only pay for a real getUser() network round-trip once per
+  // VERIFIED_CACHE_TTL_MS per exact token — cached in a signed, tamper-proof
+  // cookie so a client can never forge or extend its own verified window.
+  type AuthUser = NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user']>;
+  let user: AuthUser | null = null;
+
   try {
-    const result = await supabase.auth.getUser();
-    user = result.data.user;
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+
+    if (accessToken) {
+      const tokenHash = await sha256Hex(accessToken);
+      const cached = request.cookies.get(VERIFIED_COOKIE_NAME)?.value;
+      let trustedCache = false;
+
+      if (cached) {
+        const [payloadB64, sig] = cached.split('.');
+        if (payloadB64 && sig && (await verifyPayload(payloadB64, sig))) {
+          try {
+            const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'))) as {
+              tokenHash: string; verifiedAt: number; id: string; email: string | null;
+            };
+            if (payload.tokenHash === tokenHash && Date.now() - payload.verifiedAt < VERIFIED_CACHE_TTL_MS) {
+              user = { id: payload.id, email: payload.email } as AuthUser;
+              trustedCache = true;
+            }
+          } catch {
+            // Malformed/tampered cache payload — fall through to a real check.
+          }
+        }
+      }
+
+      if (!trustedCache) {
+        const result = await supabase.auth.getUser();
+        user = result.data.user;
+        if (user) {
+          const payload = { tokenHash, verifiedAt: Date.now(), id: user.id, email: user.email ?? null };
+          const payloadB64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          const sig = await signPayload(payloadB64);
+          if (sig) {
+            pendingCookies.push({
+              name: VERIFIED_COOKIE_NAME,
+              value: `${payloadB64}.${sig}`,
+              options: { maxAge: VERIFIED_CACHE_TTL_MS / 1000 },
+            });
+          }
+        }
+      }
+    } else {
+      // No local session at all — nothing to verify; fall through as anonymous.
+      user = null;
+    }
   } catch (err) {
-    console.warn('[middleware] auth.getUser() failed:', err);
+    console.warn('[middleware] auth check failed:', err);
   }
 
   // Forward the already-verified user id to Server Components via a signed

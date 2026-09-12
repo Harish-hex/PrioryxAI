@@ -102,6 +102,7 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
       "/learning",
       "/profile",
       "/settings",
+      "/career/roadmap",
       "/career/resume/upload",
       "/career/resume/swot",
       "/career/resume/builder",
@@ -138,10 +139,10 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
   }
 
   return (
-    <aside
-      className={`fixed bottom-6 left-6 top-6 z-40 hidden flex-col rounded-[32px] neu-card p-4 sm:p-5 transition-[width] duration-300 lg:flex ${
-        collapsed ? "w-24" : "w-72"
-      }`}
+    <motion.aside
+      className="fixed bottom-6 left-6 top-6 z-40 hidden flex-col overflow-hidden rounded-[32px] neu-card p-4 sm:p-5 lg:flex"
+      animate={{ width: collapsed ? "96px" : "288px" }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {/* Brand Header */}
       {!collapsed ? (
@@ -412,6 +413,6 @@ export function Sidebar({ activeView, collapsed, isPro, onNavigate, onOpenPricin
           {!collapsed && <span>{signingOut ? "Signing out..." : "Sign Out"}</span>}
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

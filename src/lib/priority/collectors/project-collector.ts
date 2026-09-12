@@ -18,13 +18,19 @@ export async function collectProjectSignals(
   db: SupabaseClient,
   userId: string
 ): Promise<ProjectSignal[]> {
+  // Weekends have more free time for the multi-hour blocks a project phase
+  // actually needs — surface more of the user's in-progress Foundry projects
+  // then, with a higher priority nudge, instead of the weekday trickle of 3.
+  const dayOfWeek = new Date().getDay() // 0 = Sun, 6 = Sat
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+
   const { data: projects } = await db
     .from('user_projects')
     .select('*')
     .eq('user_id', userId)
     .eq('verified', false)
     .order('created_at', { ascending: true })
-    .limit(3)
+    .limit(isWeekend ? 5 : 3)
 
   if (!projects?.length) return []
 
@@ -45,13 +51,15 @@ export async function collectProjectSignals(
       projectId: proj.id,
       projectTitle: proj.title ?? 'Project',
       currentPhase: currentPhaseNum,
-      phaseName: currentPhaseData?.name ?? `Phase ${currentPhaseNum}`,
+      phaseName: isWeekend
+        ? `Weekend build: ${currentPhaseData?.name ?? `Phase ${currentPhaseNum}`}`
+        : (currentPhaseData?.name ?? `Phase ${currentPhaseNum}`),
       phaseDescription: currentPhaseData?.description ?? 'Continue your project',
       deliverable: currentPhaseData?.deliverable ?? '',
       techStack: (proj.tech_stack as string[]) ?? [],
       estimatedDays: currentPhaseData?.days ?? 2,
-      urgencyScore: 60,
-      priority: 'MEDIUM' as const
+      urgencyScore: isWeekend ? 75 : 60,
+      priority: (isWeekend ? 'HIGH' : 'MEDIUM') as 'HIGH' | 'MEDIUM'
     }
   })
 }

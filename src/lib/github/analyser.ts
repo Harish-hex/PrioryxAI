@@ -3,14 +3,17 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { openai } from '@/lib/openai';
 import { scoreProject, scorePortfolio } from './scorer';
 import { inspectRepoStructure, fetchFileContent, type RepoStructureSignals } from './repo-inspector';
+import { scanDependenciesForVulnerabilities, type VulnerablePackage } from './security-scanner';
 import type { CachedRepo, GitHubIntelligenceReport, PriorityAction, ProjectScore } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Bounds how many repos get a real file-tree inspection (2 REST calls each)
-// per analysis run, so this stays well within maxDuration and GitHub's rate
-// limit even for users with many repos. The rest still get metadata-only
-// scoring — better than skipping analysis for them entirely.
-const MAX_STRUCTURE_INSPECTIONS = 8;
+// per analysis run. Matches github-sync.ts's own `first: 20` GraphQL cap, so
+// every repo we ever actually sync gets real structural signals — anything
+// beyond that falls back to metadata-only scoring, which produces repetitive
+// generic weaknesses (e.g. "no README"/"no deployment" on every repo) since
+// it can't see the actual file tree.
+const MAX_STRUCTURE_INSPECTIONS = 20;
 
 function impactScore(weakness: { priority: string; impactAreas: string[] }): number {
   const base =
@@ -55,9 +58,24 @@ export async function runGitHubIntelligence(
     r.status === 'fulfilled' ? r.value : null
   );
 
+  emit('Scanning dependencies for known vulnerabilities...');
+  const vulnResults = await Promise.allSettled(
+    structures.map(async (s, i) => {
+      if (!s?.hasDependencyManifest || !s.dependencyManifestPath) return [];
+      const content = await fetchFileContent(repos[i].url, s.dependencyManifestPath);
+      if (!content) return [];
+      return scanDependenciesForVulnerabilities(s.dependencyManifestPath, content);
+    })
+  );
+  const vulnerablePackagesByRepo: Array<VulnerablePackage[]> = vulnResults.map(r =>
+    r.status === 'fulfilled' ? r.value : []
+  );
+
   emit(`Scoring ${repos.length} repositories...`);
 
-  const scored: ProjectScore[] = repos.map((repo, i) => scoreProject(repo, i, structures[i] ?? null));
+  const scored: ProjectScore[] = repos.map((repo, i) =>
+    scoreProject(repo, i, structures[i] ?? null, vulnerablePackagesByRepo[i] ?? [])
+  );
   const portfolioScore = scorePortfolio(repos, scored);
 
   // Build all priority actions across all repos
@@ -87,7 +105,8 @@ export async function runGitHubIntelligence(
   // Sort by impact score descending
   allActions.sort((a, b) => b.impactScore - a.impactScore);
 
-  const topProjects = [...scored].sort((a, b) => b.totalScore - a.totalScore).slice(0, 5);
+  const allProjects = [...scored].sort((a, b) => b.totalScore - a.totalScore);
+  const topProjects = allProjects.slice(0, 5);
   const weakestProjects = [...scored].sort((a, b) => a.totalScore - b.totalScore).slice(0, 3);
   const resumeReadyProjects = scored.filter(p => p.careerRelevance.resumeWorthy).map(p => p.repoName);
 
@@ -188,6 +207,59 @@ export async function runGitHubIntelligence(
     } catch (e) {
       console.error('[GitHub Analyser] GPT narrative failed:', e);
     }
+
+    // Per-repo implementation feedback — every repo with a readable key
+    // source file (not just the top 3), so each repo gets its own specific
+    // model/architecture/implementation critique instead of the generic
+    // structural checklist repeating across every repo past the top few.
+    emit('Generating per-repo implementation feedback...');
+    try {
+      const feedbackTargets = scored
+        .map((ps, i) => ({ ps, i }))
+        .filter(({ i }) => structures[i]?.keySourceFilePath)
+        .slice(0, 12);
+
+      if (feedbackTargets.length > 0) {
+        const excerptResults = await Promise.allSettled(
+          feedbackTargets.map(({ i }) =>
+            fetchFileContent(repos[i].url, structures[i]!.keySourceFilePath!, 2500)
+          )
+        );
+
+        const perRepoExcerpts = feedbackTargets
+          .map(({ ps, i }, idx) => {
+            const content = excerptResults[idx].status === 'fulfilled' ? excerptResults[idx].value : null;
+            if (!content) return null;
+            return `--- ${ps.repoName} (${ps.primaryLanguage ?? 'unknown'}) :: ${structures[i]!.keySourceFilePath} ---\n${content}`;
+          })
+          .filter((x): x is string => x !== null)
+          .join('\n\n');
+
+        if (perRepoExcerpts) {
+          const feedbackResponse = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            max_tokens: 1200,
+            messages: [{
+              role: 'user',
+              content: `For EACH repo below, give exactly 2 specific, code-grounded implementation improvements — point at the actual model design, architecture, error handling, algorithm choice, or code structure visible in the excerpt (e.g. "the training loop has no validation split", "the API handler has no input validation before hitting the DB", "the model class hardcodes hyperparameters instead of accepting config"). Do NOT mention README, documentation, or deployment — those are tracked separately. If an excerpt is too short to say anything specific, give one general best-practice suggestion for that language/domain instead.\n\n${perRepoExcerpts}\n\nReturn ONLY raw JSON (no markdown), keyed by exact repo name:\n{ "RepoName": ["suggestion 1", "suggestion 2"], ... }`
+            }]
+          });
+
+          const rawFeedback = feedbackResponse.choices[0]?.message?.content ?? '{}';
+          const cleanedFeedback = rawFeedback.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          const feedbackByRepo = JSON.parse(cleanedFeedback) as Record<string, string[]>;
+
+          for (const { ps } of feedbackTargets) {
+            const fb = feedbackByRepo[ps.repoName];
+            if (Array.isArray(fb) && fb.length > 0) {
+              ps.implementationFeedback = fb;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[GitHub Analyser] Per-repo implementation feedback failed:', e);
+    }
   }
 
   emit('Saving analysis to database...');
@@ -252,6 +324,7 @@ export async function runGitHubIntelligence(
     profileWeaknesses,
     topProjects,
     weakestProjects,
+    allProjects,
     priorityActions: allActions.slice(0, 20),
     careerReadiness: {
       resumeReadyProjects,

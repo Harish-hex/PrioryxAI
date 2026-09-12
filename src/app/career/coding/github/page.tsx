@@ -16,6 +16,7 @@ interface ProjectScore {
   dimensions: { documentation: number; codeQuality: number; activity: number; completeness: number; careerValue: number };
   weaknesses: { title: string; description: string; fix: string; priority: string; effort: string; estimatedMinutes: number; aiSuggestedCommands?: string }[];
   strengths: string[];
+  implementationFeedback?: string[];
   primaryLanguage: string | null;
   careerRelevance: { resumeWorthy: boolean; interviewTopics: string[] };
 }
@@ -32,7 +33,7 @@ interface PriorityAction {
 interface IntelligenceReport {
   totalRepos: number; portfolioScore: number;
   profileStrengths: string[]; profileWeaknesses: string[];
-  topProjects: ProjectScore[]; weakestProjects: ProjectScore[];
+  topProjects: ProjectScore[]; weakestProjects: ProjectScore[]; allProjects: ProjectScore[];
   priorityActions: PriorityAction[];
   careerReadiness: { resumeReadyProjects: string[]; languageDiversity: string[]; estimatedProfileStrength: string };
   commitPatterns: { totalCommitsLast90Days: number; averageCommitsPerWeek: number; longestStreak: number; currentStreak: number; consistencyScore: number };
@@ -428,16 +429,21 @@ export default function GitHubIntelligencePage() {
         </section>
       )}
 
-      {/* Project Dimension Audit Cards */}
-      {report && report.topProjects.length > 0 && (
+      {/* Project Dimension Audit Cards — every analyzed repo, not just the top few */}
+      {report && (report.allProjects ?? report.topProjects).length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Code2 size={18} className="text-indigo-500" />
-            <h2 className="text-base font-bold text-slate-950 dark:text-white">Repository Health Scores</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Code2 size={18} className="text-indigo-500" />
+              <h2 className="text-base font-bold text-slate-950 dark:text-white">Repository Health Scores</h2>
+            </div>
+            <span className="neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              {(report.allProjects ?? report.topProjects).length} repos analysed
+            </span>
           </div>
 
           <div className="grid gap-3">
-            {report.topProjects.map((proj, i) => (
+            {(report.allProjects ?? report.topProjects).map((proj, i) => (
               <motion.div
                 key={proj.repoName}
                 initial={{ opacity: 0, y: 12 }}
@@ -481,6 +487,17 @@ export default function GitHubIntelligencePage() {
                       exit={{ height: 0, opacity: 0 }}
                       className="px-5 pb-5 pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-4"
                     >
+                      {proj.totalScore < 100 && (
+                        <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                          <p className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
+                            Path to 100 — {100 - proj.totalScore} points away
+                          </p>
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                            Closing every gap below takes this repo to a perfect score.
+                          </p>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                         <div className="neu-inset rounded-2xl p-4 space-y-2.5">
                           <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Score Breakdown</p>
@@ -491,12 +508,38 @@ export default function GitHubIntelligencePage() {
 
                         <div className="space-y-3">
                           {proj.weaknesses && proj.weaknesses.length > 0 && (
-                            <div className="neu-inset rounded-2xl p-4 space-y-2">
-                              <p className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Actionable Fixes</p>
-                              {proj.weaknesses.slice(0, 3).map((w, i) => (
-                                <div key={i} className="text-xs text-slate-700 dark:text-slate-300">
-                                  <p className="font-bold">{w.title}</p>
+                            <div className="neu-inset rounded-2xl p-4 space-y-2.5">
+                              <p className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                All Gaps ({proj.weaknesses.length})
+                              </p>
+                              {proj.weaknesses.map((w, wi) => (
+                                <div key={wi} className="text-xs text-slate-700 dark:text-slate-300 border-b border-slate-200/60 dark:border-white/10 pb-2 last:border-0 last:pb-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`neu-pill rounded-full px-1.5 py-0.5 text-[9px] font-bold border ${priorityColor[w.priority] ?? ''}`}>
+                                      {w.priority}
+                                    </span>
+                                    <p className="font-bold">{w.title}</p>
+                                  </div>
                                   <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">{w.fix}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {(!proj.weaknesses || proj.weaknesses.length === 0) && (
+                            <div className="neu-inset rounded-2xl p-4 text-center">
+                              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">No gaps detected — this repo is in great shape.</p>
+                            </div>
+                          )}
+
+                          {proj.implementationFeedback && proj.implementationFeedback.length > 0 && (
+                            <div className="neu-inset rounded-2xl p-4 space-y-2">
+                              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                Implementation Feedback
+                              </p>
+                              {proj.implementationFeedback.map((fb, fi) => (
+                                <div key={fi} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                  <Code2 size={12} className="mt-0.5 shrink-0 text-indigo-500" />
+                                  <span>{fb}</span>
                                 </div>
                               ))}
                             </div>

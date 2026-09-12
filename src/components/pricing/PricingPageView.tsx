@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { PRO_FEATURES } from '@/lib/pro-features';
 import {
   Check,
   X,
@@ -280,24 +281,12 @@ export default function PricingPageView() {
                   </div>
 
                   <div className="space-y-3 mb-8">
-                    {[
-                      'Unlimited tasks in priority feed',
-                      'Unlimited AI assistant messages (GPT-4o)',
-                      '10 timetable scans / day with OCR',
-                      'Auto GitHub sync every 6 hours',
-                      'Resume Intelligence (64+ skills & SWOT)',
-                      'Project Foundry (9 AI project roadmaps)',
-                      'Live Internship & Job market matching',
-                      'LeetCode + HackerRank automation',
-                      '1v1 DSA Duels & Peer Challenges',
-                      'Placement Readiness 100-pt Score Card',
-                      'Priority Discord & Email Support',
-                    ].map((feat) => (
-                      <div key={feat} className="flex items-center gap-3">
+                    {PRO_FEATURES.map((feat) => (
+                      <div key={feat.label} className="flex items-center gap-3">
                         <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center flex-shrink-0">
                           <Check size={12} className="text-emerald-400" />
                         </div>
-                        <span className="text-slate-100 text-sm font-semibold">{feat}</span>
+                        <span className="text-slate-100 text-sm font-semibold">{feat.label}</span>
                       </div>
                     ))}
                   </div>

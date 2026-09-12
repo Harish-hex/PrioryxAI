@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, AlertTriangle, CheckCircle2, ExternalLink,
@@ -104,18 +104,82 @@ export function AIDailyPlanPanel() {
 
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
-  async function handleComplete(taskId: string) {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    recordDailyActivity();
-    await fetch(`/api/priority/tasks/${taskId}/complete`, { method: "POST" });
-  }
+  // Auto-tick tasks the moment the user actually does the underlying work
+  // elsewhere in the app (solves the DSA problem, watches the video, submits
+  // a project phase, etc.) — no manual "mark done" click required for those.
+  useEffect(() => {
+    function onActivity(e: Event) {
+      const detail = (e as CustomEvent).detail as { type: string; metadata?: Record<string, any> } | undefined;
+      if (!detail) return;
+      const { type, metadata = {} } = detail;
+      const link: string | undefined = metadata.link || metadata.videoUrl || metadata.url;
+      const title: string | undefined = metadata.title;
+
+      setTasks(prev => {
+        const match = prev.find((task) => {
+          const taskUrl = task.action_url || (task.task_data as any)?.problemUrl;
+          if (task.category === "leetcode" && type === "dsa_solved") {
+            if (link && taskUrl && link === taskUrl) return true;
+            if (title && task.title.toLowerCase().includes(String(title).toLowerCase())) return true;
+          }
+          if (task.category === "learning" && type === "youtube_watch") {
+            if (link && taskUrl && link === taskUrl) return true;
+          }
+          if (task.category === "project" && type === "foundry_phase_submitted") {
+            const projectId = metadata.projectId;
+            if (projectId && task.action_url.includes(String(projectId))) return true;
+          }
+          if (task.category === "resume" && type === "resume_analysis") return true;
+          return false;
+        });
+        if (!match) return prev;
+        recordDailyActivity();
+        fetch(`/api/priority/tasks/${match.id}/complete`, { method: "POST" }).catch(() => {});
+        return prev.filter((t) => t.id !== match.id);
+      });
+    }
+
+    window.addEventListener("prioryx_activity_updated", onActivity);
+    return () => window.removeEventListener("prioryx_activity_updated", onActivity);
+  }, []);
 
   async function handleDismiss(taskId: string) {
     setTasks(prev => prev.filter(t => t.id !== taskId));
     await fetch(`/api/priority/tasks/${taskId}/dismiss`, { method: "POST" });
   }
 
+  // For task categories with no specific in-app activity signal to key off
+  // (github fixes, job applications, exam prep — all done on an external site
+  // or offline), infer completion from the natural workflow instead of asking
+  // for a separate "mark done" click: note when the user opens the task's own
+  // action link, and if they come back to this tab afterwards having spent a
+  // real amount of time away, treat that as them having done it.
+  const openedAtRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      for (const [taskId, openedAt] of Array.from(openedAtRef.current.entries())) {
+        openedAtRef.current.delete(taskId);
+        if (now - openedAt >= 8_000) {
+          setTasks(prev => {
+            if (!prev.some(t => t.id === taskId)) return prev;
+            recordDailyActivity();
+            fetch(`/api/priority/tasks/${taskId}/complete`, { method: "POST" }).catch(() => {});
+            return prev.filter(t => t.id !== taskId);
+          });
+        }
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   function handleAction(task: PriorityTaskItem) {
+    if (!["dsa_solved", "youtube_watch"].includes(task.category)) {
+      openedAtRef.current.set(task.id, Date.now());
+    }
     if (task.action_url.startsWith("http")) {
       window.open(task.action_url, "_blank", "noopener,noreferrer");
     } else {
@@ -300,16 +364,12 @@ export function AIDailyPlanPanel() {
                           </div>
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions — completion ticks itself once the task is actually
+                            done (see the activity listener and visibility-based fallback
+                            above); "Dismiss" only skips the suggestion, it never claims
+                            the work was finished. */}
                         <div className="flex shrink-0 flex-col gap-1.5 items-end">
                           <div className="flex gap-1.5">
-                            <button
-                              onClick={() => handleComplete(task.id)}
-                              title="Mark done"
-                              className="flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </button>
                             <button
                               onClick={() => handleDismiss(task.id)}
                               title="Dismiss"

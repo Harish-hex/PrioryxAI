@@ -52,7 +52,8 @@ export function DailyChallengesCard({ onAddTask }: DailyChallengesCardProps) {
           localStorage.setItem(todayKey, JSON.stringify(Array.from(next)));
         }
         if (willBeSolved) {
-          recordUserActivity("dsa_solved", { problemId: id });
+          const problem = challenges.find((c) => c.id === id);
+          recordUserActivity("dsa_solved", { problemId: id, title: problem?.title, link: problem?.problemLink });
         }
       } catch {}
       return next;

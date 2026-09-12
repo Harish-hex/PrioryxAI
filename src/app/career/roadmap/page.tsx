@@ -2,245 +2,271 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Award,
-  Bot,
-  CheckCircle2,
-  ChevronDown,
-  Circle,
-  Code2,
-  ExternalLink,
-  HelpCircle,
-  Play,
-  Sparkles,
-} from "lucide-react";
+import { Compass, HelpCircle, ChevronRight, Search } from "lucide-react";
 import {
   CATALOG,
   isCurated,
-  listRoadmaps,
   totalTopicCount,
+  listRoadmaps,
+  getRoadmap,
   type RoadmapCatalogEntry,
-  type RoadmapDefinition,
-  type RoadmapTopic,
 } from "@/lib/roadmaps/data";
+import { matchRoadmaps, type RoadmapMatch } from "@/lib/roadmaps/match";
+import { ROLE_ICONS, ROLE_ACCENTS, CATEGORY_LABELS } from "./shared";
 
-const ROLE_ICONS: Record<string, any> = {
-  "ai-engineer": Bot,
-  frontend: Code2,
-  backend: Code2,
-  python: Code2,
-  sql: Code2,
-};
+type CategoryFilter = "all" | "role" | "skill" | "beginner" | "practice";
 
-const ROLE_ACCENTS: Record<string, string> = {
-  "ai-engineer": "from-violet-500 to-purple-600",
-  frontend: "from-cyan-500 to-blue-600",
-  backend: "from-emerald-500 to-teal-600",
-  python: "from-amber-500 to-orange-600",
-  sql: "from-sky-500 to-indigo-600",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  role: "Role Based Roadmaps",
-  skill: "Skill Based Roadmaps",
-  beginner: "Absolute Beginners",
-  practice: "Best Practices",
-};
-
-export default function RoadmapPage() {
-  const roadmaps = listRoadmaps();
-
+export default function RoadmapDashboard() {
   const [userStream, setUserStream] = useState<string | null>(null);
-  const [selectedStream, setSelectedStream] = useState<string | null>(null);
-  const [showPicker, setShowPicker] = useState(true);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [recommended, setRecommended] = useState<RoadmapMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
 
   useEffect(() => {
-    fetch("/api/user/profile")
-      .then((r) => r.json())
-      .then((data) => {
-        const stream = data?.profile?.stream as string | undefined;
-        if (stream && CATALOG.some((c) => c.id === stream)) {
-          setUserStream(stream);
+    let cancelled = false;
+
+    async function loadSignals() {
+      const signals: string[] = [];
+
+      try {
+        const profileRes = await fetch("/api/user/profile");
+        const profileData = await profileRes.json();
+        const stream = profileData?.profile?.stream as string | undefined;
+        const subjects = profileData?.profile?.subjects as string[] | undefined;
+        const githubLangs = profileData?.profile?.top_repos as Array<{ language?: string }> | undefined;
+
+        if (stream) {
+          if (!cancelled) setUserStream(stream);
+          signals.push(stream);
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingProfile(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        if (Array.isArray(subjects)) signals.push(...subjects);
+        if (Array.isArray(githubLangs)) {
+          signals.push(...githubLangs.map((r) => r.language).filter(Boolean) as string[]);
+        }
+      } catch {}
+
+      try {
+        const resumeRes = await fetch("/api/career/resume");
+        const resumeData = await resumeRes.json();
+        const resume = resumeData?.data;
+        const skillEntities = resume?.skill_entities;
+        if (Array.isArray(skillEntities)) {
+          signals.push(...skillEntities.map((s: any) => (typeof s === "string" ? s : s?.name)).filter(Boolean));
+        } else if (skillEntities && typeof skillEntities === "object" && Array.isArray(skillEntities.skills)) {
+          signals.push(...skillEntities.skills.filter(Boolean));
+        }
+        const parsedSkills = resume?.parsed_data?.skills;
+        if (Array.isArray(parsedSkills)) signals.push(...parsedSkills.filter(Boolean));
+      } catch {}
+
+      if (!cancelled) {
+        setRecommended(matchRoadmaps(signals).filter((m) => isCurated(m.id)));
+        setLoading(false);
+      }
+    }
+
+    loadSignals();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    if (!selectedStream) return;
-    fetch(`/api/roadmap/progress?stream=${selectedStream}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const ids = (data?.completed ?? []).map((c: { topic_id: string }) => c.topic_id);
-        setCompletedIds(new Set(ids));
-      })
-      .catch(() => setCompletedIds(new Set()));
-  }, [selectedStream]);
-
-  function chooseStream(id: string) {
-    setSelectedStream(id);
-    setShowPicker(false);
-    setExpandedTopic(null);
-  }
-
-  async function toggleComplete(topicId: string) {
-    if (!selectedStream) return;
-    const willBeCompleted = !completedIds.has(topicId);
-    setCompletedIds((prev) => {
-      const next = new Set(Array.from(prev));
-      if (willBeCompleted) next.add(topicId);
-      else next.delete(topicId);
-      return next;
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return CATALOG.filter((entry) => {
+      if (entry.label.toLowerCase().includes(q)) return true;
+      if (entry.id.toLowerCase().includes(q)) return true;
+      const r = getRoadmap(entry.id);
+      if (r?.tagline?.toLowerCase().includes(q)) return true;
+      if (
+        r?.sections?.some(
+          (s) =>
+            s.title.toLowerCase().includes(q) ||
+            s.topics.some((t) => t.title.toLowerCase().includes(q))
+        )
+      ) {
+        return true;
+      }
+      return false;
     });
-    try {
-      await fetch("/api/roadmap/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream: selectedStream, topicId, completed: willBeCompleted }),
-      });
-    } catch {}
-  }
-
-  const roadmap: RoadmapDefinition | undefined = roadmaps.find((r) => r.id === selectedStream);
-  const total = roadmap ? totalTopicCount(roadmap) : 0;
-  const doneCount = useMemo(() => {
-    if (!roadmap) return 0;
-    return roadmap.sections.reduce(
-      (sum, s) => sum + s.topics.filter((t) => completedIds.has(t.id)).length,
-      0
-    );
-  }, [roadmap, completedIds]);
+  }, [searchQuery]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-          Career Roadmap
-        </h1>
-        <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
-          A guided, step-by-step path — pick your role and follow the map from first principles to production.
-        </p>
-      </div>
-
-      {(showPicker || !roadmap) && !loadingProfile && (
-        <CatalogPicker userStream={userStream} onChoose={chooseStream} />
-      )}
-
-      {loadingProfile && (
-        <div className="neu-card rounded-[28px] p-8 text-center text-sm text-slate-600 dark:text-slate-400">
-          Loading your roadmap…
-        </div>
-      )}
-
-      {roadmap && !showPicker && (
-        <div>
-          {/* Header bar with progress + change path */}
-          <div className="neu-card mb-8 flex flex-col gap-4 rounded-[28px] p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${ROLE_ACCENTS[roadmap.id] ?? "from-slate-500 to-slate-600"} text-white shadow-sm`}
-              >
-                {(() => {
-                  const Icon = ROLE_ICONS[roadmap.id] ?? HelpCircle;
-                  return <Icon size={20} />;
-                })()}
+    <div className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:px-6 sm:py-8">
+      {/* 1. Career Roadmap Header — Floating Neumorphism Banner Card */}
+      <header className="neu-card rounded-[28px] p-6 sm:rounded-[32px] sm:p-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="neu-pill inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <img src="/logo.png" alt="PrioryxAI" className="h-4 w-4 shrink-0 object-contain" />
+                <span>PrioryxAI workspace</span>
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-950 dark:text-white">{roadmap.label}</h2>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{roadmap.tagline}</p>
-              </div>
+              <span className="neu-pill inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <Compass size={14} className="text-cyan-500" />
+                <span>{CATALOG.length} Roadmaps</span>
+              </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="neu-pill flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-slate-950 dark:text-white">
-                {total > 0 && doneCount === total ? (
-                  <>
-                    <Sparkles size={14} className="text-emerald-500" />
-                    <span>Roadmap complete!</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-emerald-600 dark:text-emerald-400">{doneCount}</span>
-                    <span>/ {total} done</span>
-                  </>
-                )}
-              </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white">
+                Career Roadmap
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm sm:text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">
+                A guided, step-by-step path for every role — matched to your onboarding stream and resume skills where possible.
+              </p>
+            </div>
+          </div>
+
+          {/* Search bar inside the header */}
+          <div className="relative w-full md:max-w-xs lg:max-w-sm">
+            <Search
+              size={17}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+            />
+            <input
+              type="text"
+              placeholder="Search 90+ roadmaps..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="neu-inset w-full rounded-2xl py-3 pl-11 pr-10 text-sm font-medium text-slate-900 placeholder-slate-500 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500/50 dark:text-white dark:placeholder-slate-400"
+            />
+            {searchQuery && (
               <button
                 type="button"
-                onClick={() => setShowPicker(true)}
-                className="neu-btn rounded-2xl px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-700 dark:hover:text-white"
               >
-                Change path
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 2. Recommended Section — Floating Neumorphic Card Header + Floating Cards */}
+      {!loading && recommended.length > 0 && !searchQuery.trim() && (
+        <section className="space-y-4">
+          <div className="neu-card rounded-[24px] p-5 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+              Recommended for you
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+              Matched to your profile stream and resume signals
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {recommended.slice(0, 6).map((match) => {
+              const roadmap = listRoadmaps().find((r) => r.id === match.id);
+              if (!roadmap) return null;
+              const Icon = ROLE_ICONS[match.id] ?? HelpCircle;
+              const topicCount = totalTopicCount(roadmap);
+
+              return (
+                <Link
+                  key={match.id}
+                  href={`/career/roadmap/${match.id}`}
+                  className="neu-card group relative flex flex-col justify-between rounded-[24px] p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${ROLE_ACCENTS[match.id] ?? "from-slate-500 to-slate-600"} text-white shadow-sm transition-transform duration-200 group-hover:scale-105`}
+                      >
+                        <Icon size={22} />
+                      </div>
+                      <span className="neu-pill rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                        Matched
+                      </span>
+                    </div>
+
+                    <h3 className="mt-3.5 text-base font-bold text-slate-950 dark:text-white transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                      {match.label}
+                    </h3>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2">
+                      {roadmap.tagline}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-200/80 pt-3 dark:border-white/10">
+                    <span className="neu-pill rounded-lg px-2 py-0.5 text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                      {topicCount} topics
+                    </span>
+                    <span className="inline-flex items-center gap-0.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 transition-transform duration-200 group-hover:translate-x-0.5">
+                      Explore <ChevronRight size={13} />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Catalog Section with Search Results or Categorized Streams */}
+      {searchQuery.trim() ? (
+        <section className="space-y-4">
+          <div className="neu-card flex flex-col gap-3 rounded-[24px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex items-center gap-3">
+              <div className="neu-pill flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-cyan-600 dark:text-cyan-400">
+                <Search size={18} />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                  Search Results
+                </h2>
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Showing roadmaps matching &ldquo;{searchQuery}&rdquo;
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="neu-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                {searchResults.length} {searchResults.length === 1 ? "Match" : "Matches"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="neu-pill rounded-full px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-cyan-600 dark:text-slate-300 dark:hover:text-cyan-400"
+              >
+                Clear
               </button>
             </div>
           </div>
 
-          {/* Hero "start here" resources */}
-          {(roadmap.heroVideoUrl || roadmap.heroCertUrl) && (
-            <div className="mb-8 grid gap-3 sm:grid-cols-2">
-              {roadmap.heroVideoUrl && (
-                <Link
-                  href={roadmap.heroVideoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="neu-card flex items-start gap-3 rounded-[22px] p-4 transition hover:-translate-y-0.5"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
-                    <Play size={16} className="fill-current" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-500">Best video to start</p>
-                    <p className="mt-0.5 truncate text-sm font-semibold text-slate-950 dark:text-white">
-                      {roadmap.heroVideoLabel ?? "Watch now"}
-                    </p>
-                  </div>
-                </Link>
-              )}
-              {roadmap.heroCertUrl && (
-                <Link
-                  href={roadmap.heroCertUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="neu-card flex items-start gap-3 rounded-[22px] p-4 transition hover:-translate-y-0.5"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                    <Award size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-500">Best certification</p>
-                    <p className="mt-0.5 truncate text-sm font-semibold text-slate-950 dark:text-white">
-                      {roadmap.heroCertLabel ?? "View certification"}
-                    </p>
-                  </div>
-                </Link>
-              )}
+          {searchResults.length === 0 ? (
+            <div className="neu-card rounded-[28px] p-8 text-center space-y-3">
+              <p className="text-base font-bold text-slate-950 dark:text-white">
+                No roadmaps match &ldquo;{searchQuery}&rdquo;
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Try searching for another role, technology, or clear the search query.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="neu-pill rounded-xl px-4 py-2 text-xs font-bold text-cyan-600 dark:text-cyan-400"
+              >
+                Show all roadmaps
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+              {searchResults.map((entry) => (
+                <CatalogCard key={entry.id} entry={entry} isRecommended={entry.id === userStream} />
+              ))}
             </div>
           )}
-
-          {/* Status legend */}
-          <div className="mb-6 flex items-center gap-5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Circle size={12} className="text-slate-400 dark:text-slate-500" /> To learn
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 size={12} className="text-emerald-500" /> Done
-            </span>
-          </div>
-
-          {/* Visual tree */}
-          <RoadmapTree
-            roadmap={roadmap}
-            completedIds={completedIds}
-            expandedTopic={expandedTopic}
-            onExpand={setExpandedTopic}
-            onToggleComplete={toggleComplete}
-          />
-        </div>
+        </section>
+      ) : (
+        <CatalogPicker
+          userStream={userStream}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
       )}
     </div>
   );
@@ -248,162 +274,110 @@ export default function RoadmapPage() {
 
 function CatalogPicker({
   userStream,
-  onChoose,
+  selectedCategory,
+  onSelectCategory,
 }: {
   userStream: string | null;
-  onChoose: (id: string) => void;
+  selectedCategory: CategoryFilter;
+  onSelectCategory: (cat: CategoryFilter) => void;
 }) {
-  const categories: Array<"role" | "skill" | "beginner" | "practice"> = ["role", "skill", "beginner", "practice"];
+  const allCategories: Array<"role" | "skill" | "beginner" | "practice"> = [
+    "role",
+    "skill",
+    "beginner",
+    "practice",
+  ];
+
+  const filterTabs: Array<{ id: CategoryFilter; label: string; count: number }> = [
+    { id: "all", label: "All Tracks", count: CATALOG.length },
+    { id: "role", label: "Roles", count: CATALOG.filter((e) => e.category === "role").length },
+    { id: "skill", label: "Skills", count: CATALOG.filter((e) => e.category === "skill").length },
+    { id: "beginner", label: "Foundational", count: CATALOG.filter((e) => e.category === "beginner").length },
+    { id: "practice", label: "Best Practices", count: CATALOG.filter((e) => e.category === "practice").length },
+  ];
+
+  const visibleCategories =
+    selectedCategory === "all" ? allCategories : allCategories.filter((c) => c === selectedCategory);
+
+  const displayedCount =
+    selectedCategory === "all"
+      ? CATALOG.length
+      : CATALOG.filter((e) => e.category === selectedCategory).length;
 
   return (
-    <div>
-      <h2 className="mb-1 text-lg font-bold text-slate-950 dark:text-white">
-        What are you learning?
-      </h2>
-      <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
-        Pick a track. Curated tracks open a full visual roadmap in-app with videos, certifications, and progress
-        tracking — everything else opens the matching roadmap.sh guide in a new tab.
-      </p>
-
-      {categories.map((cat) => {
-        const entries = [...CATALOG.filter((e) => e.category === cat)].sort((a, b) => {
-          if (a.id === userStream) return -1;
-          if (b.id === userStream) return 1;
-          const aCurated = isCurated(a.id) ? 0 : 1;
-          const bCurated = isCurated(b.id) ? 0 : 1;
-          return aCurated - bCurated;
-        });
-        if (entries.length === 0) return null;
-
-        return (
-          <div key={cat} className="mb-8">
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
-              {CATEGORY_LABELS[cat]}
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {entries.map((entry) => (
-                <CatalogCard key={entry.id} entry={entry} isRecommended={entry.id === userStream} onChoose={onChoose} />
-              ))}
+    <div className="space-y-8">
+      {/* 3. "All Roadmaps" Section Header — Floating Neumorphic Card */}
+      <div className="neu-card flex flex-col gap-4 rounded-[28px] p-5 sm:rounded-[32px] sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="neu-pill flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-cyan-600 dark:text-cyan-400">
+              <Compass size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                All Roadmaps
+              </h2>
+              <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                Every roadmap opens with videos, certifications, and progress tracking — pick a track to get started.
+              </p>
             </div>
           </div>
-        );
-      })}
-    </div>
-  );
-}
+          <span className="neu-pill self-start sm:self-auto rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+            {displayedCount} Tracks Available
+          </span>
+        </div>
 
-function CatalogCard({
-  entry,
-  isRecommended,
-  onChoose,
-}: {
-  entry: RoadmapCatalogEntry;
-  isRecommended: boolean;
-  onChoose: (id: string) => void;
-}) {
-  const curated = isCurated(entry.id);
-  const Icon = ROLE_ICONS[entry.id] ?? HelpCircle;
-
-  if (!curated) {
-    return (
-      <div
-        title="This roadmap is being built — check back soon"
-        className="neu-inset relative flex w-full items-center justify-between gap-2 rounded-2xl px-4 py-3.5 opacity-80"
-      >
-        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{entry.label}</span>
-        <span className="shrink-0 text-[11px] font-bold text-amber-600 dark:text-amber-400">Coming soon</span>
+        {/* Category Filter Tabs in Neumorphic Style */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/60 pt-3.5 dark:border-white/5">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onSelectCategory(tab.id)}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 ${
+                selectedCategory === tab.id
+                  ? "neu-btn-pressed bg-cyan-500/15 text-cyan-600 border border-cyan-500/30 dark:bg-cyan-500/25 dark:text-cyan-400"
+                  : "neu-pill text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
       </div>
-    );
-  }
 
-  return (
-    <button
-      type="button"
-      onClick={() => onChoose(entry.id)}
-      className="neu-card group relative rounded-[28px] p-5 text-left transition hover:-translate-y-0.5"
-    >
-      {isRecommended && (
-        <span className="absolute right-4 top-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-          Recommended
-        </span>
-      )}
-      <div
-        className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${ROLE_ACCENTS[entry.id] ?? "from-slate-500 to-slate-600"} text-white shadow-sm`}
-      >
-        <Icon size={20} />
-      </div>
-      <h3 className="text-sm font-bold text-slate-950 dark:text-white">{entry.label}</h3>
-      <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">In-app roadmap</p>
-    </button>
-  );
-}
-
-function RoadmapTree({
-  roadmap,
-  completedIds,
-  expandedTopic,
-  onExpand,
-  onToggleComplete,
-}: {
-  roadmap: RoadmapDefinition;
-  completedIds: Set<string>;
-  expandedTopic: string | null;
-  onExpand: (id: string | null) => void;
-  onToggleComplete: (id: string) => void;
-}) {
-  return (
-    <div className="relative">
-      {/* Center spine */}
-      <div className="absolute bottom-0 left-5 top-2 w-px bg-slate-300 dark:bg-white/15 sm:left-1/2" />
-
+      {/* 4. Category Streams — Each with Floating Neumorphic Category Bar and Floating Cards */}
       <div className="space-y-10">
-        {roadmap.sections.map((section, sIdx) => {
-          const sectionDone = section.topics.every((t) => completedIds.has(t.id));
+        {visibleCategories.map((cat) => {
+          const entries = [...CATALOG.filter((e) => e.category === cat)].sort((a, b) => {
+            if (a.id === userStream) return -1;
+            if (b.id === userStream) return 1;
+            const aCurated = isCurated(a.id) ? 0 : 1;
+            const bCurated = isCurated(b.id) ? 0 : 1;
+            return aCurated - bCurated;
+          });
+          if (entries.length === 0) return null;
+
           return (
-            <div key={section.id}>
-              {/* Section milestone node */}
-              <div className="relative z-10 flex items-center gap-3 sm:justify-center">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black ${
-                    sectionDone
-                      ? "border-emerald-500 bg-emerald-500 text-white"
-                      : "neu-card border-slate-300 text-slate-950 dark:border-white/20 dark:text-white"
-                  }`}
-                >
-                  {sectionDone ? <CheckCircle2 size={18} /> : sIdx + 1}
+            <div key={cat} className="space-y-4">
+              {/* Category Stream Header: Floating Neumorphic Bar */}
+              <div className="neu-card flex items-center justify-between rounded-[22px] px-5 py-3.5">
+                <div className="flex items-center gap-3">
+                  <span className="h-4 w-1.5 rounded-full bg-cyan-500 shadow-sm shadow-cyan-500/50" />
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-950 dark:text-white">
+                    {CATEGORY_LABELS[cat]}
+                  </h3>
                 </div>
-                <h3 className="text-base font-bold text-slate-950 dark:text-white sm:absolute sm:left-1/2 sm:ml-6">
-                  {section.title}
-                </h3>
+                <span className="neu-pill rounded-full px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {entries.length} {entries.length === 1 ? "track" : "tracks"}
+                </span>
               </div>
 
-              {/* Topic nodes — alternate sides on desktop, stacked on mobile */}
-              <div className="mt-4 space-y-3 pl-[52px] sm:space-y-4 sm:pl-0">
-                {section.topics.map((topic, tIdx) => {
-                  const isDone = completedIds.has(topic.id);
-                  const isExpanded = expandedTopic === topic.id;
-                  const alignRight = tIdx % 2 === 1;
-
-                  return (
-                    <div key={topic.id} className="relative sm:grid sm:grid-cols-2 sm:gap-x-10">
-                      {/* Connector: spine -> node, desktop only */}
-                      <div
-                        className={`hidden sm:block absolute top-1/2 h-px w-10 bg-slate-300 dark:bg-white/15 ${
-                          alignRight ? "left-1/2" : "right-1/2"
-                        }`}
-                      />
-                      <div className={alignRight ? "sm:col-start-2 sm:pl-10" : "sm:col-start-1 sm:flex sm:justify-end sm:pr-10"}>
-                        <TopicNode
-                          topic={topic}
-                          isDone={isDone}
-                          isExpanded={isExpanded}
-                          onExpand={() => onExpand(isExpanded ? null : topic.id)}
-                          onToggleComplete={() => onToggleComplete(topic.id)}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Floating Cards Grid — each card floats directly on page background */}
+              <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                {entries.map((entry) => (
+                  <CatalogCard key={entry.id} entry={entry} isRecommended={entry.id === userStream} />
+                ))}
               </div>
             </div>
           );
@@ -413,87 +387,74 @@ function RoadmapTree({
   );
 }
 
-function TopicNode({
-  topic,
-  isDone,
-  isExpanded,
-  onExpand,
-  onToggleComplete,
-}: {
-  topic: RoadmapTopic;
-  isDone: boolean;
-  isExpanded: boolean;
-  onExpand: () => void;
-  onToggleComplete: () => void;
-}) {
-  return (
-    <div className="w-full max-w-md">
-      <button
-        type="button"
-        onClick={onExpand}
-        className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
-          isDone
-            ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10"
-            : "neu-card"
-        }`}
-      >
-        {isDone ? (
-          <CheckCircle2 size={18} className="shrink-0 text-emerald-500" />
-        ) : (
-          <Circle size={18} className="shrink-0 text-slate-400 dark:text-slate-500" />
-        )}
-        <span
-          className={`flex-1 text-sm font-semibold ${
-            isDone ? "text-emerald-700 dark:text-emerald-300" : "text-slate-950 dark:text-white"
-          }`}
-        >
-          {topic.title}
-        </span>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-slate-500 dark:text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-        />
-      </button>
+function CatalogCard({ entry, isRecommended }: { entry: RoadmapCatalogEntry; isRecommended: boolean }) {
+  const curated = isCurated(entry.id);
+  const Icon = ROLE_ICONS[entry.id] ?? HelpCircle;
 
-      {isExpanded && (
-        <div className="neu-inset mt-2 rounded-2xl p-4">
-          <p className="text-sm text-slate-700 dark:text-slate-300">{topic.description}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {topic.videoUrl && (
-              <Link
-                href={topic.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
-              >
-                <Play size={12} className="fill-current" /> Watch <ExternalLink size={10} className="opacity-60" />
-              </Link>
-            )}
-            {topic.certUrl && (
-              <Link
-                href={topic.certUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="neu-pill inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                <Award size={12} /> {topic.certLabel ?? "Certification"} <ExternalLink size={10} className="opacity-60" />
-              </Link>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={onToggleComplete}
-            className={`mt-3 inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
-              isDone
-                ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                : "neu-btn text-slate-700 dark:text-slate-300"
-            }`}
+  if (!curated) {
+    return (
+      <div
+        title="This roadmap is being built — check back soon"
+        className="neu-card relative flex w-full items-center justify-between gap-3 rounded-[22px] p-4 opacity-90 transition-all duration-200 hover:opacity-100 hover:-translate-y-0.5"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${ROLE_ACCENTS[entry.id] ?? "from-slate-500 to-slate-600"} text-white shadow-sm`}
           >
-            {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-            {isDone ? "Completed — click to undo" : "Mark complete"}
-          </button>
+            <Icon size={17} />
+          </div>
+          <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
+            {entry.label}
+          </span>
         </div>
-      )}
-    </div>
+        <span className="neu-pill shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+          Coming soon
+        </span>
+      </div>
+    );
+  }
+
+  const roadmap = getRoadmap(entry.id);
+  const topicCount = roadmap ? totalTopicCount(roadmap) : 0;
+
+  return (
+    <Link
+      href={`/career/roadmap/${entry.id}`}
+      className="neu-card group relative flex flex-col justify-between rounded-[24px] p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+    >
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${ROLE_ACCENTS[entry.id] ?? "from-slate-500 to-slate-600"} text-white shadow-sm transition-transform duration-200 group-hover:scale-105`}
+          >
+            <Icon size={20} />
+          </div>
+          {isRecommended && (
+            <span className="neu-pill rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              Recommended
+            </span>
+          )}
+        </div>
+
+        <h4 className="mt-3.5 text-sm font-bold text-slate-950 dark:text-white transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+          {entry.label}
+        </h4>
+
+        {roadmap?.tagline && (
+          <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+            {roadmap.tagline}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between border-t border-slate-200/70 pt-2.5 dark:border-white/10">
+        <span className="neu-pill rounded-lg px-2 py-0.5 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+          {topicCount > 0 ? `${topicCount} topics` : "Interactive track"}
+        </span>
+        <span className="inline-flex items-center gap-0.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 transition-transform duration-200 group-hover:translate-x-0.5">
+          Explore <ChevronRight size={13} />
+        </span>
+      </div>
+    </Link>
   );
 }

@@ -49,30 +49,43 @@ export async function runPriorityOrchestrator(
   const plan = await generateDailyPlan(db, userId)
 
   // ── 3. Clear stale tasks for today (not completed) ────────
+  // Roadmap-started tasks ("Learn: X", source_type = 'roadmap_topic') are
+  // deliberately excluded — they're something the user explicitly chose to
+  // start on a roadmap, not a regenerated AI suggestion, so a plan refresh
+  // must never silently wipe them out from under the user.
   await db
     .from('priority_tasks')
     .delete()
     .eq('user_id', userId)
     .eq('scheduled_for', today)
     .eq('completed', false)
+    .neq('source_type', 'roadmap_topic')
 
   // ── 4. Insert fresh tasks ─────────────────────────────────
-  let savedTasks: Record<string, unknown>[] = []
   if (plan.tasks.length > 0) {
-    const { data: inserted, error: insertErr } = await db
+    const { error: insertErr } = await db
       .from('priority_tasks')
       .insert(plan.tasks)
-      .select()
 
     if (insertErr) {
       console.error('[Orchestrator] Task insert error:', insertErr.message)
-      // Return in-memory tasks even if DB save failed
-      savedTasks = plan.tasks as unknown as Record<string, unknown>[]
-    } else {
-      savedTasks = (inserted ?? []) as Record<string, unknown>[]
-      console.log('[Orchestrator] Saved', savedTasks.length, 'tasks to DB')
     }
   }
+
+  // ── 4b. Re-read the full task list for today ───────────────
+  // Returning only the just-inserted rows would drop the preserved
+  // roadmap-started tasks from step 3 — read everything back together.
+  const { data: allTodayTasks } = await db
+    .from('priority_tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('scheduled_for', today)
+    .eq('completed', false)
+    .eq('dismissed', false)
+    .order('urgency_score', { ascending: false })
+
+  const savedTasks: Record<string, unknown>[] =
+    (allTodayTasks as Record<string, unknown>[] | null) ?? (plan.tasks as unknown as Record<string, unknown>[])
 
   // ── 5. Upsert daily plan ──────────────────────────────────
   const { error: planErr } = await db

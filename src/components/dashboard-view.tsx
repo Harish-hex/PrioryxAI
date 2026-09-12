@@ -1,9 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, Check, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, Flame, GitBranch, Lock, MapPin, Play, Plus, Settings, Target, X, Zap } from "lucide-react";
+import { ArrowUpRight, Banknote, BookOpen, Brain, Briefcase, Calendar, Check, CheckCircle2, ChevronRight, Clock3, Code2, ExternalLink, FileText, Flame, GitBranch, Lock, MapPin, Play, Plus, Rocket, Settings, Target, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Modal, not visible on first paint — defer out of the initial DashboardView chunk.
 const FocusSessionModal = dynamic(() => import("@/components/focus-session-modal").then((m) => m.FocusSessionModal), {
@@ -118,6 +120,18 @@ interface DashboardViewProps {
   onOpenPricing: () => void;
 }
 
+/** Classifies a task's `external_url` for safe rendering: only http(s) links
+ * open in a new tab, and only same-origin relative paths (starting with a
+ * single "/", never "//") use next/link — everything else (javascript:,
+ * data:, protocol-relative //evil.com, etc.) is rejected outright rather than
+ * ever reaching an href. */
+function classifyTaskLink(url: string | null | undefined): "external" | "internal" | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return "external";
+  if (url.startsWith("/") && !url.startsWith("//")) return "internal";
+  return null;
+}
+
 function derivePriority(task: Task): string {
   // Use explicit priority field if present (low/medium/high/urgent from DB)
   if (task.priority) {
@@ -229,8 +243,6 @@ export function DashboardView({
           onSnooze={onSnoozeTask}
           onOpenPricing={onOpenPricing}
         />
-
-        <DailyGrowthPanel />
       </section>
 
       <aside className="min-w-0 space-y-6">
@@ -455,7 +467,6 @@ function PriorityFeed({
   onSnooze: (id: string, hours: number) => void;
   onOpenPricing: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<"priority" | "all">("priority");
   const [dailyChallenges, setDailyChallenges] = useState<CodingProblem[]>([]);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [todayKey, setTodayKey] = useState<string>("");
@@ -472,7 +483,10 @@ function PriorityFeed({
     const key = `prioryx_daily_solved_${today.toISOString().slice(0, 10)}`;
     setTodayKey(key);
 
-    const daily = getDailyChallenges(today);
+    // The feed shows exactly ONE coding question per day, not the full
+    // Easy+Medium+Hard trio getDailyChallenges() returns — pick just the
+    // first (still deterministic/rotating day to day via getDailyChallenges).
+    const daily = getDailyChallenges(today).slice(0, 1);
     setDailyChallenges(daily);
 
     try {
@@ -504,42 +518,35 @@ function PriorityFeed({
     });
   };
 
+  // A single ordered list — everything the old "Priority" and "All tasks"
+  // tabs showed, merged into one section (see the removal of the tab split).
   const priorityTasks = tasks.filter(
     (t) => t.priority === "red" || t.priority === "amber" || (!t.due_at && (t.score ?? 0) >= 110)
   );
   const otherAllTasks = tasks.filter(
     (t) => t.priority === "green" && (t.score ?? 0) < 110
   );
-  const allTasksCount = dailyChallenges.length + otherAllTasks.length;
+  const allDisplayTasks = [...priorityTasks, ...otherAllTasks];
+  const allTasksCount = dailyChallenges.length + allDisplayTasks.length;
 
   return (
     <div className="neu-card rounded-[32px] p-6 sm:p-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Priority feed</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">All Task</h2>
           <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Ordered by urgency, effort, and longer-term value.
           </p>
         </div>
-        <div className="flex gap-2">
-          <TabButton active={activeTab === "priority"} count={priorityTasks.length} onClick={() => setActiveTab("priority")}>
-            Priority
-          </TabButton>
-          <TabButton active={activeTab === "all"} count={allTasksCount} onClick={() => setActiveTab("all")}>
-            All tasks
-          </TabButton>
-        </div>
+        <span className="neu-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+          {allTasksCount} {allTasksCount === 1 ? "task" : "tasks"}
+        </span>
       </div>
 
-      {loading ? (
-        <div className="mt-6 space-y-3">
-          <LoadingCard />
-          <LoadingCard />
-          <LoadingCard />
-        </div>
-      ) : activeTab === "all" ? (
+      {!loading && dailyChallenges.length > 0 && (
         <div className="mt-6 space-y-3.5">
-          {/* Daily DSA Workout Questions */}
+          {/* Daily coding question — shown in both Priority and All tasks,
+              since it's a genuine daily priority, not just a bonus extra. */}
           {dailyChallenges.map((prob, idx) => {
             const isSolved = solvedIds.has(prob.id);
 
@@ -642,79 +649,19 @@ function PriorityFeed({
               </motion.div>
             );
           })}
-
-          {/* Other general tasks if any */}
-          <AnimatePresence initial={false}>
-          {otherAllTasks.map((task, index) =>
-            task.type === "job" ? (
-              <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
-            ) : (
-              <motion.article
-                key={task.id}
-                layout
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, x: 24, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: "easeIn" } }}
-                className="neu-raised-sm overflow-hidden rounded-[26px] p-5 transition hover:neu-card"
-                initial={{ opacity: 0, y: 8 }}
-                transition={{ delay: index * 0.03, duration: 0.24 }}
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`h-2.5 w-2.5 rounded-full ${priorityStyles[task.priority]?.dot ?? "bg-slate-400"}`} />
-                      <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-400">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className={`neu-pill rounded-full px-2.5 py-0.5 text-xs font-semibold ${typeStyles[task.type] ?? "text-slate-600 dark:text-slate-300"}`}>
-                        {task.type}
-                      </span>
-                    </div>
-                    <h3 className="mt-2.5 text-base font-bold text-slate-950 dark:text-white">{task.title}</h3>
-                    <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">{task.reason}</p>
-                  </div>
-                  <div className="shrink-0 space-y-2 sm:text-right">
-                    <div className="neu-inset rounded-[20px] px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300">
-                      <p className="font-bold text-slate-900 dark:text-white">{task.deadline}</p>
-                      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-400">{task.estimate}</p>
-                    </div>
-                    <div className="flex gap-2 sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => onSnooze(task.id, 2)}
-                        className="neu-btn rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                      >
-                        +2h
-                      </button>
-                      {isPro && (
-                        <button
-                          type="button"
-                          onClick={() => onSnooze(task.id, 24)}
-                          className="neu-btn rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                        >
-                          +24h
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleComplete(task.id)}
-                        disabled={completingIds.has(task.id)}
-                        className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-60"
-                      >
-                        {completingIds.has(task.id) ? <CheckCircle2 size={13} className="animate-pulse" /> : <Check size={13} />}
-                        {completingIds.has(task.id) ? "Marking…" : "Mark Done"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.article>
-            )
-          )}
-          </AnimatePresence>
         </div>
-      ) : priorityTasks.length ? (
+      )}
+
+      {loading ? (
+        <div className="mt-6 space-y-3">
+          <LoadingCard />
+          <LoadingCard />
+          <LoadingCard />
+        </div>
+      ) : allDisplayTasks.length ? (
         <div className="mt-6 space-y-3">
           <AnimatePresence initial={false}>
-          {priorityTasks.map((task, index) =>
+          {allDisplayTasks.map((task, index) =>
             task.type === "job" ? (
               <JobCard key={task.id} task={task} index={index} isPro={isPro} onComplete={onComplete} onOpenPricing={onOpenPricing} />
             ) : (
@@ -746,7 +693,24 @@ function PriorityFeed({
                       <p className="font-bold text-slate-900 dark:text-white">{task.deadline}</p>
                       <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-400">{task.estimate}</p>
                     </div>
-                    <div className="flex gap-2 sm:justify-end">
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                      {classifyTaskLink(task.external_url) === "external" ? (
+                        <a
+                          href={task.external_url!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-cyan-700 dark:text-cyan-400"
+                        >
+                          {task.action_label ?? "Open"} <ExternalLink size={12} />
+                        </a>
+                      ) : classifyTaskLink(task.external_url) === "internal" ? (
+                        <Link
+                          href={task.external_url!}
+                          className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-cyan-700 dark:text-cyan-400"
+                        >
+                          {task.action_label ?? "Open"} <ChevronRight size={12} />
+                        </Link>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onSnooze(task.id, 2)}
@@ -837,35 +801,6 @@ function PriorityFeed({
         </div>
       )}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  count,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  count: number;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
-        active
-          ? "neu-inset text-slate-950 dark:text-white"
-          : "neu-btn text-slate-600 dark:text-slate-300"
-      }`}
-    >
-      {children}
-      <span className={`neu-pill rounded-lg px-2 py-0.5 text-xs font-semibold ${active ? "text-slate-950 dark:text-cyan-400" : "text-slate-500 dark:text-slate-400"}`}>
-        {count}
-      </span>
-    </button>
   );
 }
 
@@ -1140,98 +1075,6 @@ function FocusPanel({ onOpenPricing, stats, isPro }: { onOpenPricing: () => void
 }
 
 
-
-interface DailyGrowthPicks {
-  topic: string;
-  reason: string;
-  video: { videoId: string; title: string; channelName: string; thumbnail: string; duration: string } | null;
-  githubRepo: { name: string; fullName: string; description: string | null; url: string; stars: number; language: string | null } | null;
-  courseSuggestion: { type: 'college_subject' | 'general'; title: string; detail: string } | null;
-}
-
-function DailyGrowthPanel() {
-  // 10min client TTL — content is the same all day server-side anyway
-  // (server caches until midnight IST); this just avoids a redundant round
-  // trip every time the user navigates back to Dashboard within a session.
-  const { data, loading } = useCachedFetch<DailyGrowthPicks & { error?: string }>("/api/feed/daily-growth", 10 * 60 * 1000);
-  const picks = data && !data.error ? data : null;
-
-  if (loading && !picks) {
-    return <LoadingCard />;
-  }
-
-  if (!picks || !picks.topic) {
-    return null;
-  }
-
-  return (
-    <div className="neu-card rounded-[28px] p-5 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Daily growth pick</p>
-          <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{picks.topic}</h3>
-        </div>
-        <div className="neu-pill rounded-2xl p-2.5 text-slate-900 dark:text-white">
-          <Brain size={16} />
-        </div>
-      </div>
-      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{picks.reason}</p>
-
-      <div className="mt-4 space-y-2.5">
-        {picks.video && (
-          <a
-            href={`https://www.youtube.com/watch?v=${picks.video.videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="neu-inset flex items-center gap-3 rounded-2xl p-3 transition hover:brightness-105"
-          >
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
-              <Play size={15} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.video.title}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{picks.video.channelName} · {picks.video.duration}</p>
-            </div>
-            <ExternalLink size={13} className="flex-shrink-0 text-slate-400" />
-          </a>
-        )}
-
-        {picks.githubRepo && (
-          <a
-            href={picks.githubRepo.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="neu-inset flex items-center gap-3 rounded-2xl p-3 transition hover:brightness-105"
-          >
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-600 dark:text-violet-400">
-              <GitBranch size={15} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.githubRepo.fullName}</p>
-              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                {picks.githubRepo.description ?? `${picks.githubRepo.stars.toLocaleString()} stars`}
-              </p>
-            </div>
-            <ExternalLink size={13} className="flex-shrink-0 text-slate-400" />
-          </a>
-        )}
-
-        {picks.courseSuggestion && (
-          <div className="neu-inset flex items-center gap-3 rounded-2xl p-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <BookOpen size={15} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{picks.courseSuggestion.title}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{picks.courseSuggestion.detail}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const difficultyStyles: Record<string, string> = {
   Beginner: "text-emerald-700 dark:text-emerald-400",
   Intermediate: "text-blue-700 dark:text-blue-400",
@@ -1399,6 +1242,63 @@ function ProjectIdeasPanel({ isPro, onOpenPricing }: { isPro: boolean; onOpenPri
   );
 }
 
+function getSetupMeta(id: string) {
+  if (id.includes("github")) {
+    return {
+      icon: GitBranch,
+      accent: "text-purple-600 dark:text-purple-400",
+      bg: "bg-purple-500/15",
+      badge: "GitHub Sync",
+    };
+  }
+  if (id.includes("exam") || id.includes("timetable")) {
+    return {
+      icon: Calendar,
+      accent: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-500/15",
+      badge: "Academics",
+    };
+  }
+  if (id.includes("resume")) {
+    return {
+      icon: FileText,
+      accent: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-500/15",
+      badge: "Career Match",
+    };
+  }
+  if (id.includes("skill") || id.includes("subject")) {
+    return {
+      icon: Code2,
+      accent: "text-cyan-600 dark:text-cyan-400",
+      bg: "bg-cyan-500/15",
+      badge: "Skills Profile",
+    };
+  }
+  if (id.includes("browse") || id.includes("job") || id.includes("internshala") || id.includes("opportunity")) {
+    return {
+      icon: Briefcase,
+      accent: "text-blue-600 dark:text-blue-400",
+      bg: "bg-blue-500/15",
+      badge: "Opportunities",
+    };
+  }
+  if (id.includes("profile") || id.includes("guidance")) {
+    return {
+      icon: Target,
+      accent: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-500/15",
+      badge: "Guidance",
+    };
+  }
+  return {
+    icon: CheckCircle2,
+    accent: "text-cyan-600 dark:text-cyan-400",
+    bg: "bg-cyan-500/15",
+    badge: "Setup",
+  };
+}
+
 function SetupStrip({
   items,
   isPro,
@@ -1412,10 +1312,22 @@ function SetupStrip({
   onOpenSettings: () => void;
   onOpenPricing: () => void;
 }) {
+  const router = useRouter();
+
   function handleItemClick(item: any) {
-    if (item.action_view === "settings") { onOpenSettings(); return; }
+    if (item.action_view === "career" || item.id?.includes("resume")) {
+      router.push("/career/resume/upload");
+      return;
+    }
+    if (item.action_view === "settings") {
+      onOpenSettings();
+      return;
+    }
     if (item.action_view === "external") {
-      if (!isPro) { onOpenPricing(); return; }
+      if (!isPro) {
+        onOpenPricing();
+        return;
+      }
       if (item.external_url) window.open(item.external_url, "_blank", "noopener,noreferrer");
       return;
     }
@@ -1425,45 +1337,101 @@ function SetupStrip({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -6 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="neu-card rounded-[28px] p-5"
+        exit={{ opacity: 0, y: -8 }}
+        className="neu-card relative overflow-hidden rounded-[28px] p-5 sm:p-6"
       >
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400">Get started</p>
-        <div className="mt-3 space-y-2">
+        {/* Header with Title, Icon & Step Counter */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="neu-pill flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-cyan-600 dark:text-cyan-400">
+              <Rocket size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-950 dark:text-white">
+                  Get Started with PrioryxAI
+                </h3>
+                <span className="neu-pill rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+                  Quick Setup
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                Complete these high-impact steps to calibrate your personalized priority ranking and job matching.
+              </p>
+            </div>
+          </div>
+
+          <div className="neu-pill self-start sm:self-auto inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="h-2 w-2 rounded-full bg-cyan-500" />
+            <span>{items.length} {items.length === 1 ? "step" : "steps"} remaining</span>
+          </div>
+        </div>
+
+        {/* Step Cards Grid */}
+        <div className="mt-5 space-y-3">
           {items.map((item) => {
+            const meta = getSetupMeta(item.id ?? "");
+            const Icon = meta.icon;
             const isProGated = item.action_pro_only && !isPro;
+
             return (
               <div
                 key={item.id}
-                className="neu-raised-sm group flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 transition hover:neu-card"
+                className="neu-raised-sm group relative flex flex-col gap-3 rounded-2xl p-3.5 transition-all duration-200 hover:neu-card hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between sm:p-4"
               >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
-                  <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{item.title}</p>
-                  {isProGated && (
-                    <span className="neu-pill shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      Pro
+                {/* Left details */}
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className={`neu-pill flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.accent} shadow-sm`}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-slate-950 dark:text-white transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                        {item.title}
+                      </p>
+                      <span className="neu-pill rounded-full px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                        {meta.badge}
+                      </span>
+                      {isProGated && (
+                        <span className="neu-pill rounded-full px-2 py-0.5 text-[10px] font-black uppercase text-amber-600 dark:text-amber-400">
+                          Pro
+                        </span>
+                      )}
+                    </div>
+                    {item.reason && (
+                      <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400 line-clamp-1">
+                        {item.reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right action & metadata */}
+                <div className="flex shrink-0 items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-slate-200/50 dark:border-white/5 sm:border-0">
+                  {item.estimate && (
+                    <span className="neu-pill inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                      <Clock3 size={11} /> {item.estimate}
                     </span>
                   )}
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleItemClick(item)}
-                    className="neu-btn inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-600 transition dark:text-slate-300"
+                    className="neu-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 transition-all hover:scale-[1.02]"
                   >
-                    {isProGated ? <Lock size={11} /> : <Settings size={11} />}
-                    {isProGated ? "Upgrade to unlock" : (item.action_label ?? "Fix")}
-                    <ChevronRight size={11} />
+                    {isProGated ? <Lock size={12} /> : <Settings size={12} />}
+                    <span>{isProGated ? "Upgrade to unlock" : (item.action_label ?? "Complete")}</span>
+                    <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onDismiss(item.id)}
-                    className="rounded-lg p-1 text-slate-400 opacity-0 transition hover:text-slate-700 group-hover:opacity-100 dark:text-slate-500 dark:hover:text-slate-300"
-                    aria-label="Dismiss"
+                    className="neu-pill rounded-xl p-1.5 text-slate-400 opacity-60 transition-all hover:opacity-100 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
+                    title="Dismiss step"
+                    aria-label="Dismiss step"
                   >
-                    <X size={12} />
+                    <X size={13} />
                   </button>
                 </div>
               </div>

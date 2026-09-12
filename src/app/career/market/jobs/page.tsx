@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check, Sparkles } from "lucide-react";
+import { Loader2, Briefcase, ArrowUpRight, Bookmark, Filter, X, Search, Check, Sparkles, Lock } from "lucide-react";
+import { PricingModal } from "@/components/pricing-modal";
+
+const FREE_JOB_LIMIT = 3;
 
 interface Job {
   id: string;
@@ -42,6 +45,8 @@ const LOC_KEYWORDS: Record<string, string[]> = {
 export default function JobMarketPage() {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [isPro, setIsPro] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState({
@@ -58,6 +63,14 @@ export default function JobMarketPage() {
       .then((res) => res.json())
       .then((data) => setJobs(data.jobs ?? []))
       .finally(() => setLoading(false));
+
+    fetch("/api/user/status")
+      .then((r) => r.json())
+      .then((d) => {
+        const active = Boolean(d?.pro_status) && (!d?.pro_expires_at || new Date(d.pro_expires_at) > new Date());
+        setIsPro(active);
+      })
+      .catch(() => setIsPro(false));
   }, []);
 
   const applyFilters = (jobList: Job[], ignoreMatchScore: boolean) => {
@@ -108,6 +121,9 @@ export default function JobMarketPage() {
   }, [usingFallback, jobs, filters, searchQuery]);
 
   const filteredJobs = usingFallback ? fallbackJobs : strictFiltered;
+  const visibleJobs = isPro ? filteredJobs : filteredJobs.slice(0, FREE_JOB_LIMIT);
+  const lockedJobs = isPro ? [] : filteredJobs.slice(FREE_JOB_LIMIT);
+  const lockedJobCount = lockedJobs.length;
 
   const saveJob = async (job: Job) => {
     setSavedIds(prev => new Set(prev).add(job.id));
@@ -257,7 +273,7 @@ export default function JobMarketPage() {
 
       <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 px-1">
         <span>
-          Showing {filteredJobs.length} of {jobs.length} jobs
+          Showing {visibleJobs.length} of {filteredJobs.length} jobs
           {filters.matchScore > 0 && !usingFallback && <> · {filters.matchScore}%+ profile match</>}
           {usingFallback && <> · closest matches (below {filters.matchScore}%)</>}
         </span>
@@ -277,7 +293,7 @@ export default function JobMarketPage() {
 
       {/* Job Cards List */}
       <div className="space-y-3.5">
-        {filteredJobs.map((job, i) => {
+        {visibleJobs.map((job, i) => {
           const isSaved = savedIds.has(job.id);
           const scoreColor = job.matchScore >= 80 ? '#10b981' : job.matchScore >= 50 ? '#f59e0b' : '#f43f5e';
 
@@ -350,7 +366,58 @@ export default function JobMarketPage() {
             </motion.div>
           );
         })}
+
+        {/* Blurred Locked Job Cards for Free Tier */}
+        {!isPro && lockedJobs.slice(0, 3).map((job, idx) => (
+          <div
+            key={`locked-${job.id || idx}`}
+            className="neu-card relative overflow-hidden rounded-[24px] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none opacity-85"
+          >
+            <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0 filter blur-[6px]">
+              <div className="shrink-0 w-12 h-12 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-4 bg-slate-300 dark:bg-slate-700 rounded-md w-56" />
+                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-md w-36" />
+              </div>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/20 dark:bg-black/40 backdrop-blur-[2px]">
+              <button
+                type="button"
+                onClick={() => setPricingOpen(true)}
+                className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-lg"
+              >
+                <Lock size={13} className="text-amber-400" />
+                <span>Unlock with Subscription</span>
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Unlock wall — free users see only the top FREE_JOB_LIMIT matches */}
+      {lockedJobCount > 0 && (
+        <div className="neu-card rounded-[28px] p-8 text-center space-y-4">
+          <div className="neu-pill-inset mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-amber-500">
+            <Lock size={26} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+              {lockedJobCount} more matching {lockedJobCount === 1 ? "job" : "jobs"} locked
+            </h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Free plan shows your top {FREE_JOB_LIMIT} matches. Upgrade to Pro to unlock every matching job and apply directly.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPricingOpen(true)}
+            className="neu-btn inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+          >
+            <Lock size={14} className="text-amber-400" />
+            <span>Unlock with Subscription</span>
+          </button>
+        </div>
+      )}
 
       {filteredJobs.length === 0 && (
         <div className="neu-card rounded-[28px] p-10 md:p-14 text-center space-y-4 max-w-xl mx-auto">
@@ -375,6 +442,8 @@ export default function JobMarketPage() {
           </div>
         </div>
       )}
+
+      <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} isPro={isPro} />
     </div>
   );
 }

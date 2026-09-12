@@ -7,7 +7,18 @@ import { collectProjectSignals } from './collectors/project-collector'
 import { collectSubjectSignals } from './collectors/subject-collector'
 import { collectTimetableSignals } from './collectors/timetable-collector'
 import { collectJobSignals } from './collectors/job-collector'
+import { collectRoadmapSignals } from './collectors/roadmap-collector'
 import { signalToTask, PriorityTaskRow } from './task-generator'
+
+/** Deterministic day-of-year index — used to rotate which item from a larger
+ * candidate pool (e.g. GitHub fixes) gets picked as "today's one", so the
+ * feed shows something different tomorrow instead of the same top pick every
+ * day until the user happens to finish it. */
+function dayOfYear(d: Date): number {
+  const start = new Date(d.getFullYear(), 0, 0)
+  const diff = d.getTime() - start.getTime()
+  return Math.floor(diff / 86_400_000)
+}
 
 export interface DailyPlan {
   todaysFocus: string
@@ -60,25 +71,27 @@ export async function generateDailyPlan(
   })
 
   // ── Collect all signals in parallel ──────────────────────
-  const [examRes, dsaRes, githubRes, resumeRes2, projectRes, timetableRes, subjectRes, jobRes] =
+  const [examRes, dsaRes, githubRes, resumeRes2, projectRes, timetableRes, subjectRes, jobRes, roadmapRes] =
     await Promise.allSettled([
       collectExamSignals(db, userId),
-      collectDSASignals(db, userId, lcWeakTopics, companies, 3),
+      collectDSASignals(db, userId, lcWeakTopics, companies, 5),
       collectGitHubSignals(db, userId),
       collectResumeSignals(db, userId, companies),
       collectProjectSignals(db, userId),
       collectTimetableSignals(db, userId),
       collectSubjectSignals(db, userId),
-      collectJobSignals(db, userId)
+      collectJobSignals(db, userId),
+      collectRoadmapSignals(db, userId)
     ])
 
   const exams = examRes.status === 'fulfilled' ? examRes.value : []
-  const dsa = dsaRes.status === 'fulfilled' ? dsaRes.value : []
-  const github = githubRes.status === 'fulfilled' ? githubRes.value : []
+  const dsaPool = dsaRes.status === 'fulfilled' ? dsaRes.value : []
+  const githubPool = githubRes.status === 'fulfilled' ? githubRes.value : []
   const resumeGaps = resumeRes2.status === 'fulfilled' ? resumeRes2.value : []
   const projects = projectRes.status === 'fulfilled' ? projectRes.value : []
   const timetableSubjects = timetableRes.status === 'fulfilled' ? timetableRes.value : []
   const jobs = jobRes.status === 'fulfilled' ? jobRes.value : []
+  const roadmap = roadmapRes.status === 'fulfilled' ? roadmapRes.value : []
   if (jobRes.status === 'rejected') {
     console.error('[AI Planner] Job matching failed:', jobRes.reason)
   }
@@ -88,20 +101,37 @@ export async function generateDailyPlan(
     ? timetableSubjects
     : (subjectRes.status === 'fulfilled' ? subjectRes.value : [])
 
+  // The feed shows exactly ONE coding question and ONE GitHub fix per day —
+  // but which one rotates by day-of-year through the candidate pool, so it's
+  // a genuinely different pick tomorrow instead of always the same #1.
+  const dow = dayOfYear(today)
+  const dsa = dsaPool.length > 0 ? [dsaPool[dow % dsaPool.length]] : []
+  const github = githubPool.length > 0 ? [githubPool[dow % githubPool.length]] : []
+
   console.log('[AI Planner] Signals:', {
     exams: exams.length, dsa: dsa.length,
     github: github.length, gaps: resumeGaps.length, projects: projects.length,
-    subjects: subjects.length, jobs: jobs.length
+    subjects: subjects.length, jobs: jobs.length, roadmap: roadmap.length
   })
 
+  // Weekends: surface more Foundry projects to work on (collectProjectSignals
+  // already returns up to 5 on Sat/Sun vs. 3 on weekdays) instead of just 1.
+  const dayOfWeek = today.getDay()
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+  const projectTaskLimit = isWeekend ? 3 : 1
+
   // ── Convert signals to task rows ─────────────────────────
+  // Core daily set, one of each: a coding question, a GitHub fix, the next
+  // roadmap topic, a timetable study block, and a skill gap to close — plus
+  // exams/jobs/weekend-project tasks layered in when relevant.
   const allTasks: PriorityTaskRow[] = [
     ...exams.map(s => signalToTask(s, userId, todayStr)),
     ...jobs.map(s => signalToTask(s, userId, todayStr)),
     ...dsa.map(s => signalToTask(s, userId, todayStr)),
-    ...github.slice(0, 2).map(s => signalToTask(s, userId, todayStr)),
+    ...github.map(s => signalToTask(s, userId, todayStr)),
+    ...roadmap.map(s => signalToTask(s, userId, todayStr)),
     ...resumeGaps.slice(0, 1).map(s => signalToTask(s, userId, todayStr)),
-    ...projects.slice(0, 1).map(s => signalToTask(s, userId, todayStr)),
+    ...projects.slice(0, projectTaskLimit).map(s => signalToTask(s, userId, todayStr)),
     ...subjects.slice(0, 1).map(s => signalToTask(s, userId, todayStr)),
   ]
 
@@ -170,11 +200,11 @@ export async function generateDailyPlan(
   } else if (exams.some(e => e.daysUntil <= 3)) {
     todaysFocus = `Exam in ${exams[0].daysUntil} days — prioritise ${exams[0].subjectName} revision + 1 DSA problem`
   } else if (exams.length > 0) {
-    todaysFocus = `Balanced day — exam prep + ${dsa.length} DSA problems + profile improvements`
+    todaysFocus = `Balanced day — exam prep + today's DSA problem + profile improvements`
   } else if (dsa.length > 0 && lcWeakTopics.length > 0) {
-    todaysFocus = `Target your weak areas: ${lcWeakTopics.slice(0, 2).join(' & ')} with today's curated problems`
+    todaysFocus = `Target your weak areas: ${lcWeakTopics.slice(0, 2).join(' & ')} with today's curated problem`
   } else if (dsa.length > 0) {
-    todaysFocus = `Daily coding practice — ${dsa.length} curated problems from your skill path`
+    todaysFocus = `Daily coding practice — today's curated problem from your skill path`
   } else if (github.length > 0) {
     todaysFocus = `Portfolio day — improve GitHub health and project visibility`
   } else {

@@ -4,6 +4,7 @@ import type {
   ScoreDimensions, WeaknessCategory, PriorityLevel, ImpactArea, EffortLevel
 } from './types';
 import type { RepoStructureSignals } from './repo-inspector';
+import type { VulnerablePackage } from './security-scanner';
 
 const STALE_DAYS = 90;
 const RECENT_PUSH_DAYS = 30;
@@ -22,7 +23,11 @@ function gradeFromScore(score: number): ProjectScore['grade'] {
   return 'F';
 }
 
-function computeDimensions(repo: CachedRepo, structure?: RepoStructureSignals | null): ScoreDimensions {
+function computeDimensions(
+  repo: CachedRepo,
+  structure?: RepoStructureSignals | null,
+  vulnerablePackages?: VulnerablePackage[]
+): ScoreDimensions {
   const days = daysSince(repo.pushedAt);
   const hasDescription = !!(repo.description && repo.description.trim().length > 10);
   const descLen = repo.description?.length ?? 0;
@@ -52,18 +57,22 @@ function computeDimensions(repo: CachedRepo, structure?: RepoStructureSignals | 
   // Code Quality: 0-20 — real structural signals (tests, CI, organized
   // folders) when available, falling back to the metadata-only proxy.
   const descWords = (repo.description ?? '').split(' ').length;
+  // A known-vulnerable dependency knocks points off code quality — capped so
+  // it can't single-handedly zero out an otherwise well-built project.
+  const vulnPenalty = Math.min(8, (vulnerablePackages?.length ?? 0) * 4);
+
   const codeQuality = structure
-    ? Math.min(20,
+    ? Math.max(0, Math.min(20,
         (structure.hasTests ? 7 : 0) +
         (structure.hasCI ? 5 : 0) +
         (structure.hasOrganizedStructure ? 5 : 0) +
         (repo.language ? 3 : 0)
-      )
-    : Math.min(20,
+      ) - vulnPenalty)
+    : Math.max(0, Math.min(20,
         (hasDescription && descWords >= 5 ? 10 : 4) +
         (repo.language ? 6 : 0) +
         (repo.name && !repo.name.match(/^repo\d+|test|untitled/i) ? 4 : 0)
-      );
+      ) - vulnPenalty);
 
   // Completeness: 0-20 — dependency manifest + deployment signals (Docker)
   // over the old star-count-only proxy, which said nothing about whether
@@ -91,7 +100,12 @@ function computeDimensions(repo: CachedRepo, structure?: RepoStructureSignals | 
   return { documentation, codeQuality, activity, completeness, careerValue };
 }
 
-function detectWeaknesses(repo: CachedRepo, dims: ScoreDimensions, structure?: RepoStructureSignals | null): ProjectWeakness[] {
+function detectWeaknesses(
+  repo: CachedRepo,
+  dims: ScoreDimensions,
+  structure?: RepoStructureSignals | null,
+  vulnerablePackages?: VulnerablePackage[]
+): ProjectWeakness[] {
   const weaknesses: ProjectWeakness[] = [];
   const days = daysSince(repo.pushedAt);
 
@@ -250,6 +264,19 @@ function detectWeaknesses(repo: CachedRepo, dims: ScoreDimensions, structure?: R
     }
   }
 
+  if (vulnerablePackages && vulnerablePackages.length > 0) {
+    const names = vulnerablePackages.map(v => v.name).slice(0, 3).join(', ');
+    add(
+      'vulnerable_dependency',
+      `${vulnerablePackages.length} dependenc${vulnerablePackages.length === 1 ? 'y has' : 'ies have'} known vulnerabilities`,
+      `${names}${vulnerablePackages.length > 3 ? ', and others' : ''} — flagged by OSV.dev with known CVE/GHSA advisories.`,
+      'Update the affected package(s) to a patched version and re-run your test suite.',
+      'quick_win', 'HIGH',
+      ['career_signal', 'interview_talking_point'],
+      30
+    );
+  }
+
   return weaknesses;
 }
 
@@ -270,10 +297,15 @@ function computeStrengths(repo: CachedRepo, dims: ScoreDimensions, structure?: R
   return s;
 }
 
-export function scoreProject(repo: CachedRepo, repoId = 0, structure?: RepoStructureSignals | null): ProjectScore {
-  const dims = computeDimensions(repo, structure);
+export function scoreProject(
+  repo: CachedRepo,
+  repoId = 0,
+  structure?: RepoStructureSignals | null,
+  vulnerablePackages?: VulnerablePackage[]
+): ProjectScore {
+  const dims = computeDimensions(repo, structure, vulnerablePackages);
   const total = Object.values(dims).reduce((a, b) => a + b, 0);
-  const weaknesses = detectWeaknesses(repo, dims, structure);
+  const weaknesses = detectWeaknesses(repo, dims, structure, vulnerablePackages);
   const strengths = computeStrengths(repo, dims, structure);
 
   const interviewTopics: string[] = [];
