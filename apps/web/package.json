@@ -10,6 +10,7 @@
     "test": "node --test tests/**/*.test.js"
   },
   "dependencies": {
+    "@prioryxai/types": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
     "@react-pdf/renderer": "^4.4.1",
     "@supabase/ssr": "^0.10.2",

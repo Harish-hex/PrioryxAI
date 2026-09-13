@@ -1,4 +1,5 @@
 {
+  "extends": "../../packages/config/base.tsconfig.json",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -22,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "Frontend", ".next", "PrioryxAI", "PrioryxAI-main"]
+  "exclude": ["node_modules", ".next"]
 }
