@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    name: apps/web (lint + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Non-blocking: the existing codebase has ~15 pre-existing lint
+      # violations (no-explicit-any, require-imports in migration scripts,
+      # etc.) unrelated to this CI setup. Surfacing them here rather than
+      # silently fixing unrelated files, but not failing every PR on debt
+      # this change didn't introduce. `build` below is the real gate.
+      - run: pnpm turbo run lint --filter=@prioryxai/web
+        continue-on-error: true
+        env:
+          # Dummy values so Next.js's build-time env validation doesn't
+          # fail CI on a fork/PR that has no repo secrets configured.
+          # Nothing here is used to reach a real service in CI.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
+          OPENAI_API_KEY: placeholder
+
+      - run: pnpm turbo run build --filter=@prioryxai/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
+          OPENAI_API_KEY: placeholder
+
+  ai-service:
+    name: apps/ai-service (test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements-dev.txt
+
+      - run: pytest
+        env:
+          # score_engine tests are pure/offline; these placeholders only
+          # satisfy Settings() at import time, never a real API call.
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
+          ANTHROPIC_API_KEY: placeholder
+          AI_SERVICE_SECRET: placeholder

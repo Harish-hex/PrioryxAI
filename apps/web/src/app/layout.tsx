@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { CookieBanner } from "@/components/cookie-banner";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -169,6 +170,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <AnalyticsProvider />
         <CookieBanner />
       </body>
     </html>
