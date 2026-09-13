@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start -p $PORT",
     "lint": "next lint",
+    "test": "node --test tests/**/*.test.js",
     "mobile:sync": "cap sync",
     "mobile:copy": "cap copy",
     "mobile:android": "cap open android"
