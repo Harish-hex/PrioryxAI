@@ -1,13 +1,13 @@
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # build outputs
-/.next/
+.next/
 /out/
-/build
+**/dist/
 /coverage
 *.tsbuildinfo
 next-env.d.ts
@@ -64,6 +64,7 @@ graphify-out/
 supabase/.temp/
 tempCodeRunnerFile*
 /PrioryxAI-main/
+/archive/PrioryxAI-main-nested-repo/
 /*.sql
 /*.jpeg
 /*.png
