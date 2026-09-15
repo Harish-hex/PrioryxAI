@@ -18,6 +18,12 @@ export const visionRatelimitPro = new Ratelimit({
   limiter: Ratelimit.slidingWindow(10, '1 d'),
 });
 
+// Study room creation — spam prevention per the Peer Collaboration Dashboard spec (3/day per user).
+export const roomCreateRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, '1 d'),
+});
+
 // Redis failure must never crash the product — safe for caches and non-critical operations
 export async function withFallback<T>(fn: () => Promise<T>, fallback: T, timeoutMs = 800): Promise<T> {
   try {

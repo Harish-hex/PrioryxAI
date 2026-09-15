@@ -1,0 +1,60 @@
+{
+  "functions": {
+    "src/app/api/career/resume/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/career/analyze/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/resume/process/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/schedule/exam/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/schedule/timetable/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/leetcode/connect/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/hackerrank/connect/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/career/collab/friends/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/career/collab/challenges/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/platforms/unified/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/foundry/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/assistant/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/priority/today/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/youtube/search/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/webhooks/razorpay/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}

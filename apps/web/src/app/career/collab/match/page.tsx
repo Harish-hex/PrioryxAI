@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -581,6 +582,27 @@ function CollabContent() {
             )}
           </div>
         </div>
+      </motion.div>
+
+      {/* Study Rooms entry point */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.08 }}
+      >
+        <Link
+          href="/career/collab/rooms"
+          className="neu-card rounded-[28px] p-6 flex items-center justify-between gap-4 group transition hover:shadow-inner"
+        >
+          <div>
+            <p className="text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-1">Live Study Rooms</p>
+            <p className="text-sm font-bold text-slate-950 dark:text-white">Study together in real time</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">DSA sprints, project reviews, mock interviews, and accountability check-ins with live presence and chat.</p>
+          </div>
+          <span className="neu-btn shrink-0 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white">
+            Browse Rooms
+          </span>
+        </Link>
       </motion.div>
 
       {/* Tabs */}

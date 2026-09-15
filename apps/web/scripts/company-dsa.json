@@ -1,0 +1,3923 @@
+[
+  {
+    "title": "Two Sum",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte",
+      "Google",
+      "Infosys",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #1)",
+    "is_important": true
+  },
+  {
+    "title": "Best Time to Buy and Sell Stock",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "Google",
+      "LTIMindtree",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #121)",
+    "is_important": true
+  },
+  {
+    "title": "Majority Element",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #169)",
+    "is_important": true
+  },
+  {
+    "title": "Contains Duplicate",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte",
+      "Google",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #217)",
+    "is_important": true
+  },
+  {
+    "title": "Product of Array Except Self",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #238)",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Subarray (Kadane’s Algorithm)",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #53)",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Product Subarray",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #152)",
+    "is_important": true
+  },
+  {
+    "title": "Merge Intervals",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #56)",
+    "is_important": true
+  },
+  {
+    "title": "Insert Interval",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #57)",
+    "is_important": true
+  },
+  {
+    "title": "Set Matrix Zeroes",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #73)",
+    "is_important": true
+  },
+  {
+    "title": "Spiral Matrix",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #54)",
+    "is_important": true
+  },
+  {
+    "title": "Rotate Image (90 degrees)",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #48)",
+    "is_important": true
+  },
+  {
+    "title": "Pascal’s Triangle",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #118)",
+    "is_important": true
+  },
+  {
+    "title": "Subarray Sum Equals K",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Infosys"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #560)",
+    "is_important": true
+  },
+  {
+    "title": "Missing Number",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #268)",
+    "is_important": true
+  },
+  {
+    "title": "Valid Anagram",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #242)",
+    "is_important": true
+  },
+  {
+    "title": "Group Anagrams",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree",
+      "Microsoft"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #49)",
+    "is_important": true
+  },
+  {
+    "title": "Valid Palindrome",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #125)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Palindromic Substring",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #5)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Common Prefix",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #14)",
+    "is_important": true
+  },
+  {
+    "title": "Count and Say",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #38)",
+    "is_important": true
+  },
+  {
+    "title": "Implement strStr()",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte",
+      "Google",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #28)",
+    "is_important": true
+  },
+  {
+    "title": "String to Integer (atoi)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Microsoft"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #8)",
+    "is_important": true
+  },
+  {
+    "title": "Valid Parentheses",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "TCS",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #20)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Substring Without Repeating Characters",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #3)",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Linked List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte",
+      "Google",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #206)",
+    "is_important": true
+  },
+  {
+    "title": "Merge Two Sorted Lists",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Deloitte",
+      "Google",
+      "Infosys",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #21)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Nth Node From End of List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Infosys",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #19)",
+    "is_important": true
+  },
+  {
+    "title": "Linked List Cycle Detection (Floyd's Algorithm)",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #141)",
+    "is_important": true
+  },
+  {
+    "title": "Intersection of Two Linked Lists",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "Infosys",
+      "Microsoft",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #160)",
+    "is_important": true
+  },
+  {
+    "title": "Linked List Cycle II (Start of Cycle)",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #142)",
+    "is_important": true
+  },
+  {
+    "title": "Palindrome Linked List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "Infosys",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #234)",
+    "is_important": true
+  },
+  {
+    "title": "Reorder List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #143)",
+    "is_important": true
+  },
+  {
+    "title": "Linked List Cycle",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #141)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Duplicates from Sorted List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #83)",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Linked List II",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #92)",
+    "is_important": true
+  },
+  {
+    "title": "Implement Queue using Stacks",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "Infosys",
+      "Microsoft",
+      "TCS",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #232)",
+    "is_important": true
+  },
+  {
+    "title": "Min Stack",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Infosys",
+      "TCS",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #155)",
+    "is_important": true
+  },
+  {
+    "title": "Top K Frequent Elements",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #347)",
+    "is_important": true
+  },
+  {
+    "title": "Top K Frequent Words",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #347)",
+    "is_important": true
+  },
+  {
+    "title": "Daily Temperatures",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Microsoft"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #739)",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Depth of Binary Tree",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "Infosys",
+      "LTIMindtree",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #104)",
+    "is_important": true
+  },
+  {
+    "title": "Symmetric Tree",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #101)",
+    "is_important": true
+  },
+  {
+    "title": "Path Sum",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #112)",
+    "is_important": true
+  },
+  {
+    "title": "Lowest Common Ancestor of a BST",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #235)",
+    "is_important": true
+  },
+  {
+    "title": "Convert Sorted Array to Binary Search Tree",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #104)",
+    "is_important": true
+  },
+  {
+    "title": "Validate Binary Search Tree",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #98)",
+    "is_important": true
+  },
+  {
+    "title": "Binary Tree Right Side View",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #199)",
+    "is_important": true
+  },
+  {
+    "title": "Path Sum III",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #437)",
+    "is_important": true
+  },
+  {
+    "title": "Validate Binary Search Tree (Inorder Traversal)",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #98)",
+    "is_important": true
+  },
+  {
+    "title": "Binary Tree Level Order Traversal",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "TCS"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #102)",
+    "is_important": true
+  },
+  {
+    "title": "Merge K Sorted Lists",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #23)",
+    "is_important": true
+  },
+  {
+    "title": "Task Scheduler",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #621)",
+    "is_important": true
+  },
+  {
+    "title": "Permutations",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #46)",
+    "is_important": true
+  },
+  {
+    "title": "Combination Sum",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #39)",
+    "is_important": true
+  },
+  {
+    "title": "Palindrome Partitioning",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #131)",
+    "is_important": true
+  },
+  {
+    "title": "Word Search II",
+    "topic": "Backtracking",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #212)",
+    "is_important": true
+  },
+  {
+    "title": "Climbing Stairs",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #70)",
+    "is_important": true
+  },
+  {
+    "title": "Minimum Path Sum",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #64)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Increasing Subsequence",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "TCS"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #300)",
+    "is_important": true
+  },
+  {
+    "title": "Coin Change",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #322)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Palindromic Subsequence",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #516)",
+    "is_important": true
+  },
+  {
+    "title": "Edit Distance (Levenshtein)",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #72)",
+    "is_important": true
+  },
+  {
+    "title": "Decode Ways",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #91)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Increasing Path in Matrix",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #329)",
+    "is_important": true
+  },
+  {
+    "title": "Word Break",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Google",
+      "Infosys",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #139)",
+    "is_important": true
+  },
+  {
+    "title": "Burst Balloons (Interval DP)",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #312)",
+    "is_important": true
+  },
+  {
+    "title": "Regular Expression Matching",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #10)",
+    "is_important": true
+  },
+  {
+    "title": "Sudoku Solver",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Accenture",
+      "Microsoft"
+    ],
+    "notes": "From Accenture DSA prep sheet (LeetCode #37)",
+    "is_important": true
+  },
+  {
+    "title": "Two Sum - Find pair with given sum",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Subarray Sum (Kadane's Algorithm)",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Rotate Array",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find Duplicate Number",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Merge Sorted Arrays",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Move Zeros to End",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find Missing Number",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Words in String",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement strStr (Find Needle in Haystack)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Evaluate Reverse Polish Notation",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Next Greater Element",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "TCS"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Largest Rectangle in Histogram",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "TCS"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Simplify Path",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Decode String",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Infosys",
+      "LTIMindtree",
+      "PayPal"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Sliding Window Maximum",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Microsoft",
+      "TCS",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "First Non-Repeating Character in Stream",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Fibonacci Number",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Power Function",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Generate Parentheses",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Letter Combinations of Phone Number",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Subsets",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Word Search",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Lowest Common Ancestor of BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Kth Smallest Element in BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Microsoft"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Delete Node in BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Convert Sorted Array to BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Range Sum of BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Insert into BST",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Level Order Traversal",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Diameter of Binary Tree",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Invert Binary Tree",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Lowest Common Ancestor of Binary Tree",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Number of Islands",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Infosys",
+      "LTIMindtree",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Clone Graph",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Course Schedule (Cycle Detection)",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Pacific Atlantic Water Flow",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "Infosys",
+      "LTIMindtree",
+      "Uber"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Shortest Path in Binary Matrix",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Rotting Oranges",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Word Ladder",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Graph Valid Tree",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "Google",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "House Robber",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree",
+      "PayPal"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Unique Paths",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Single Number",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Number of 1 Bits (Hamming Weight)",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Bits",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Power of Two",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Deloitte",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Missing Number (Bit Manipulation)",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Capgemini",
+      "Facebook",
+      "LTIMindtree"
+    ],
+    "notes": "From Capgemini DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Move Zeroes",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "Google",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #283)",
+    "is_important": true
+  },
+  {
+    "title": "Reverse String",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #344)",
+    "is_important": true
+  },
+  {
+    "title": "Intersection of Two Arrays",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #349)",
+    "is_important": true
+  },
+  {
+    "title": "Plus One",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "PayPal"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #66)",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Subarray",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "Infosys",
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #53)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Duplicates from Sorted Array",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "Microsoft"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #26)",
+    "is_important": true
+  },
+  {
+    "title": "Palindrome Number",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #9)",
+    "is_important": true
+  },
+  {
+    "title": "Merge Sorted Array",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #88)",
+    "is_important": true
+  },
+  {
+    "title": "Search Insert Position",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #35)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Element",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte",
+      "Microsoft"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #27)",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Product of Two Elements",
+    "topic": "General",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Deloitte"
+    ],
+    "notes": "From Deloitte DSA prep sheet (LeetCode #1464)",
+    "is_important": true
+  },
+  {
+    "title": "Find the Duplicate Number",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #287)",
+    "is_important": true
+  },
+  {
+    "title": "Find All Numbers Disappeared in an Array",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "PayPal"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #448)",
+    "is_important": true
+  },
+  {
+    "title": "Encode and Decode Strings",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #271)",
+    "is_important": true
+  },
+  {
+    "title": "Palindrome Permutation",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #266)",
+    "is_important": true
+  },
+  {
+    "title": "Minimum Window Substring",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #76)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Nth Node From End",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #19)",
+    "is_important": true
+  },
+  {
+    "title": "Add Two Numbers",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #2)",
+    "is_important": true
+  },
+  {
+    "title": "Remove Linked List Elements",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #203)",
+    "is_important": true
+  },
+  {
+    "title": "Copy List with Random Pointer",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #138)",
+    "is_important": true
+  },
+  {
+    "title": "Number of Recent Calls",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #933)",
+    "is_important": true
+  },
+  {
+    "title": "Perfect Squares",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #279)",
+    "is_important": true
+  },
+  {
+    "title": "Implement Circular Queue",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #622)",
+    "is_important": true
+  },
+  {
+    "title": "Design Hit Counter",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #362)",
+    "is_important": true
+  },
+  {
+    "title": "Moving Average from Data Stream",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #346)",
+    "is_important": true
+  },
+  {
+    "title": "Number of Islands (BFS)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #200)",
+    "is_important": true
+  },
+  {
+    "title": "Number of Islands II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #305)",
+    "is_important": true
+  },
+  {
+    "title": "Serialize and Deserialize Binary Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys",
+      "TCS",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #297)",
+    "is_important": true
+  },
+  {
+    "title": "Binary Tree Maximum Path Sum",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #124)",
+    "is_important": true
+  },
+  {
+    "title": "Construct Binary Tree from Preorder and Inorder Traversal",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #105)",
+    "is_important": true
+  },
+  {
+    "title": "Kth Smallest Element in a BST",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #230)",
+    "is_important": true
+  },
+  {
+    "title": "Insert into a Binary Search Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #701)",
+    "is_important": true
+  },
+  {
+    "title": "Number of Islands (DFS)",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #200)",
+    "is_important": true
+  },
+  {
+    "title": "Course Schedule",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Infosys",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #207)",
+    "is_important": true
+  },
+  {
+    "title": "Course Schedule II",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #210)",
+    "is_important": true
+  },
+  {
+    "title": "Number of Connected Components in an Undirected Graph",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google",
+      "Uber"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #323)",
+    "is_important": true
+  },
+  {
+    "title": "Minimum Height Trees",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #310)",
+    "is_important": true
+  },
+  {
+    "title": "Reconstruct Itinerary",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Google"
+    ],
+    "notes": "From Google DSA prep sheet (LeetCode #332)",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Pairs",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "3Sum Smaller",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find All Duplicates in an Array",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Maximum Sum Circular Subarray",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement strStr",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "First Unique Character in a String",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "String to Integer (atoi",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Words in a String",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Valid Palindrome II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Isomorphic Strings",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "ZigZag Conversion",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Wildcard Matching",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Middle of the Linked List",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Sort List",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Longest Valid Parentheses",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement Stack using Queues",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "Microsoft",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Next Greater Element II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "Microsoft"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Score of Parentheses",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Design Circular Deque",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Design Circular Queue",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "PayPal"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Lowest Common Ancestor of a Binary Tree",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "Uber"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Search in a Binary Search Tree",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Delete Node in a BST",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Longest Increasing Path in a Matrix",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys",
+      "Microsoft",
+      "Uber",
+      "PayPal"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement Trie (Prefix Tree",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Meeting Rooms II",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Open the Lock",
+    "topic": "Queue",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Infosys"
+    ],
+    "notes": "From Infosys DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Search in Rotated Sorted Array",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #33)",
+    "is_important": true
+  },
+  {
+    "title": "Linked List Cycle II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft",
+      "PayPal"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #142)",
+    "is_important": true
+  },
+  {
+    "title": "Inorder Traversal (Recursive & Iterative)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #94)",
+    "is_important": true
+  },
+  {
+    "title": "Binary Search",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #704)",
+    "is_important": true
+  },
+  {
+    "title": "Find Minimum in Rotated Sorted Array",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #153)",
+    "is_important": true
+  },
+  {
+    "title": "Kth Largest Element in Array",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #215)",
+    "is_important": true
+  },
+  {
+    "title": "Longest Increasing Subsequence (LIS)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #300)",
+    "is_important": true
+  },
+  {
+    "title": "Coin Change (Unbounded Knapsack)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #322)",
+    "is_important": true
+  },
+  {
+    "title": "Maximal Square",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #221)",
+    "is_important": true
+  },
+  {
+    "title": "Burst Balloons",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft",
+      "Uber"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #312)",
+    "is_important": true
+  },
+  {
+    "title": "N-Queens",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #51)",
+    "is_important": true
+  },
+  {
+    "title": "N-Queens II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #52)",
+    "is_important": true
+  },
+  {
+    "title": "Combinations",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Microsoft"
+    ],
+    "notes": "From Microsoft DSA prep sheet (LeetCode #77)",
+    "is_important": true
+  },
+  {
+    "title": "Valid Sudoku",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet (LeetCode #36)",
+    "is_important": true
+  },
+  {
+    "title": "Rotate Image",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet (LeetCode #48)",
+    "is_important": true
+  },
+  {
+    "title": "Contains Duplicate II",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet (LeetCode #219)",
+    "is_important": true
+  },
+  {
+    "title": "Intersection of Two Arrays II",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet (LeetCode #350)",
+    "is_important": true
+  },
+  {
+    "title": "Add Binary",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse String (Repeated for clarity)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Length of Last Word",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Add Strings",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "To Lower Case",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Roman to Integer",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Delete Node in a Linked List",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal",
+      "Uber"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Swap Nodes in Pairs",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal",
+      "Uber"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Remove Duplicates from Sorted List II (Variation)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Nodes in k-Group",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Baseball Game",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Min Stack (Alternate Implementation)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Verify Preorder Serialization of a Binary Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Recent Counter (Alternate)",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Binary Tree Inorder Traversal",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Same Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Balanced Binary Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Minimum Depth of Binary Tree",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Flatten Binary Tree to Linked List",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Populating Next Right Pointers in Each Node",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Kth Largest Element in an Array",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Kth Smallest Element in a Sorted Matrix",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Accounts Merge",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "PayPal"
+    ],
+    "notes": "From PayPal DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find Missing Number in Array",
+    "topic": "Arrays",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement strstr() Function",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Count and Say Problem",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Word Break Problem",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Validate Sudoku Board",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement Stack using Array",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement Stack using Queue",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Trapping Rain Water",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Circular Queue Implementation",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse a Linked List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Detect Cycle in a Linked List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Merge Two Sorted Linked Lists",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS",
+      "Uber"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find Middle of a Linked List",
+    "topic": "Linked List",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Fibonacci Numbers (Recursive and DP)",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Tower of Hanoi Problem",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Generate All Subsets of a Set",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Permutations of a String",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Solve a Maze Problem Using Backtracking",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Flood Fill Algorithm",
+    "topic": "Recursion",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Insert in a BST",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Search a Value in BST",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find Lowest Common Ancestor in BST",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Validate a BST",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find kth Smallest Element in BST",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Diameter of a Binary Tree",
+    "topic": "BST",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Height of a Binary Tree",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Check if Two Trees are Identical",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Convert Sorted Array to Balanced BST",
+    "topic": "Trees",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Implement Graph Using Adjacency List",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Breadth-First Search (BFS)",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Depth-First Search (DFS)",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Detect Cycle in a Graph",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Dijkstra’s Shortest Path",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Topological Sort in DAG",
+    "topic": "Graphs",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Coin Change Problem",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Edit Distance Between Two Strings",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "0/1 Knapsack Problem",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Minimum Path Sum in a Grid",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Max Product Subarray",
+    "topic": "Dynamic Programming",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find the Single Number",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Count Number of 1 Bits",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Power of Two Check",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Swap Odd and Even Bits",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Reverse Bits of an Integer",
+    "topic": "Bit Manipulation",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "TCS"
+    ],
+    "notes": "From TCS DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find the missing number in an array of 1 to N",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #268)",
+    "is_important": true
+  },
+  {
+    "title": "Move all zeroes to the end of the array",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #283)",
+    "is_important": true
+  },
+  {
+    "title": "Find the largest subarray with equal number of 0s and 1s",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #525)",
+    "is_important": true
+  },
+  {
+    "title": "Find the longest substring without repeating characters",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #3)",
+    "is_important": true
+  },
+  {
+    "title": "Find the longest palindrome in a string",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #5)",
+    "is_important": true
+  },
+  {
+    "title": "Find the intersection of two arrays",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #349)",
+    "is_important": true
+  },
+  {
+    "title": "Find the union of two arrays",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Find the majority element in an array",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #169)",
+    "is_important": true
+  },
+  {
+    "title": "Find the first non-repeating character in a string",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #387)",
+    "is_important": true
+  },
+  {
+    "title": "Find the longest common prefix in an array of strings",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #14)",
+    "is_important": true
+  },
+  {
+    "title": "Reverse a singly linked list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #206)",
+    "is_important": true
+  },
+  {
+    "title": "Detect a cycle in a linked list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #141)",
+    "is_important": true
+  },
+  {
+    "title": "Find the middle of a linked list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #876)",
+    "is_important": true
+  },
+  {
+    "title": "Remove duplicates from sorted linked list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #83)",
+    "is_important": true
+  },
+  {
+    "title": "Add two numbers represented by linked lists",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #2)",
+    "is_important": true
+  },
+  {
+    "title": "Flatten a multilevel doubly linked list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #430)",
+    "is_important": true
+  },
+  {
+    "title": "Rotate list",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #61)",
+    "is_important": true
+  },
+  {
+    "title": "Clone a linked list with random pointer",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #138)",
+    "is_important": true
+  },
+  {
+    "title": "Sliding Window for Minimum (Monotonic Queue)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Number of Provinces",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #547)",
+    "is_important": true
+  },
+  {
+    "title": "Word Ladder (Shortest Transformation Sequence)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #127)",
+    "is_important": true
+  },
+  {
+    "title": "Find Redundant Connection",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #684)",
+    "is_important": true
+  },
+  {
+    "title": "Surrounded Regions",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #130)",
+    "is_important": true
+  },
+  {
+    "title": "Preorder & Postorder Traversals",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet",
+    "is_important": true
+  },
+  {
+    "title": "Level Order Traversal / Breadth-First",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #102)",
+    "is_important": true
+  },
+  {
+    "title": "Construct Binary Tree from Preorder and Inorder",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #105)",
+    "is_important": true
+  },
+  {
+    "title": "Permutations (Backtracking)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #46)",
+    "is_important": true
+  },
+  {
+    "title": "Fibonacci with Memoization (DP / Recursion + Memo)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #509)",
+    "is_important": true
+  },
+  {
+    "title": "Climbing Stairs (DP)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #70)",
+    "is_important": true
+  },
+  {
+    "title": "Edit Distance (Levenshtein Distance)",
+    "topic": "Arrays & Strings",
+    "difficulty": "Medium",
+    "platform": "LeetCode",
+    "problem_url": "",
+    "companies": [
+      "Uber"
+    ],
+    "notes": "From Uber DSA prep sheet (LeetCode #72)",
+    "is_important": true
+  }
+]

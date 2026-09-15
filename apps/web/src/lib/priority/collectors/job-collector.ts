@@ -17,6 +17,8 @@ export interface JobSignal {
 }
 
 const MATCH_THRESHOLD = 75
+/** Matches at or above this score are strong enough to guarantee a Priority Feed slot. */
+const STRONG_MATCH_THRESHOLD = 85
 
 function rowToOpportunity(row: Record<string, unknown>): NormalizedOpportunity {
   return {
@@ -89,14 +91,18 @@ export async function collectJobSignals(
       )
     }
 
+    // A strong match (85%+) is worth applying to today even with no deadline
+    // pressure — give it an urgency score high enough to survive the feed's
+    // top-8 cut instead of being crowded out by routine study tasks.
     const urgencyScore =
       daysUntilDeadline !== null && daysUntilDeadline <= 3 ? 95 :
       daysUntilDeadline !== null && daysUntilDeadline <= 7 ? 85 :
+      result.score >= STRONG_MATCH_THRESHOLD ? 88 :
       70 + Math.round((result.score - MATCH_THRESHOLD) / 4)
 
     const priority: JobSignal['priority'] =
       daysUntilDeadline !== null && daysUntilDeadline <= 3 ? 'CRITICAL' :
-      result.score >= 90 ? 'HIGH' :
+      result.score >= STRONG_MATCH_THRESHOLD ? 'HIGH' :
       'MEDIUM'
 
     return {

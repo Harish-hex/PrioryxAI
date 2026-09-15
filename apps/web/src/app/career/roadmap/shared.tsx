@@ -547,6 +547,17 @@ function RoadmapTree({
   onToggleComplete: (id: string) => void;
   isPro: boolean;
 }) {
+  // Flatten every topic across all sections into one running order so the
+  // "first 4 topics free" rule applies to the roadmap as a whole, not per section.
+  const topicGlobalIndex = new Map<string, number>();
+  let topicCounter = 0;
+  for (const section of roadmap.sections) {
+    for (const topic of section.topics) {
+      topicGlobalIndex.set(topic.id, topicCounter++);
+    }
+  }
+  const FREE_TOPIC_LIMIT = 4;
+
   return (
     <div className="relative">
       <div className="absolute bottom-0 left-5 top-2 w-px bg-slate-300 dark:bg-white/15 sm:left-1/2" />
@@ -609,6 +620,7 @@ function RoadmapTree({
                   const isDone = completedIds.has(topic.id);
                   const isExpanded = expandedTopic === topic.id;
                   const alignRight = tIdx % 2 === 1;
+                  const topicLocked = !isPro && (topicGlobalIndex.get(topic.id) ?? 0) >= FREE_TOPIC_LIMIT;
 
                   return (
                     <div key={topic.id} className="relative sm:grid sm:grid-cols-2 sm:gap-x-10">
@@ -625,6 +637,7 @@ function RoadmapTree({
                           onExpand={() => onExpand(isExpanded ? null : topic.id)}
                           onToggleComplete={() => onToggleComplete(topic.id)}
                           isPro={isPro}
+                          locked={topicLocked}
                           roadmapId={roadmap.id}
                         />
                       </div>
@@ -647,6 +660,7 @@ function TopicNode({
   onExpand,
   onToggleComplete,
   isPro,
+  locked = false,
   roadmapId,
 }: {
   topic: RoadmapTopic;
@@ -655,6 +669,7 @@ function TopicNode({
   onExpand: () => void;
   onToggleComplete: () => void;
   isPro: boolean;
+  locked?: boolean;
   roadmapId: string;
 }) {
   const [starting, setStarting] = useState(false);
@@ -689,6 +704,10 @@ function TopicNode({
           <div className="neu-pill flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/40">
             <CheckCircle2 size={18} className="stroke-[2.5]" />
           </div>
+        ) : locked ? (
+          <div className="neu-pill flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-md shadow-amber-500/30">
+            <Lock size={15} />
+          </div>
         ) : (
           <div className="neu-pill flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 dark:text-slate-500">
             <Circle size={16} />
@@ -711,6 +730,11 @@ function TopicNode({
                 <CheckCircle2 size={11} className="stroke-[2.5]" /> Completed
               </span>
             )}
+            {!isDone && locked && (
+              <span className="neu-pill shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                <Lock size={10} /> Pro
+              </span>
+            )}
           </div>
         </div>
 
@@ -727,39 +751,53 @@ function TopicNode({
         <div className="neu-inset mt-2.5 rounded-[22px] p-5">
           <p className="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">{topic.description}</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
-            {/* Neumorphic Red Video Button */}
-            {topic.videoUrl ? (
+            {locked ? (
               <Link
-                href={topic.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="neu-pill group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 border border-red-500/30 hover:neu-raised-sm hover:-translate-y-0.5 transition-all"
-              >
-                <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-red-500 text-white shadow-sm shadow-red-500/30">
-                  <Play size={10} className="fill-current ml-0.5" />
-                </div>
-                <span>Watch Tutorial</span>
-                <ExternalLink size={11} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            ) : (
-              <span className="neu-pill inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 opacity-75">
-                Video coming soon
-              </span>
-            )}
-
-            {topic.certUrl && (
-              <Link
-                href={topic.certUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/pricing"
                 className="neu-pill group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:neu-raised-sm hover:-translate-y-0.5 transition-all"
               >
-                <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm shadow-amber-500/30">
-                  <Award size={10} />
+                <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-sm shadow-amber-500/30">
+                  <Lock size={10} />
                 </div>
-                <span>{topic.certLabel ?? "Certification"}</span>
-                <ExternalLink size={11} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                <span>Unlock video + certification with Pro</span>
               </Link>
+            ) : (
+              <>
+                {/* Neumorphic Red Video Button */}
+                {topic.videoUrl ? (
+                  <Link
+                    href={topic.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-pill group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 border border-red-500/30 hover:neu-raised-sm hover:-translate-y-0.5 transition-all"
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-red-500 text-white shadow-sm shadow-red-500/30">
+                      <Play size={10} className="fill-current ml-0.5" />
+                    </div>
+                    <span>Watch Tutorial</span>
+                    <ExternalLink size={11} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                ) : (
+                  <span className="neu-pill inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 opacity-75">
+                    Video coming soon
+                  </span>
+                )}
+
+                {topic.certUrl && (
+                  <Link
+                    href={topic.certUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-pill group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:neu-raised-sm hover:-translate-y-0.5 transition-all"
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm shadow-amber-500/30">
+                      <Award size={10} />
+                    </div>
+                    <span>{topic.certLabel ?? "Certification"}</span>
+                    <ExternalLink size={11} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                )}
+              </>
             )}
           </div>
 
@@ -815,10 +853,10 @@ function TopicNode({
           {topic.subtopics && topic.subtopics.length > 0 && (
             <div className="mt-5 space-y-2.5 border-t border-slate-200/70 pt-4 dark:border-white/10">
               {topic.subtopics.map((sub, i) => {
-                // The first 2 subtopics are free; from the 3rd onward, video +
-                // certification require Pro — the rest of the subtopic (title,
-                // description) is still visible so the roadmap stays useful.
-                const locked = i >= 2 && !isPro;
+                // If the parent topic is already Pro-locked, every subtopic is
+                // locked too. Otherwise the first 2 subtopics are free and the
+                // 3rd onward require Pro — title/description stay visible either way.
+                const subLocked = locked || (i >= 2 && !isPro);
 
                 if (typeof sub === "string") {
                   return (
@@ -834,7 +872,7 @@ function TopicNode({
                     </div>
                   );
                 }
-                return <SubtopicNode key={sub.id} topic={sub} locked={locked} />;
+                return <SubtopicNode key={sub.id} topic={sub} locked={subLocked} />;
               })}
             </div>
           )}

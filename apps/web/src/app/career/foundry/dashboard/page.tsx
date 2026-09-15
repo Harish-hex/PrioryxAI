@@ -358,18 +358,23 @@ export default function FoundryDashboard() {
 
       {/* Pro upsell banner */}
       {projects.length > FREE_PROJECT_LIMIT && (
-        <div className="neu-card rounded-[24px] p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-amber-400/30 bg-amber-50/40 dark:bg-amber-500/5">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Sparkles size={16} className="shrink-0 text-amber-500" />
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-              <span className="font-bold">{projects.length - FREE_PROJECT_LIMIT} projects locked</span> — Upgrade to Pro to unlock all {projects.length} personalized projects.
+        <div className="neu-card rounded-[28px] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/30 shrink-0 mx-auto sm:mx-0">
+            <Lock size={24} />
+          </div>
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <h3 className="text-sm sm:text-base font-bold text-slate-950 dark:text-white">
+              {projects.length - FREE_PROJECT_LIMIT} project{projects.length - FREE_PROJECT_LIMIT === 1 ? "" : "s"} waiting to unlock
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Upgrade to Pro to build all {projects.length} AI-generated projects tailored to your resume's skill gaps.
             </p>
           </div>
           <Link
             href="/pricing"
-            className="neu-btn shrink-0 inline-flex items-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600"
+            className="shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Sparkles size={12} />
+            <Sparkles size={14} />
             Upgrade to Pro
           </Link>
         </div>
@@ -393,17 +398,17 @@ export default function FoundryDashboard() {
             >
               {/* Locked overlay */}
               {isLocked && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-[28px] bg-slate-900/65 dark:bg-slate-950/75 backdrop-blur-[2px] p-6 text-center gap-3">
-                  <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                    <Lock size={22} className="text-amber-400" />
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-[28px] bg-slate-950/85 backdrop-blur-sm p-6 text-center gap-3">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                    <Lock size={22} className="text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">Pro Project</p>
-                    <p className="text-xs text-slate-300 mt-0.5">Upgrade to Pro to unlock this project and all remaining projects.</p>
+                    <p className="text-xs text-slate-200 mt-0.5">Upgrade to Pro to unlock this project and all remaining projects.</p>
                   </div>
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600"
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-amber-500/30 transition-transform hover:scale-[1.03] active:scale-[0.97]"
                   >
                     <Sparkles size={12} />
                     Upgrade to Pro

@@ -995,44 +995,6 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
       },
     ],
   },
-  sql: {
-    id: "sql",
-    label: "SQL",
-    tagline: "Query, join, and design relational data confidently.",
-    heroVideoUrl: "https://www.youtube.com/watch?v=qw--VYLpxG4",
-    heroVideoLabel: "freeCodeCamp: Learn PostgreSQL — Full Course",
-    heroCertUrl: "https://www.freecodecamp.org/learn/relational-database/",
-    heroCertLabel: "freeCodeCamp: Relational Databases",
-    sections: [
-      {
-        id: "foundations",
-        title: "Foundations",
-        topics: [
-          {
-            id: "sql-basics",
-            title: "SQL Basics",
-            description: "SELECT, WHERE, JOIN, GROUP BY — the queries you'll write every day.",
-            videoUrl: "https://www.youtube.com/watch?v=qw--VYLpxG4",
-            certUrl: "https://www.freecodecamp.org/learn/relational-database/",
-            certLabel: "freeCodeCamp: Relational Databases",
-          },
-        ],
-      },
-      {
-        id: "advanced",
-        title: "Schema & Performance",
-        topics: [
-          {
-            id: "schema-indexing",
-            title: "Schema Design & Indexing",
-            description: "Normalization, indexes, and query performance tuning.",
-            certUrl: "https://www.freecodecamp.org/learn/relational-database/",
-            certLabel: "freeCodeCamp: Relational Databases",
-          },
-        ],
-      },
-    ],
-  },
   "full-stack": {
     id: "full-stack",
     label: "Full Stack",
@@ -2068,6 +2030,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "Designing systems that scale — from a single server to distributed architecture.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-software-system-design/",
     heroVideoLabel: "freeCodeCamp: Learn Software System Design",
+    heroCertUrl: "https://www.scholarhat.com/free-course/software-architecture-and-system-design-course",
+    heroCertLabel: "ScholarHat: Software Architecture & System Design (Free Certificate)",
     sections: [
       {
         id: "fundamentals",
@@ -2113,6 +2077,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "Version control and collaborative workflows.",
     heroVideoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU",
     heroVideoLabel: "freeCodeCamp: Learn Git — Full Course for Beginners",
+    heroCertUrl: "https://docs.github.com/en/get-started/showcase-your-expertise-with-github-certifications/about-github-certifications",
+    heroCertLabel: "GitHub Foundations Certification",
     sections: [
       {
         id: "basics",
@@ -2715,6 +2681,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Android path — Kotlin fundamentals through distribution.",
     heroVideoUrl: "https://www.freecodecamp.org/news/master-kotlin-and-android-60-hour-course/",
     heroVideoLabel: "freeCodeCamp: Master Kotlin & Android — 60-Hour Course",
+    heroCertUrl: "https://developer.android.com/courses",
+    heroCertLabel: "Android Developers: Courses & Certification",
     sections: [
       {
         id: "pick-language-android",
@@ -2830,6 +2798,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh iOS path — Swift fundamentals through continuous learning.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-the-swift-programming-language/",
     heroVideoLabel: "freeCodeCamp: Learn the Swift Programming Language",
+    heroCertUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/swift-tutorial",
+    heroCertLabel: "Great Learning: Free Swift Course with Certificate",
     sections: [
       {
         id: "pick-language-ios",
@@ -2958,6 +2928,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh API Design path — HTTP basics through standards & compliance.",
     heroVideoUrl: "https://www.freecodecamp.org/news/apis-for-beginners/",
     heroVideoLabel: "freeCodeCamp: APIs for Beginners — Full Course",
+    heroCertUrl: "https://academy.postman.com/",
+    heroCertLabel: "Postman Academy",
     sections: [
       {
         id: "learn-basics-api",
@@ -3068,6 +3040,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh QA path — fundamentals through headless testing.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-java-testing-with-selenium",
     heroVideoLabel: "freeCodeCamp: Learn Java Testing with Selenium",
+    heroCertUrl: "https://www.freecodecamp.org/learn/quality-assurance/",
+    heroCertLabel: "freeCodeCamp: Quality Assurance Certification",
     sections: [
       {
         id: "fundamentals-qa",
@@ -3169,6 +3143,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Blockchain path — fundamentals through scaling.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-solidity-blockchain-and-smart-contracts-in-a-free",
     heroVideoLabel: "freeCodeCamp: Learn Solidity, Blockchain, and Smart Contracts",
+    heroCertUrl: "https://web3.freecodecamp.org/web3",
+    heroCertLabel: "freeCodeCamp: Web3 Curriculum",
     sections: [
       {
         id: "basic-blockchain-knowledge",
@@ -3242,6 +3218,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Cyber Security path — IT fundamentals through advanced attack knowledge.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-cybersecurity-and-ethical-hacking-using-kali-linux/",
     heroVideoLabel: "freeCodeCamp: Cybersecurity and Ethical Hacking with Kali Linux",
+    heroCertUrl: "https://www.coursera.org/professional-certificates/google-cybersecurity",
+    heroCertLabel: "Google Cybersecurity Professional Certificate",
     sections: [
       {
         id: "fundamental-it-skills",
@@ -3309,6 +3287,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Network Engineer path — internet fundamentals through observability.",
     heroVideoUrl: "https://www.freecodecamp.org/news/free-computer-networking-course/",
     heroVideoLabel: "freeCodeCamp: Computer Networking Fundamentals",
+    heroCertUrl: "https://www.netacad.com/",
+    heroCertLabel: "Cisco Networking Academy",
     sections: [
       {
         id: "introduction-ne",
@@ -3495,6 +3475,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Software Architect path — fundamentals through enterprise software.",
     heroVideoUrl: "https://www.freecodecamp.org/news/microservices-and-software-system-design-course/",
     heroVideoLabel: "freeCodeCamp: Microservices and Software System Design Course",
+    heroCertUrl: "https://www.scholarhat.com/free-course/software-architecture-and-system-design-course",
+    heroCertLabel: "ScholarHat: Software Architecture & System Design (Free Certificate)",
     sections: [
       {
         id: "basics-sa",
@@ -3540,6 +3522,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Technical Writer path — foundations through content distribution.",
     heroVideoUrl: "https://www.freecodecamp.org/news/improve-your-technical-writing-skills-to-advance-your-career/",
     heroVideoLabel: "freeCodeCamp: Improve Your Technical Writing Skills",
+    heroCertUrl: "https://www.coursera.org/learn/technical-writing-introduction",
+    heroCertLabel: "Coursera: Introduction to Technical Writing",
     sections: [
       {
         id: "introduction-tw",
@@ -3609,6 +3593,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh DevRel path — communication skills through career development.",
     heroVideoUrl: "https://www.youtube.com/watch?v=poLzjLt2yqU",
     heroVideoLabel: "freeCodeCamp: The Business of Building Apps",
+    heroCertUrl: "https://learn.developermarketing.io/course/developer-relations-certified-masters",
+    heroCertLabel: "Developer Relations: Certified Masters",
     sections: [
       {
         id: "what-is-devrel",
@@ -3753,6 +3739,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Engineering Manager path — technical leadership through change management.",
     heroVideoUrl: "https://www.youtube.com/watch?v=poLzjLt2yqU",
     heroVideoLabel: "freeCodeCamp: The Business of Building Apps",
+    heroCertUrl: "https://www.coursera.org/specializations/leadership-development-engineers",
+    heroCertLabel: "Coursera: Leadership Development for Engineers (Rice University)",
     sections: [
       {
         id: "what-is-em",
@@ -3839,6 +3827,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Forward Deployed Engineer path — full-stack skills plus customer delivery.",
     heroVideoUrl: "https://www.freecodecamp.org/news/ai-engineering-roadmap/",
     heroVideoLabel: "freeCodeCamp: AI Engineering Roadmap",
+    heroCertUrl: "https://adasci.org/courses/adasci-certified-forward-deployed-engineer",
+    heroCertLabel: "ADaSci: Certified Forward Deployed Engineer",
     sections: [
       {
         id: "introduction-fde",
@@ -3961,6 +3951,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Product Manager path — introduction through leadership.",
     heroVideoUrl: "https://www.youtube.com/watch?v=poLzjLt2yqU",
     heroVideoLabel: "freeCodeCamp: The Business of Building Apps",
+    heroCertUrl: "https://www.coursera.org/specializations/product-management-certification",
+    heroCertLabel: "Coursera: Product Management Certification",
     sections: [
       {
         id: "introduction-pm",
@@ -4066,6 +4058,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh UX Design path — human decision making through measuring impact.",
     heroVideoUrl: "https://www.freecodecamp.org/news/learn-figma-for-ui-ux-design/",
     heroVideoLabel: "freeCodeCamp: Learn Figma for UI/UX Design",
+    heroCertUrl: "https://www.coursera.org/professional-certificates/google-ux-design",
+    heroCertLabel: "Google UX Design Professional Certificate",
     sections: [
       {
         id: "human-decision-making",
@@ -4121,6 +4115,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Game Developer path — math and physics through advanced rendering.",
     heroVideoUrl: "https://www.youtube.com/watch?v=gB1F9G0JXOo",
     heroVideoLabel: "freeCodeCamp: Learn Unity — Beginner's Game Development Tutorial",
+    heroCertUrl: "https://unity.com/products/unity-certifications/associate-game-developer",
+    heroCertLabel: "Unity Certified Associate: Game Developer",
     sections: [
       {
         id: "game-mathematics",
@@ -4174,6 +4170,8 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
     tagline: "The exact roadmap.sh Server-Side Game Developer path — networking protocols through AI.",
     heroVideoUrl: "https://www.freecodecamp.org/news/free-computer-networking-course/",
     heroVideoLabel: "freeCodeCamp: Computer Networking Fundamentals",
+    heroCertUrl: "https://aws.amazon.com/training/learn-about/game-tech/",
+    heroCertLabel: "AWS for Games: Digital Training",
     sections: [
       {
         id: "tcp-section",
@@ -4254,6 +4252,2319 @@ export const ROADMAPS: Record<string, RoadmapDefinition> = {
         title: "AI",
         videoUrl: "https://www.youtube.com/watch?v=GIsg-ZUy0MY",
         topics: [{ id: "ai-topics-ssgd", title: "Cloud ML (Amazon ML, Azure ML), Deep Learning (TensorFlow, PyTorch)", description: "Server-side AI for matchmaking, anti-cheat, and NPC behavior.", videoUrl: "https://www.youtube.com/watch?v=GIsg-ZUy0MY" }],
+      },
+    ],
+  },
+  "html": {
+    id: "html",
+    label: "HTML",
+    tagline: "The exact roadmap.sh HTML path — how the web works through accessibility and SEO basics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+    heroVideoLabel: "freeCodeCamp: HTML Full Course for Beginners",
+    heroCertUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+    heroCertLabel: "freeCodeCamp: Responsive Web Design Certification",
+    sections: [
+      {
+        id: "how-the-web-works",
+        title: "Introduction",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        topics: [
+          { id: "html-markup-languages", title: "What are markup languages?", description: "HTML as a markup language, not a programming language.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-how-web-works", title: "How the web works", description: "HTTP, DNS, domain names, browsers, and hosting — the pieces behind every page load.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-seo-what-is", title: "What is SEO?", description: "Why markup choices affect how search engines read your page.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "html-basic-tags",
+        title: "Basic Tags & Document Structure",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        certUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+        certLabel: "freeCodeCamp: Responsive Web Design",
+        topics: [
+          { id: "html-doctype-structure", title: "!DOCTYPE, html, head, body, meta", description: "The document skeleton every HTML page starts from.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-headings-text", title: "Headings & Text Tags", description: "h1–h6, p, strong/b, em/i, mark, and other basic text tags.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-links-lists", title: "Links & Lists", description: "Anchor tags, ordered/unordered/nested/definition lists.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-div-span", title: "div, span, class, id", description: "Grouping and identifying elements for styling and scripting.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-tables", title: "Tables", description: "table, tr, td, th for tabular data.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "html-forms",
+        title: "Forms",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        topics: [
+          { id: "html-forms-inputs", title: "Labels & Inputs", description: "Form controls and their accessible labels.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-form-validation", title: "Form Validation", description: "Built-in HTML validation attributes and their limitations.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-file-uploads", title: "File Uploads", description: "The file input type and upload constraints.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "html-semantic-a11y",
+        title: "Semantic HTML & Accessibility",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        certUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+        certLabel: "freeCodeCamp: Responsive Web Design",
+        topics: [
+          { id: "html-semantic-tags", title: "Semantic Markup", description: "header, nav, main, article, section, aside, footer.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-accessibility-basics", title: "Accessibility", description: "Writing markup that works with assistive technology.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "html-media",
+        title: "Media & Embedding",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        topics: [
+          { id: "html-img-figure", title: "Images, Video, Audio", description: "img, video, audio tags and img vs figure.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "html-iframe", title: "iframe & Embedding", description: "Embedding other pages or media inline.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+    ],
+  },
+  "css": {
+    id: "css",
+    label: "CSS",
+    tagline: "The exact roadmap.sh CSS path — syntax basics through animations and responsive design.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+    heroVideoLabel: "freeCodeCamp: Learn CSS in this free 6-hour video course",
+    heroCertUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+    heroCertLabel: "freeCodeCamp: Responsive Web Design Certification",
+    sections: [
+      {
+        id: "css-syntax-basics",
+        title: "Syntax Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+        topics: [
+          { id: "css-inline-external-internal", title: "Inline, External & Internal CSS", description: "The three ways to attach styles to HTML, and cascading order.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-selectors-declarations", title: "Selectors & Declarations", description: "Element, class, id, universal, grouping, and combinator selectors.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-specificity", title: "CSS Specificity", description: "How the browser decides which conflicting rule wins.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-units", title: "Units & Functions", description: "Absolute vs relative units, and CSS functions/variables.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+        ],
+      },
+      {
+        id: "css-properties-values",
+        title: "Properties & Values",
+        videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+        topics: [
+          { id: "css-fonts-text", title: "Fonts & Text Styling", description: "Font family, size, style, shorthand, and text alignment/decoration.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-colors-backgrounds", title: "Colors & Backgrounds", description: "rgb/hsl/hex color, background color, image, gradient, and position.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-box-model", title: "Box Model", description: "Padding, border, margin, width/height, and box-sizing.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+        ],
+      },
+      {
+        id: "css-layouts",
+        title: "Layouts",
+        videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+        certUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+        certLabel: "freeCodeCamp: Responsive Web Design",
+        topics: [
+          { id: "css-display-position", title: "Display & Position", description: "block/inline/inline-block, position (relative, absolute, fixed, sticky).", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-flexbox", title: "Flexbox", description: "One-dimensional layout for rows and columns.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-grid", title: "Grid", description: "Two-dimensional layout for full page structures.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+        ],
+      },
+      {
+        id: "css-responsiveness",
+        title: "Responsiveness",
+        videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+        topics: [
+          { id: "css-media-queries", title: "Media & Container Queries", description: "Adapting layout based on viewport or container size.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-responsive-typography", title: "Responsive Typography", description: "Fluid font sizing across screen sizes.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+        ],
+      },
+      {
+        id: "css-methodologies",
+        title: "Methodologies & Animations",
+        videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/",
+        topics: [
+          { id: "css-bem-sass", title: "BEM, Sass, PostCSS, CSS Modules", description: "Naming conventions and preprocessing/tooling approaches for scaling CSS.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+          { id: "css-transitions-animations", title: "Transitions & Keyframe Animations", description: "Animating property changes over time.", videoUrl: "https://www.freecodecamp.org/news/learn-css-in-this-free-6-hour-video-course/" },
+        ],
+      },
+    ],
+  },
+  "sql": {
+    id: "sql",
+    label: "SQL",
+    tagline: "The exact roadmap.sh SQL path — relational database basics through advanced query techniques.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+    heroVideoLabel: "freeCodeCamp: Learn SQL — Full Course",
+    heroCertUrl: "https://www.freecodecamp.org/learn/relational-database/",
+    heroCertLabel: "freeCodeCamp: Relational Database Certification",
+    sections: [
+      {
+        id: "sql-rdbms-basics",
+        title: "Relational Databases",
+        videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+        topics: [
+          { id: "sql-what-is-rdbms", title: "What are Relational Databases?", description: "Tables, rows, columns, and how RDBMS differs from NoSQL.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-basic-syntax", title: "Basic SQL Syntax", description: "Keywords, data types, and operators.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+        ],
+      },
+      {
+        id: "sql-ddl-dml",
+        title: "DDL & DML",
+        videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+        certUrl: "https://www.freecodecamp.org/learn/relational-database/",
+        certLabel: "freeCodeCamp: Relational Database",
+        topics: [
+          { id: "sql-ddl", title: "Data Definition Language", description: "CREATE, ALTER, DROP, and TRUNCATE TABLE.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-dml", title: "Data Manipulation Language", description: "SELECT, INSERT, UPDATE, DELETE, WHERE, ORDER BY, GROUP BY, HAVING.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-constraints", title: "Data Constraints", description: "Primary key, foreign key, unique, NOT NULL, and CHECK.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+        ],
+      },
+      {
+        id: "sql-joins-subqueries",
+        title: "Joins & Subqueries",
+        videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+        topics: [
+          { id: "sql-join-types", title: "JOIN Types", description: "INNER, LEFT, RIGHT, FULL OUTER, self, and cross joins.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-subqueries", title: "Subqueries", description: "Scalar, nested, and correlated subqueries.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-aggregate-functions", title: "Aggregate Functions", description: "SUM, COUNT, AVG, MIN, MAX with GROUP BY and HAVING.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+        ],
+      },
+      {
+        id: "sql-views-transactions",
+        title: "Views, Indexes & Transactions",
+        videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+        topics: [
+          { id: "sql-views-indexes", title: "Views & Indexes", description: "Creating/modifying views, and managing indexes for query speed.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-transactions", title: "Transactions & ACID", description: "BEGIN, COMMIT, ROLLBACK, SAVEPOINT, and isolation levels.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-security", title: "Data Integrity & Security", description: "Constraints, GRANT/REVOKE, and database security best practices.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+        ],
+      },
+      {
+        id: "sql-advanced",
+        title: "Advanced SQL",
+        videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/",
+        topics: [
+          { id: "sql-window-functions", title: "Window Functions", description: "ROW_NUMBER, RANK, DENSE_RANK, LEAD, LAG.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-cte-recursive", title: "CTEs & Recursive Queries", description: "Common table expressions and recursive query patterns.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+          { id: "sql-query-optimization", title: "Query Optimization", description: "Using indexes, optimizing joins, and reducing subqueries.", videoUrl: "https://www.freecodecamp.org/news/learn-sql-full-course/" },
+        ],
+      },
+    ],
+  },
+  "java": {
+    id: "java",
+    label: "Java",
+    tagline: "Core Java syntax through collections, exceptions, and modern concurrency.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+    heroVideoLabel: "freeCodeCamp: Learn Java Programming (Version 17)",
+    heroCertUrl: "https://learn.oracle.com/ols/learning-path/oracle-java-foundations/88323/79726",
+    heroCertLabel: "Oracle Java Foundations (Free)",
+    sections: [
+      {
+        id: "java-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+        certUrl: "https://learn.oracle.com/ols/learning-path/oracle-java-foundations/88323/79726",
+        certLabel: "Oracle Java Foundations",
+        topics: [
+          { id: "java-syntax-vars", title: "Syntax, Variables & Data Types", description: "Primitives, variables, and Java's static typing.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-control-flow", title: "Control Flow", description: "if/else, switch, loops, and operators.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-methods", title: "Methods & Arrays", description: "Defining methods, overloading, and working with arrays.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+        ],
+      },
+      {
+        id: "java-oop",
+        title: "Object-Oriented Programming",
+        videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+        topics: [
+          { id: "java-classes-objects", title: "Classes & Objects", description: "Constructors, fields, and instance vs static members.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-inheritance-poly", title: "Inheritance & Polymorphism", description: "Extending classes, overriding methods, and interfaces.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-abstraction-encap", title: "Abstraction & Encapsulation", description: "Abstract classes, access modifiers, and interfaces vs abstract classes.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+        ],
+      },
+      {
+        id: "java-collections",
+        title: "Collections & Generics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+        topics: [
+          { id: "java-collections-framework", title: "Collections Framework", description: "List, Set, Map, and choosing the right collection.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-generics", title: "Generics", description: "Type-safe reusable classes and methods.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+        ],
+      },
+      {
+        id: "java-exceptions",
+        title: "Exception Handling",
+        videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+        topics: [
+          { id: "java-try-catch", title: "try/catch/finally", description: "Checked vs unchecked exceptions, and custom exception types.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+        ],
+      },
+      {
+        id: "java-modern",
+        title: "Streams & Concurrency",
+        videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/",
+        topics: [
+          { id: "java-streams-lambdas", title: "Streams & Lambdas", description: "Functional-style operations over collections.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+          { id: "java-threads", title: "Threads & Concurrency", description: "Thread basics, synchronization, and the java.util.concurrent package.", videoUrl: "https://www.freecodecamp.org/news/learn-java-programming/" },
+        ],
+      },
+    ],
+  },
+  "cpp": {
+    id: "cpp",
+    label: "C++",
+    tagline: "From syntax and memory management through the STL and modern C++.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+    heroVideoLabel: "freeCodeCamp: Learn C++ Programming — 31-Hour Course",
+    heroCertUrl: "https://cppinstitute.org/cpa",
+    heroCertLabel: "C++ Institute: CPA — C++ Certified Associate Programmer",
+    sections: [
+      {
+        id: "cpp-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+        certUrl: "https://cppinstitute.org/cpa",
+        certLabel: "C++ Institute: CPA",
+        topics: [
+          { id: "cpp-syntax-types", title: "Syntax & Data Types", description: "Variables, primitive types, and compilation basics.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+          { id: "cpp-control-functions", title: "Control Flow & Functions", description: "Loops, conditionals, and function overloading.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+        ],
+      },
+      {
+        id: "cpp-memory",
+        title: "Memory & Pointers",
+        videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+        topics: [
+          { id: "cpp-pointers-refs", title: "Pointers & References", description: "Manual memory management and reference semantics.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+          { id: "cpp-smart-pointers", title: "Smart Pointers", description: "unique_ptr, shared_ptr, and RAII for automatic cleanup.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+        ],
+      },
+      {
+        id: "cpp-oop",
+        title: "Object-Oriented Programming",
+        videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+        topics: [
+          { id: "cpp-classes", title: "Classes & Inheritance", description: "Constructors, destructors, and virtual functions.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+        ],
+      },
+      {
+        id: "cpp-stl-templates",
+        title: "STL & Templates",
+        videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+        topics: [
+          { id: "cpp-stl-containers", title: "STL Containers & Algorithms", description: "vector, map, set, and the <algorithm> header.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+          { id: "cpp-templates", title: "Templates", description: "Generic functions and classes.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+        ],
+      },
+      {
+        id: "cpp-modern",
+        title: "Modern C++",
+        videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/",
+        topics: [
+          { id: "cpp-move-semantics", title: "Move Semantics", description: "Rvalue references and avoiding unnecessary copies.", videoUrl: "https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/" },
+        ],
+      },
+    ],
+  },
+  "c-programming": {
+    id: "c-programming",
+    label: "C",
+    tagline: "Low-level fundamentals — pointers, memory, and the standard library.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/",
+    heroVideoLabel: "freeCodeCamp: Complete C Programming Course from Dr. Chuck",
+    heroCertUrl: "https://cppinstitute.org/cla",
+    heroCertLabel: "C++ Institute: CLA — C Certified Associate Programmer",
+    sections: [
+      {
+        id: "c-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/",
+        certUrl: "https://cppinstitute.org/cla",
+        certLabel: "C++ Institute: CLA",
+        topics: [
+          { id: "c-syntax-vars", title: "Syntax & Variables", description: "Compilation, primitive types, and operators.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+          { id: "c-control-flow", title: "Control Flow & Functions", description: "Loops, conditionals, and function declarations.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+        ],
+      },
+      {
+        id: "c-pointers-memory",
+        title: "Pointers & Memory",
+        videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/",
+        topics: [
+          { id: "c-pointers", title: "Pointers", description: "Pointer arithmetic and passing by reference.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+          { id: "c-malloc-free", title: "Dynamic Memory (malloc/free)", description: "Manual heap allocation and avoiding memory leaks.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+        ],
+      },
+      {
+        id: "c-arrays-strings",
+        title: "Arrays & Strings",
+        videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/",
+        topics: [
+          { id: "c-arrays", title: "Arrays", description: "Fixed-size arrays and their relationship to pointers.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+          { id: "c-strings", title: "C Strings", description: "Null-terminated char arrays and the string.h functions.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+        ],
+      },
+      {
+        id: "c-structs-files",
+        title: "Structs & File I/O",
+        videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/",
+        topics: [
+          { id: "c-structs", title: "Structs", description: "Grouping related data into custom types.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+          { id: "c-file-io", title: "File I/O", description: "Reading and writing files with fopen/fread/fwrite.", videoUrl: "https://www.freecodecamp.org/news/complete-c-programming-course-from-dr-chuck/" },
+        ],
+      },
+    ],
+  },
+  golang: {
+    id: "golang",
+    label: "Go",
+    tagline: "Go's syntax, concurrency model, and standard library.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/go-golang-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Go (Golang) in 7 Hours",
+    heroCertUrl: "https://coddy.tech/certification/go",
+    heroCertLabel: "Coddy: Free Verified Go Certification",
+    sections: [
+      {
+        id: "go-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/go-golang-course/",
+        certUrl: "https://coddy.tech/certification/go",
+        certLabel: "Coddy: Go Certification",
+        topics: [
+          { id: "go-syntax-types", title: "Syntax & Types", description: "Variables, static typing, and Go's minimal syntax.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+          { id: "go-functions-structs", title: "Functions & Structs", description: "Multiple return values, structs, and methods.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+        ],
+      },
+      {
+        id: "go-concurrency",
+        title: "Concurrency",
+        videoUrl: "https://www.freecodecamp.org/news/go-golang-course/",
+        topics: [
+          { id: "go-goroutines", title: "Goroutines", description: "Lightweight concurrent functions.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+          { id: "go-channels", title: "Channels", description: "Communicating between goroutines safely.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+        ],
+      },
+      {
+        id: "go-errors",
+        title: "Error Handling",
+        videoUrl: "https://www.freecodecamp.org/news/go-golang-course/",
+        topics: [
+          { id: "go-error-interface", title: "The error Interface", description: "Go's explicit, value-based error handling.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+        ],
+      },
+      {
+        id: "go-stdlib",
+        title: "Standard Library & Modules",
+        videoUrl: "https://www.freecodecamp.org/news/go-golang-course/",
+        topics: [
+          { id: "go-packages-modules", title: "Packages & Modules", description: "go.mod, imports, and organizing a Go project.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+          { id: "go-net-http", title: "net/http", description: "Building HTTP servers with the standard library.", videoUrl: "https://www.freecodecamp.org/news/go-golang-course/" },
+        ],
+      },
+    ],
+  },
+  "rust": {
+    id: "rust",
+    label: "Rust",
+    tagline: "Ownership, borrowing, and safe systems programming.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+    heroVideoLabel: "freeCodeCamp: Rust Programming Course for Beginners",
+    heroCertUrl: "https://coddy.tech/certification/rust",
+    heroCertLabel: "Coddy: Free Verified Rust Certification",
+    sections: [
+      {
+        id: "rust-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+        certUrl: "https://coddy.tech/certification/rust",
+        certLabel: "Coddy: Rust Certification",
+        topics: [
+          { id: "rust-syntax-vars", title: "Syntax & Variables", description: "Immutability by default, and Rust's type system.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "rust-ownership",
+        title: "Ownership & Borrowing",
+        videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+        topics: [
+          { id: "rust-ownership-rules", title: "Ownership Rules", description: "How Rust manages memory without a garbage collector.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+          { id: "rust-borrowing-refs", title: "Borrowing & References", description: "Shared and mutable references, and the borrow checker.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "rust-types",
+        title: "Structs & Enums",
+        videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+        topics: [
+          { id: "rust-structs", title: "Structs", description: "Custom data types and methods via impl blocks.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+          { id: "rust-enums-match", title: "Enums & Pattern Matching", description: "Option, Result, and exhaustive match expressions.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "rust-error-handling",
+        title: "Error Handling",
+        videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+        topics: [
+          { id: "rust-result-option", title: "Result & Option", description: "Rust's alternative to exceptions and null.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "rust-traits",
+        title: "Traits & Generics",
+        videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/",
+        topics: [
+          { id: "rust-traits-topic", title: "Traits", description: "Shared behavior across types, similar to interfaces.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+          { id: "rust-generics-topic", title: "Generics", description: "Writing code that works over multiple types.", videoUrl: "https://www.freecodecamp.org/news/rust-programming-course-for-beginners/" },
+        ],
+      },
+    ],
+  },
+  "php": {
+    id: "php",
+    label: "PHP",
+    tagline: "Server-side scripting fundamentals through OOP and database access.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+    heroVideoLabel: "freeCodeCamp: PHP & WordPress — Build a Website from Start to Finish",
+    heroCertUrl: "https://www.zend.com/training/php-certification-exam",
+    heroCertLabel: "Zend: PHP Certified Engineer",
+    sections: [
+      {
+        id: "php-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+        certUrl: "https://www.zend.com/training/php-certification-exam",
+        certLabel: "Zend: PHP Certified Engineer",
+        topics: [
+          { id: "php-syntax-vars", title: "Syntax & Variables", description: "Embedding PHP in HTML, variables, and loose typing.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+          { id: "php-functions-arrays", title: "Functions & Arrays", description: "Indexed and associative arrays, and array functions.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+        ],
+      },
+      {
+        id: "php-oop",
+        title: "Object-Oriented PHP",
+        videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+        topics: [
+          { id: "php-classes-objects", title: "Classes & Objects", description: "Constructors, visibility, and inheritance in PHP.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+        ],
+      },
+      {
+        id: "php-forms-sessions",
+        title: "Forms & Sessions",
+        videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+        topics: [
+          { id: "php-get-post", title: "GET/POST & Form Handling", description: "Processing form submissions and sanitizing input.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+          { id: "php-sessions-cookies", title: "Sessions & Cookies", description: "Maintaining state across requests.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+        ],
+      },
+      {
+        id: "php-databases",
+        title: "Working with Databases",
+        videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+        topics: [
+          { id: "php-pdo-mysqli", title: "PDO & MySQLi", description: "Connecting to MySQL and preventing SQL injection with prepared statements.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+        ],
+      },
+      {
+        id: "php-ecosystem",
+        title: "Ecosystem",
+        videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/",
+        topics: [
+          { id: "php-composer", title: "Composer & Packages", description: "PHP's dependency manager and the Packagist registry.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+          { id: "php-frameworks-intro", title: "Frameworks (Laravel, Symfony)", description: "How modern PHP frameworks structure applications.", videoUrl: "https://www.freecodecamp.org/news/build-a-website-from-start-to-finish-using-wordpress-and-php/" },
+        ],
+      },
+    ],
+  },
+  docker: {
+    id: "docker",
+    label: "Docker",
+    tagline: "Containerizing applications — images, volumes, networking, and orchestration basics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/docker-full-course/",
+    heroVideoLabel: "freeCodeCamp: Docker Full Course",
+    heroCertUrl: "https://training.mirantis.com/certification/dca-certification-exam/",
+    heroCertLabel: "Docker Certified Associate (DCA)",
+    sections: [
+      {
+        id: "docker-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/docker-full-course/",
+        certUrl: "https://training.mirantis.com/certification/dca-certification-exam/",
+        certLabel: "Docker Certified Associate",
+        topics: [
+          { id: "docker-images-containers", title: "Images & Containers", description: "The difference between an image and a running container.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+          { id: "docker-dockerfile", title: "Dockerfile", description: "Building custom images layer by layer.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+        ],
+      },
+      {
+        id: "docker-storage-network",
+        title: "Volumes & Networking",
+        videoUrl: "https://www.freecodecamp.org/news/docker-full-course/",
+        topics: [
+          { id: "docker-volumes", title: "Volumes & Bind Mounts", description: "Persisting data outside the container's writable layer.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+          { id: "docker-networking", title: "Container Networking", description: "Bridge networks and connecting containers to each other.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+        ],
+      },
+      {
+        id: "docker-compose",
+        title: "Docker Compose",
+        videoUrl: "https://www.freecodecamp.org/news/docker-full-course/",
+        topics: [
+          { id: "docker-compose-topic", title: "Multi-Container Apps", description: "Defining and running multi-service applications with docker-compose.yml.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+        ],
+      },
+      {
+        id: "docker-orchestration",
+        title: "Orchestration Basics",
+        videoUrl: "https://www.freecodecamp.org/news/docker-full-course/",
+        topics: [
+          { id: "docker-swarm-k8s-intro", title: "Docker Swarm & Kubernetes (Intro)", description: "Why you'd move from single-host Docker to an orchestrator.", videoUrl: "https://www.freecodecamp.org/news/docker-full-course/" },
+        ],
+      },
+    ],
+  },
+  kubernetes: {
+    id: "kubernetes",
+    label: "Kubernetes",
+    tagline: "Cluster architecture, workloads, and scheduling — through CKA-level topics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/",
+    heroVideoLabel: "freeCodeCamp: Certified Kubernetes Administrator (CKA) Course",
+    heroCertUrl: "https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/",
+    heroCertLabel: "Linux Foundation: Certified Kubernetes Administrator (CKA)",
+    sections: [
+      {
+        id: "k8s-architecture",
+        title: "Cluster Architecture",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/",
+        certUrl: "https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/",
+        certLabel: "Linux Foundation: CKA",
+        topics: [
+          { id: "k8s-control-plane", title: "Control Plane & Nodes", description: "API server, etcd, scheduler, controller manager, and kubelet.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+          { id: "k8s-pods", title: "Pods", description: "The smallest deployable unit in Kubernetes.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+        ],
+      },
+      {
+        id: "k8s-workloads",
+        title: "Workloads & Scheduling",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/",
+        topics: [
+          { id: "k8s-deployments", title: "Deployments & ReplicaSets", description: "Declarative updates and self-healing pod management.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+          { id: "k8s-services", title: "Services & Ingress", description: "Exposing pods internally and externally.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+        ],
+      },
+      {
+        id: "k8s-config",
+        title: "Configuration",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/",
+        topics: [
+          { id: "k8s-configmaps-secrets", title: "ConfigMaps & Secrets", description: "Externalizing configuration and sensitive values.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+          { id: "k8s-rbac", title: "RBAC", description: "Role-based access control for cluster resources.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+        ],
+      },
+      {
+        id: "k8s-troubleshooting",
+        title: "Helm & Troubleshooting",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/",
+        topics: [
+          { id: "k8s-helm", title: "Helm", description: "Package manager for templating and installing Kubernetes apps.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+          { id: "k8s-debugging", title: "Debugging a Cluster", description: "Reading logs, describe/events, and diagnosing failing pods.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-the-kubernetes-administrator-certification-and-pass-2026-update/" },
+        ],
+      },
+    ],
+  },
+  aws: {
+    id: "aws",
+    label: "AWS",
+    tagline: "Core AWS services and cloud concepts — through Cloud Practitioner-level topics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/",
+    heroVideoLabel: "freeCodeCamp: AWS Certified Cloud Practitioner Course",
+    heroCertUrl: "https://aws.amazon.com/certification/certified-cloud-practitioner/",
+    heroCertLabel: "AWS Certified Cloud Practitioner",
+    sections: [
+      {
+        id: "aws-concepts",
+        title: "Cloud Concepts",
+        videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/",
+        certUrl: "https://aws.amazon.com/certification/certified-cloud-practitioner/",
+        certLabel: "AWS Certified Cloud Practitioner",
+        topics: [
+          { id: "aws-global-infra", title: "AWS Global Infrastructure", description: "Regions, Availability Zones, and edge locations.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+          { id: "aws-iam", title: "IAM", description: "Users, roles, policies, and the principle of least privilege.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+        ],
+      },
+      {
+        id: "aws-compute",
+        title: "Compute & Storage",
+        videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/",
+        topics: [
+          { id: "aws-ec2", title: "EC2", description: "Virtual servers, instance types, and pricing models.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+          { id: "aws-s3", title: "S3", description: "Object storage, buckets, and storage classes.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+        ],
+      },
+      {
+        id: "aws-databases",
+        title: "Databases & Networking",
+        videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/",
+        topics: [
+          { id: "aws-rds-dynamo", title: "RDS & DynamoDB", description: "Managed relational databases vs. managed NoSQL.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+          { id: "aws-vpc", title: "VPC", description: "Isolated virtual networks, subnets, and routing.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+        ],
+      },
+      {
+        id: "aws-serverless",
+        title: "Containers & Serverless",
+        videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/",
+        topics: [
+          { id: "aws-lambda", title: "Lambda", description: "Running code without managing servers.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+          { id: "aws-ecs-eks", title: "ECS & EKS", description: "Running containers on AWS, managed and via Kubernetes.", videoUrl: "https://www.freecodecamp.org/news/aws-certified-cloud-practitioner-study-course-pass-the-exam-with-this-free-13-hour-course/" },
+        ],
+      },
+    ],
+  },
+  terraform: {
+    id: "terraform",
+    label: "Terraform",
+    tagline: "Infrastructure as Code — providers, state, and modules — through Terraform Associate topics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/",
+    heroVideoLabel: "freeCodeCamp: HashiCorp Terraform Associate Certification Course",
+    heroCertUrl: "https://www.hashicorp.com/en/certification/terraform-associate",
+    heroCertLabel: "HashiCorp Certified: Terraform Associate",
+    sections: [
+      {
+        id: "terraform-basics",
+        title: "IaC Basics",
+        videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/",
+        certUrl: "https://www.hashicorp.com/en/certification/terraform-associate",
+        certLabel: "HashiCorp: Terraform Associate",
+        topics: [
+          { id: "terraform-hcl", title: "HCL Syntax", description: "Resources, providers, and Terraform's declarative language.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+          { id: "terraform-providers", title: "Providers", description: "Connecting Terraform to AWS, Azure, GCP, and other platforms.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+        ],
+      },
+      {
+        id: "terraform-state",
+        title: "State Management",
+        videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/",
+        topics: [
+          { id: "terraform-state-topic", title: "Terraform State", description: "Tracking real infrastructure against your configuration.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+          { id: "terraform-remote-backends", title: "Remote Backends", description: "Sharing state safely across a team.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+        ],
+      },
+      {
+        id: "terraform-variables",
+        title: "Variables & Expressions",
+        videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/",
+        topics: [
+          { id: "terraform-vars-outputs", title: "Variables & Outputs", description: "Parameterizing configuration and exposing values.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+        ],
+      },
+      {
+        id: "terraform-modules",
+        title: "Modules & Workflow",
+        videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/",
+        topics: [
+          { id: "terraform-modules-topic", title: "Modules", description: "Reusable, composable infrastructure definitions.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+          { id: "terraform-plan-apply", title: "plan, apply, destroy", description: "The core Terraform workflow loop.", videoUrl: "https://www.freecodecamp.org/news/hashicorp-terraform-associate-certification-study-course-pass-the-exam-with-this-free-12-hour-course/" },
+        ],
+      },
+    ],
+  },
+  linux: {
+    id: "linux",
+    label: "Linux",
+    tagline: "The command line, file system, permissions, and system administration basics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+    heroVideoLabel: "freeCodeCamp: Introduction to Linux (LFS101x)",
+    heroCertUrl: "https://training.linuxfoundation.org/training/introduction-to-linux/",
+    heroCertLabel: "Linux Foundation: Introduction to Linux (LFS101x)",
+    sections: [
+      {
+        id: "linux-basics",
+        title: "Command Line Basics",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        certUrl: "https://training.linuxfoundation.org/training/introduction-to-linux/",
+        certLabel: "Linux Foundation: Introduction to Linux",
+        topics: [
+          { id: "linux-shell-basics", title: "The Shell", description: "Navigating the filesystem and running commands.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+          { id: "linux-file-system", title: "File System Hierarchy", description: "How Linux organizes directories like /etc, /var, and /home.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+      {
+        id: "linux-permissions",
+        title: "Permissions & Users",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        topics: [
+          { id: "linux-permissions-topic", title: "File Permissions", description: "chmod, chown, and the rwx permission model.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+          { id: "linux-users-groups", title: "Users & Groups", description: "Managing accounts and access.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+      {
+        id: "linux-processes",
+        title: "Processes & Services",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        topics: [
+          { id: "linux-processes-topic", title: "Processes", description: "ps, top, kill, and managing running processes.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+          { id: "linux-systemd", title: "systemd & Services", description: "Managing background services and startup.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+      {
+        id: "linux-scripting",
+        title: "Shell Scripting",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        topics: [
+          { id: "linux-bash-scripting", title: "Bash Scripting", description: "Automating tasks with shell scripts.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+    ],
+  },
+  vue: {
+    id: "vue",
+    label: "Vue",
+    tagline: "The progressive JavaScript framework — reactivity, components, and the Composition API.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/",
+    heroVideoLabel: "freeCodeCamp: Vue 3 Full Course",
+    heroCertUrl: "https://certificates.dev/vuejs",
+    heroCertLabel: "Official Vue.js Developer Certification",
+    sections: [
+      {
+        id: "vue-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/",
+        certUrl: "https://certificates.dev/vuejs",
+        certLabel: "Official Vue.js Certification",
+        topics: [
+          { id: "vue-templates-directives", title: "Templates & Directives", description: "v-bind, v-if, v-for, and Vue's template syntax.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+          { id: "vue-reactivity", title: "Reactivity", description: "ref, reactive, and how Vue tracks state changes.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+        ],
+      },
+      {
+        id: "vue-components",
+        title: "Components",
+        videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/",
+        topics: [
+          { id: "vue-props-events", title: "Props & Events", description: "Passing data down and emitting events up.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+          { id: "vue-composition-api", title: "Composition API", description: "setup(), composables, and organizing logic by feature.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+        ],
+      },
+      {
+        id: "vue-routing-state",
+        title: "Routing & State",
+        videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/",
+        topics: [
+          { id: "vue-router", title: "Vue Router", description: "Client-side routing for single-page apps.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+          { id: "vue-pinia", title: "Pinia", description: "Vue's official state management library.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+        ],
+      },
+      {
+        id: "vue-ecosystem",
+        title: "Ecosystem",
+        videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/",
+        topics: [
+          { id: "vue-nuxt", title: "Nuxt", description: "The full-stack framework built on top of Vue.", videoUrl: "https://www.freecodecamp.org/news/vue-3-full-course/" },
+        ],
+      },
+    ],
+  },
+  angular: {
+    id: "angular",
+    label: "Angular",
+    tagline: "Components, dependency injection, and RxJS-powered reactive apps.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/",
+    heroVideoLabel: "freeCodeCamp: Angular for Beginners Course",
+    heroCertUrl: "https://certificates.dev/angular",
+    heroCertLabel: "Official Angular Certification",
+    sections: [
+      {
+        id: "angular-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/",
+        certUrl: "https://certificates.dev/angular",
+        certLabel: "Official Angular Certification",
+        topics: [
+          { id: "angular-components-templates", title: "Components & Templates", description: "Angular's component model and template syntax.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+          { id: "angular-data-binding", title: "Data Binding", description: "Interpolation, property binding, and event binding.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+        ],
+      },
+      {
+        id: "angular-services-di",
+        title: "Services & Dependency Injection",
+        videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/",
+        topics: [
+          { id: "angular-services", title: "Services", description: "Sharing logic and state across components.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+          { id: "angular-di", title: "Dependency Injection", description: "Angular's built-in DI system.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+        ],
+      },
+      {
+        id: "angular-rxjs",
+        title: "RxJS & HTTP",
+        videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/",
+        topics: [
+          { id: "angular-observables", title: "Observables", description: "RxJS streams and how Angular uses them for async data.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+          { id: "angular-httpclient", title: "HttpClient", description: "Making API requests from an Angular app.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+        ],
+      },
+      {
+        id: "angular-routing",
+        title: "Routing & Forms",
+        videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/",
+        topics: [
+          { id: "angular-router", title: "Angular Router", description: "Navigation, route guards, and lazy loading.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+          { id: "angular-forms", title: "Reactive Forms", description: "Form validation and reactive form controls.", videoUrl: "https://www.freecodecamp.org/news/angular-for-beginners-course/" },
+        ],
+      },
+    ],
+  },
+  nextjs: {
+    id: "nextjs",
+    label: "Next.js",
+    tagline: "The React framework for production — routing, rendering, and full-stack apps.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/",
+    heroVideoLabel: "freeCodeCamp: Learn Next.js Tutorial",
+    heroCertUrl: "https://scrimba.com/learn-nextjs-c02moisq6a",
+    heroCertLabel: "Scrimba: Learn Next.js (Free, with Certificate)",
+    sections: [
+      {
+        id: "nextjs-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/",
+        certUrl: "https://scrimba.com/learn-nextjs-c02moisq6a",
+        certLabel: "Scrimba: Learn Next.js",
+        topics: [
+          { id: "nextjs-app-router", title: "App Router", description: "File-based routing with the app/ directory.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+          { id: "nextjs-layouts", title: "Layouts & Pages", description: "Shared layouts, nested routes, and page components.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+        ],
+      },
+      {
+        id: "nextjs-rendering",
+        title: "Rendering Strategies",
+        videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/",
+        topics: [
+          { id: "nextjs-ssr-ssg", title: "SSR, SSG & ISR", description: "Server-side rendering, static generation, and incremental static regeneration.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+          { id: "nextjs-server-components", title: "Server Components", description: "React Server Components and the client/server boundary.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+        ],
+      },
+      {
+        id: "nextjs-data",
+        title: "Data & API Routes",
+        videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/",
+        topics: [
+          { id: "nextjs-data-fetching", title: "Data Fetching", description: "Fetching data in server components and route handlers.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+          { id: "nextjs-api-routes", title: "API Routes", description: "Building backend endpoints inside a Next.js app.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+        ],
+      },
+      {
+        id: "nextjs-deployment",
+        title: "Deployment",
+        videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/",
+        topics: [
+          { id: "nextjs-vercel-deploy", title: "Deploying to Vercel", description: "Zero-config deployment and preview URLs.", videoUrl: "https://www.freecodecamp.org/news/learn-next-js-tutorial/" },
+        ],
+      },
+    ],
+  },
+  kotlin: {
+    id: "kotlin",
+    label: "Kotlin",
+    tagline: "Modern, concise JVM language basics through coroutines.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Kotlin — Complete Course",
+    heroCertUrl: "https://hyperskill.org/tracks/18",
+    heroCertLabel: "JetBrains Academy: Kotlin Core",
+    sections: [
+      {
+        id: "kotlin-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/",
+        certUrl: "https://hyperskill.org/tracks/18",
+        certLabel: "JetBrains Academy: Kotlin Core",
+        topics: [
+          { id: "kotlin-syntax-vars", title: "Syntax & Null Safety", description: "Variables, type inference, and Kotlin's null-safety operators.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+          { id: "kotlin-functions", title: "Functions", description: "Default arguments, extension functions, and lambdas.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+        ],
+      },
+      {
+        id: "kotlin-oop",
+        title: "Classes & Objects",
+        videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/",
+        topics: [
+          { id: "kotlin-classes", title: "Classes & Data Classes", description: "Regular classes, data classes, and object declarations.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+          { id: "kotlin-sealed-classes", title: "Sealed Classes & Enums", description: "Modeling restricted class hierarchies.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+        ],
+      },
+      {
+        id: "kotlin-collections",
+        title: "Collections & Functional Style",
+        videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/",
+        topics: [
+          { id: "kotlin-collections-topic", title: "Collections", description: "List, Map, Set, and Kotlin's functional collection operators.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+        ],
+      },
+      {
+        id: "kotlin-coroutines",
+        title: "Coroutines",
+        videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/",
+        topics: [
+          { id: "kotlin-coroutines-topic", title: "Coroutines Basics", description: "Structured concurrency with suspend functions and launch/async.", videoUrl: "https://www.freecodecamp.org/news/learn-kotlin-complete-course/" },
+        ],
+      },
+    ],
+  },
+  flutter: {
+    id: "flutter",
+    label: "Flutter",
+    tagline: "Dart fundamentals through building cross-platform apps with widgets.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/",
+    heroVideoLabel: "freeCodeCamp: Flutter Course for Beginners — 37 Hours",
+    heroCertUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/flutter-for-beginners",
+    heroCertLabel: "Great Learning: Free Flutter Course with Certificate",
+    sections: [
+      {
+        id: "flutter-dart",
+        title: "Dart Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/",
+        certUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/flutter-for-beginners",
+        certLabel: "Great Learning: Flutter for Beginners",
+        topics: [
+          { id: "flutter-dart-syntax", title: "Dart Syntax", description: "Variables, types, and null safety in Dart.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+        ],
+      },
+      {
+        id: "flutter-widgets",
+        title: "Widgets",
+        videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/",
+        topics: [
+          { id: "flutter-stateless-stateful", title: "Stateless & Stateful Widgets", description: "The two core widget types and when to use each.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+          { id: "flutter-layout-widgets", title: "Layout Widgets", description: "Row, Column, Stack, and building responsive layouts.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+        ],
+      },
+      {
+        id: "flutter-navigation-state",
+        title: "Navigation & State Management",
+        videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/",
+        topics: [
+          { id: "flutter-navigation", title: "Navigation & Routing", description: "Navigator, named routes, and passing data between screens.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+          { id: "flutter-state-mgmt", title: "State Management", description: "setState, Provider, and other state management approaches.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+        ],
+      },
+      {
+        id: "flutter-backend",
+        title: "Backend Integration",
+        videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/",
+        topics: [
+          { id: "flutter-firebase", title: "Firebase Integration", description: "Auth, Firestore, and connecting a Flutter app to a backend.", videoUrl: "https://www.freecodecamp.org/news/learn-flutter-full-course/" },
+        ],
+      },
+    ],
+  },
+  "aspnet-core": {
+    id: "aspnet-core",
+    label: "ASP.NET Core",
+    tagline: "Building web apps and APIs on .NET — MVC, Entity Framework, and dependency injection.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/",
+    heroVideoLabel: "freeCodeCamp: Learn ASP.NET Core MVC with .NET 9",
+    heroCertUrl: "https://www.freecodecamp.org/news/free-microsoft-c-sharp-certification/",
+    heroCertLabel: "Microsoft & freeCodeCamp: Foundational C# Certification (Free)",
+    sections: [
+      {
+        id: "aspnet-basics",
+        title: "MVC Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/",
+        certUrl: "https://www.freecodecamp.org/news/free-microsoft-c-sharp-certification/",
+        certLabel: "Microsoft: Foundational C# Certification",
+        topics: [
+          { id: "aspnet-mvc-pattern", title: "Models, Views & Controllers", description: "How ASP.NET Core structures a web request.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+          { id: "aspnet-routing", title: "Routing", description: "Mapping URLs to controller actions.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+        ],
+      },
+      {
+        id: "aspnet-data",
+        title: "Data Access",
+        videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/",
+        topics: [
+          { id: "aspnet-ef-core", title: "Entity Framework Core", description: "The ORM for querying and persisting data.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+        ],
+      },
+      {
+        id: "aspnet-di",
+        title: "Dependency Injection & Middleware",
+        videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/",
+        topics: [
+          { id: "aspnet-di-topic", title: "Dependency Injection", description: "The built-in DI container and service lifetimes.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+          { id: "aspnet-middleware", title: "Middleware Pipeline", description: "How requests flow through the ASP.NET Core pipeline.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+        ],
+      },
+      {
+        id: "aspnet-apis",
+        title: "Web APIs",
+        videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/",
+        topics: [
+          { id: "aspnet-web-api", title: "Building REST APIs", description: "Controllers, model binding, and returning JSON.", videoUrl: "https://www.freecodecamp.org/news/learn-aspnet-core-mvc-with-net-9/" },
+        ],
+      },
+    ],
+  },
+  "spring-boot": {
+    id: "spring-boot",
+    label: "Spring Boot",
+    tagline: "Auto-configuration, dependency injection, and building production Java web apps.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/",
+    heroVideoLabel: "freeCodeCamp: Learn App Development with Spring Boot 3",
+    heroCertUrl: "https://www.broadcom.com/support/education/vmware/certification/spring-certified-pro",
+    heroCertLabel: "VMware/Broadcom: Spring Certified Professional",
+    sections: [
+      {
+        id: "springboot-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/",
+        certUrl: "https://www.broadcom.com/support/education/vmware/certification/spring-certified-pro",
+        certLabel: "Spring Certified Professional",
+        topics: [
+          { id: "springboot-autoconfig", title: "Auto-Configuration & Starters", description: "How Spring Boot removes boilerplate configuration.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+          { id: "springboot-di", title: "Dependency Injection", description: "Beans, @Autowired, and the Spring container.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+        ],
+      },
+      {
+        id: "springboot-web",
+        title: "Web Layer",
+        videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/",
+        topics: [
+          { id: "springboot-rest-controllers", title: "REST Controllers", description: "@RestController, @RequestMapping, and building JSON APIs.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+        ],
+      },
+      {
+        id: "springboot-data",
+        title: "Data Access",
+        videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/",
+        topics: [
+          { id: "springboot-jpa", title: "Spring Data JPA", description: "Repositories, entities, and Hibernate under the hood.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+        ],
+      },
+      {
+        id: "springboot-production",
+        title: "Production Readiness",
+        videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/",
+        topics: [
+          { id: "springboot-actuator", title: "Actuator & Profiles", description: "Health checks, metrics, and environment-specific configuration.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+          { id: "springboot-security", title: "Spring Security", description: "Authentication and authorization basics.", videoUrl: "https://www.freecodecamp.org/news/learn-app-development-with-spring-boot-3/" },
+        ],
+      },
+    ],
+  },
+  laravel: {
+    id: "laravel",
+    label: "Laravel",
+    tagline: "PHP's expressive framework — Eloquent, routing, and Blade templates.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/laravel-full-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Laravel by Creating an Instagram Clone",
+    heroCertUrl: "https://www.vskills.in/certification/laravel-online-course",
+    heroCertLabel: "Vskills: Certified Laravel Professional",
+    sections: [
+      {
+        id: "laravel-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/",
+        certUrl: "https://www.vskills.in/certification/laravel-online-course",
+        certLabel: "Vskills: Certified Laravel Professional",
+        topics: [
+          { id: "laravel-routing-controllers", title: "Routing & Controllers", description: "Defining routes and handling requests.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+          { id: "laravel-blade", title: "Blade Templates", description: "Laravel's templating engine for views.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+        ],
+      },
+      {
+        id: "laravel-eloquent",
+        title: "Eloquent ORM",
+        videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/",
+        topics: [
+          { id: "laravel-models-migrations", title: "Models & Migrations", description: "Defining schema and mapping database tables to models.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+          { id: "laravel-relationships", title: "Eloquent Relationships", description: "hasMany, belongsTo, and many-to-many relationships.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+        ],
+      },
+      {
+        id: "laravel-auth",
+        title: "Authentication",
+        videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/",
+        topics: [
+          { id: "laravel-auth-topic", title: "Auth & Middleware", description: "Built-in authentication scaffolding and route middleware.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+        ],
+      },
+      {
+        id: "laravel-ecosystem",
+        title: "Ecosystem",
+        videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/",
+        topics: [
+          { id: "laravel-artisan", title: "Artisan CLI", description: "Code generation and task automation from the command line.", videoUrl: "https://www.freecodecamp.org/news/laravel-full-course/" },
+        ],
+      },
+    ],
+  },
+  django: {
+    id: "django",
+    label: "Django",
+    tagline: "Python's batteries-included web framework — models, views, templates, and the admin.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/python-django-course/",
+    heroVideoLabel: "freeCodeCamp: Python Django Web Framework — Full Course",
+    heroCertUrl: "https://www.studysection.com/django-foundation",
+    heroCertLabel: "StudySection: Django Foundation Certification (Free)",
+    sections: [
+      {
+        id: "django-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/python-django-course/",
+        certUrl: "https://www.studysection.com/django-foundation",
+        certLabel: "StudySection: Django Foundation",
+        topics: [
+          { id: "django-project-apps", title: "Projects & Apps", description: "Django's project/app structure and settings.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+          { id: "django-urls-views", title: "URLs & Views", description: "Routing requests to view functions or classes.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+        ],
+      },
+      {
+        id: "django-models",
+        title: "Models & ORM",
+        videoUrl: "https://www.freecodecamp.org/news/python-django-course/",
+        topics: [
+          { id: "django-models-topic", title: "Models & Migrations", description: "Defining schema in Python and generating migrations.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+          { id: "django-admin", title: "Django Admin", description: "The auto-generated admin interface for managing data.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+        ],
+      },
+      {
+        id: "django-templates",
+        title: "Templates & Forms",
+        videoUrl: "https://www.freecodecamp.org/news/python-django-course/",
+        topics: [
+          { id: "django-templates-topic", title: "Templates", description: "Django's template language for rendering HTML.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+          { id: "django-forms", title: "Forms & Validation", description: "Handling and validating user input.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+        ],
+      },
+      {
+        id: "django-rest",
+        title: "APIs",
+        videoUrl: "https://www.freecodecamp.org/news/python-django-course/",
+        topics: [
+          { id: "django-rest-framework", title: "Django REST Framework", description: "Building REST APIs on top of Django models.", videoUrl: "https://www.freecodecamp.org/news/python-django-course/" },
+        ],
+      },
+    ],
+  },
+  ruby: {
+    id: "ruby",
+    label: "Ruby",
+    tagline: "Ruby's expressive syntax — blocks, classes, and metaprogramming basics.",
+    heroVideoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY",
+    heroVideoLabel: "freeCodeCamp: Ruby Programming Language — Full Course",
+    heroCertUrl: "https://www.ruby.or.jp/en/certification/examination/",
+    heroCertLabel: "Ruby Association Certified Ruby Programmer",
+    sections: [
+      {
+        id: "ruby-basics",
+        title: "Basics",
+        videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY",
+        certUrl: "https://www.ruby.or.jp/en/certification/examination/",
+        certLabel: "Ruby Association Certified Ruby Programmer",
+        topics: [
+          { id: "ruby-syntax-vars", title: "Syntax & Variables", description: "Ruby's readable, minimal-punctuation syntax.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+          { id: "ruby-blocks-procs", title: "Blocks, Procs & Lambdas", description: "Ruby's approach to passing chunks of code around.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+        ],
+      },
+      {
+        id: "ruby-collections",
+        title: "Arrays & Hashes",
+        videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY",
+        topics: [
+          { id: "ruby-arrays-hashes", title: "Arrays & Hashes", description: "Ruby's core collection types and enumerable methods.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+        ],
+      },
+      {
+        id: "ruby-oop",
+        title: "Classes & Modules",
+        videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY",
+        topics: [
+          { id: "ruby-classes-objects", title: "Classes & Objects", description: "Everything in Ruby is an object, including numbers.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+          { id: "ruby-modules-mixins", title: "Modules & Mixins", description: "Sharing behavior across classes without inheritance.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+        ],
+      },
+      {
+        id: "ruby-errors",
+        title: "Error Handling",
+        videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY",
+        topics: [
+          { id: "ruby-exceptions", title: "Exceptions", description: "begin/rescue/ensure and raising custom errors.", videoUrl: "https://www.youtube.com/watch?v=t_ispmWmdjY" },
+        ],
+      },
+    ],
+  },
+  "ruby-on-rails": {
+    id: "ruby-on-rails",
+    label: "Ruby on Rails",
+    tagline: "Convention over configuration — MVC, ActiveRecord, and rapid full-stack development.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Ruby on Rails — Full Course",
+    heroCertUrl: "https://www.edchart.com/certificate/ruby-on-rails-certification",
+    heroCertLabel: "EdChart: Ruby on Rails Certification",
+    sections: [
+      {
+        id: "rails-basics",
+        title: "MVC Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/",
+        certUrl: "https://www.edchart.com/certificate/ruby-on-rails-certification",
+        certLabel: "EdChart: Ruby on Rails Certification",
+        topics: [
+          { id: "rails-mvc", title: "MVC & Convention over Configuration", description: "How Rails' opinionated defaults speed up development.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+          { id: "rails-routing", title: "Routing", description: "RESTful routes and the routes.rb file.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+        ],
+      },
+      {
+        id: "rails-activerecord",
+        title: "ActiveRecord",
+        videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/",
+        topics: [
+          { id: "rails-models-migrations", title: "Models & Migrations", description: "ActiveRecord's ORM and schema migrations.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+          { id: "rails-associations", title: "Associations", description: "has_many, belongs_to, and has_and_belongs_to_many.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+        ],
+      },
+      {
+        id: "rails-views",
+        title: "Views & Forms",
+        videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/",
+        topics: [
+          { id: "rails-erb-views", title: "ERB Views & Partials", description: "Embedded Ruby templates and reusable view partials.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+        ],
+      },
+      {
+        id: "rails-deployment",
+        title: "Deployment",
+        videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/",
+        topics: [
+          { id: "rails-heroku-deploy", title: "Deploying to Heroku", description: "Getting a Rails app live.", videoUrl: "https://www.freecodecamp.org/news/learn-ruby-on-rails-video-course/" },
+        ],
+      },
+    ],
+  },
+  mongodb: {
+    id: "mongodb",
+    label: "MongoDB",
+    tagline: "Document modeling, queries, and aggregation in a NoSQL database.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/",
+    heroVideoLabel: "freeCodeCamp: MongoDB Full Course with Node.js, Express & Mongoose",
+    heroCertUrl: "https://learn.mongodb.com/",
+    heroCertLabel: "MongoDB University (Official, Free)",
+    sections: [
+      {
+        id: "mongodb-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/",
+        certUrl: "https://learn.mongodb.com/",
+        certLabel: "MongoDB University",
+        topics: [
+          { id: "mongodb-documents-collections", title: "Documents & Collections", description: "BSON documents, collections, and MongoDB's flexible schema.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+          { id: "mongodb-crud", title: "CRUD Operations", description: "find, insertOne, updateOne, and deleteOne.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+        ],
+      },
+      {
+        id: "mongodb-modeling",
+        title: "Data Modeling",
+        videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/",
+        topics: [
+          { id: "mongodb-schema-design", title: "Schema Design", description: "Embedding vs. referencing related data.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+          { id: "mongodb-mongoose", title: "Mongoose", description: "Schema validation and modeling for Node.js apps.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+        ],
+      },
+      {
+        id: "mongodb-aggregation",
+        title: "Aggregation & Indexing",
+        videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/",
+        topics: [
+          { id: "mongodb-aggregation-pipeline", title: "Aggregation Pipeline", description: "$match, $group, $project, and building query pipelines.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+          { id: "mongodb-indexes", title: "Indexes", description: "Speeding up queries with single-field and compound indexes.", videoUrl: "https://www.freecodecamp.org/news/mongodb-full-course-nodejs-express-mongoose/" },
+        ],
+      },
+    ],
+  },
+  redis: {
+    id: "redis",
+    label: "Redis",
+    tagline: "In-memory data structures for caching, sessions, and pub/sub.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/",
+    heroVideoLabel: "freeCodeCamp: Redis Database Basics",
+    heroCertUrl: "https://redis.io/tutorials/university/",
+    heroCertLabel: "Redis University (Official, Free)",
+    sections: [
+      {
+        id: "redis-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/",
+        certUrl: "https://redis.io/tutorials/university/",
+        certLabel: "Redis University",
+        topics: [
+          { id: "redis-data-types", title: "Data Types", description: "Strings, lists, sets, hashes, and sorted sets.", videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/" },
+          { id: "redis-cli", title: "The Redis CLI", description: "Common commands for reading and writing keys.", videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/" },
+        ],
+      },
+      {
+        id: "redis-caching",
+        title: "Caching",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/",
+        topics: [
+          { id: "redis-cache-patterns", title: "Caching Patterns", description: "Cache-aside, write-through, and expiration (TTL).", videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/" },
+        ],
+      },
+      {
+        id: "redis-pubsub",
+        title: "Pub/Sub & Streams",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/",
+        topics: [
+          { id: "redis-pubsub-topic", title: "Pub/Sub", description: "Publishing and subscribing to channels for real-time messaging.", videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/" },
+          { id: "redis-streams", title: "Redis Streams", description: "An append-only log structure for event data.", videoUrl: "https://www.freecodecamp.org/news/how-to-learn-redis/" },
+        ],
+      },
+    ],
+  },
+  elasticsearch: {
+    id: "elasticsearch",
+    label: "Elasticsearch",
+    tagline: "Full-text search and analytics — indexing, querying, and the Elastic Stack.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Elasticsearch — Comprehensive Beginner Course",
+    heroCertUrl: "https://www.elastic.co/training/elastic-certified-engineer-exam",
+    heroCertLabel: "Elastic Certified Engineer",
+    sections: [
+      {
+        id: "elasticsearch-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/",
+        certUrl: "https://www.elastic.co/training/elastic-certified-engineer-exam",
+        certLabel: "Elastic Certified Engineer",
+        topics: [
+          { id: "elasticsearch-indices-docs", title: "Indices & Documents", description: "How Elasticsearch stores and organizes JSON documents.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+          { id: "elasticsearch-mapping", title: "Mapping", description: "Defining field types for how data gets indexed.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+        ],
+      },
+      {
+        id: "elasticsearch-querying",
+        title: "Querying",
+        videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/",
+        topics: [
+          { id: "elasticsearch-query-dsl", title: "Query DSL", description: "match, term, and bool queries.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+          { id: "elasticsearch-full-text-search", title: "Full-Text Search", description: "Analyzers, tokenizers, and relevance scoring.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+        ],
+      },
+      {
+        id: "elasticsearch-stack",
+        title: "The Elastic Stack",
+        videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/",
+        topics: [
+          { id: "elasticsearch-kibana", title: "Kibana", description: "Visualizing and exploring data indexed in Elasticsearch.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+          { id: "elasticsearch-logstash", title: "Logstash", description: "Ingesting and transforming data before it reaches Elasticsearch.", videoUrl: "https://www.freecodecamp.org/news/learn-elasticsearch-with-a-comprehensive-beginner-friendly-course/" },
+        ],
+      },
+    ],
+  },
+  cloudflare: {
+    id: "cloudflare",
+    label: "Cloudflare",
+    tagline: "Edge networking, Workers, and Cloudflare's developer platform.",
+    heroVideoUrl: "https://developers.cloudflare.com/workers/get-started/guide/",
+    heroVideoLabel: "Cloudflare: Workers Get Started Guide",
+    heroCertUrl: "https://learn.cloudflare.com/",
+    heroCertLabel: "Cloudflare University (Official, Free)",
+    sections: [
+      {
+        id: "cloudflare-basics",
+        title: "Basics",
+        videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/",
+        certUrl: "https://learn.cloudflare.com/",
+        certLabel: "Cloudflare University",
+        topics: [
+          { id: "cloudflare-dns-cdn", title: "DNS & CDN", description: "How Cloudflare sits in front of your origin server.", videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/" },
+          { id: "cloudflare-ssl", title: "SSL/TLS", description: "Encryption modes and certificate management.", videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/" },
+        ],
+      },
+      {
+        id: "cloudflare-workers",
+        title: "Workers",
+        videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/",
+        topics: [
+          { id: "cloudflare-workers-topic", title: "Cloudflare Workers", description: "Serverless functions running on Cloudflare's edge network.", videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/" },
+          { id: "cloudflare-kv-d1", title: "KV & D1", description: "Edge key-value storage and Cloudflare's serverless SQL database.", videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/" },
+        ],
+      },
+      {
+        id: "cloudflare-security",
+        title: "Security",
+        videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/",
+        topics: [
+          { id: "cloudflare-waf", title: "WAF & Firewall Rules", description: "Filtering malicious traffic at the edge.", videoUrl: "https://developers.cloudflare.com/workers/get-started/guide/" },
+        ],
+      },
+    ],
+  },
+  "shell-bash": {
+    id: "shell-bash",
+    label: "Shell / Bash",
+    tagline: "The command line and shell scripting for automation.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/",
+    heroVideoLabel: "freeCodeCamp: Use Bash Scripting to Enhance Your Productivity",
+    heroCertUrl: "https://www.freecodecamp.org/learn/learn-bash-scripting",
+    heroCertLabel: "freeCodeCamp: Learn Bash Scripting (Certification)",
+    sections: [
+      {
+        id: "bash-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/",
+        certUrl: "https://www.freecodecamp.org/learn/learn-bash-scripting",
+        certLabel: "freeCodeCamp: Learn Bash Scripting",
+        topics: [
+          { id: "bash-commands", title: "Basic Commands", description: "Navigating and manipulating files from the command line.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+          { id: "bash-variables-args", title: "Variables & Positional Arguments", description: "Storing values and reading script arguments.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+        ],
+      },
+      {
+        id: "bash-control-flow",
+        title: "Control Flow",
+        videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/",
+        topics: [
+          { id: "bash-conditionals", title: "if/elif/else & case", description: "Conditional logic in shell scripts.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+          { id: "bash-loops", title: "Loops", description: "for and while loops for repeating tasks.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+        ],
+      },
+      {
+        id: "bash-io",
+        title: "I/O & Text Processing",
+        videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/",
+        topics: [
+          { id: "bash-redirection", title: "Redirection & Pipes", description: "stdin, stdout, stderr, and chaining commands.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+          { id: "bash-awk-sed", title: "AWK & Sed", description: "Text processing tools for parsing and transforming output.", videoUrl: "https://www.freecodecamp.org/news/learn-bash-scripting-tutorial/" },
+        ],
+      },
+    ],
+  },
+  "react-native": {
+    id: "react-native",
+    label: "React Native",
+    tagline: "Building native iOS & Android apps with React — components, navigation, and native modules.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/",
+    heroVideoLabel: "freeCodeCamp: React Native Full Course",
+    heroCertUrl: "https://www.coursera.org/specializations/meta-react-native",
+    heroCertLabel: "Meta React Native Specialization",
+    sections: [
+      {
+        id: "rn-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/",
+        certUrl: "https://www.coursera.org/specializations/meta-react-native",
+        certLabel: "Meta React Native Specialization",
+        topics: [
+          { id: "rn-core-components", title: "Core Components", description: "View, Text, Image, and other built-in native components.", videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/" },
+          { id: "rn-styling", title: "Styling", description: "Flexbox-based styling with StyleSheet.", videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/" },
+        ],
+      },
+      {
+        id: "rn-navigation",
+        title: "Navigation",
+        videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/",
+        topics: [
+          { id: "rn-react-navigation", title: "React Navigation", description: "Stack, tab, and drawer navigators.", videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/" },
+        ],
+      },
+      {
+        id: "rn-native-features",
+        title: "Native Features",
+        videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/",
+        topics: [
+          { id: "rn-native-modules", title: "Native Modules & APIs", description: "Camera, location, and other device APIs.", videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/" },
+          { id: "rn-expo", title: "Expo", description: "The managed workflow for faster React Native development.", videoUrl: "https://www.freecodecamp.org/news/react-native-full-course-android-ios-development/" },
+        ],
+      },
+    ],
+  },
+  "swift-ui": {
+    id: "swift-ui",
+    label: "Swift & SwiftUI",
+    tagline: "Declarative UI for iOS — views, state, and navigation with SwiftUI.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/",
+    heroVideoLabel: "freeCodeCamp: Learn SwiftUI and Create an iOS App from Scratch",
+    heroCertUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/swift-tutorial",
+    heroCertLabel: "Great Learning: Free Swift Course with Certificate",
+    sections: [
+      {
+        id: "swiftui-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/",
+        certUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/swift-tutorial",
+        certLabel: "Great Learning: Swift Course",
+        topics: [
+          { id: "swiftui-views", title: "Views & Modifiers", description: "SwiftUI's declarative view syntax and modifier chaining.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+          { id: "swiftui-layout", title: "Stacks & Layout", description: "VStack, HStack, ZStack for composing layouts.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+        ],
+      },
+      {
+        id: "swiftui-state",
+        title: "State Management",
+        videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/",
+        topics: [
+          { id: "swiftui-state-topic", title: "@State & @Binding", description: "Local view state and two-way data flow.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+          { id: "swiftui-observable", title: "@Observable & Environment", description: "Sharing state across a view hierarchy.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+        ],
+      },
+      {
+        id: "swiftui-navigation",
+        title: "Navigation & Data",
+        videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/",
+        topics: [
+          { id: "swiftui-navigationstack", title: "NavigationStack", description: "Push/pop navigation between SwiftUI views.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+          { id: "swiftui-swiftdata", title: "SwiftData", description: "Apple's modern persistence framework for SwiftUI apps.", videoUrl: "https://www.freecodecamp.org/news/learn-swiftui-and-create-an-ios-app-from-scratch/" },
+        ],
+      },
+    ],
+  },
+  scala: {
+    id: "scala",
+    label: "Scala",
+    tagline: "Functional and object-oriented programming on the JVM.",
+    heroVideoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0",
+    heroVideoLabel: "Scala Full Course",
+    heroCertUrl: "https://www.coursera.org/learn/scala-functional-programming",
+    heroCertLabel: "EPFL (Coursera): Functional Programming Principles in Scala",
+    sections: [
+      {
+        id: "scala-basics",
+        title: "Basics",
+        videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0",
+        certUrl: "https://www.coursera.org/learn/scala-functional-programming",
+        certLabel: "EPFL: Functional Programming Principles in Scala",
+        topics: [
+          { id: "scala-syntax-vals", title: "Syntax, val & var", description: "Immutability by default and Scala's type inference.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+          { id: "scala-functions", title: "Functions", description: "First-class functions, higher-order functions, and closures.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+        ],
+      },
+      {
+        id: "scala-oop",
+        title: "Classes & Case Classes",
+        videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0",
+        topics: [
+          { id: "scala-classes-traits", title: "Classes & Traits", description: "Scala's take on classes, traits, and mixin composition.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+          { id: "scala-case-classes", title: "Case Classes & Pattern Matching", description: "Algebraic data types and exhaustive pattern matching.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+        ],
+      },
+      {
+        id: "scala-collections",
+        title: "Collections & Functional Style",
+        videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0",
+        topics: [
+          { id: "scala-collections-topic", title: "Collections", description: "List, Map, Set, and Scala's rich collection operations.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+          { id: "scala-option-either", title: "Option, Either & For-Comprehensions", description: "Handling absence and errors without exceptions.", videoUrl: "https://www.youtube.com/watch?v=DGr9hhIuw_0" },
+        ],
+      },
+    ],
+  },
+  wordpress: {
+    id: "wordpress",
+    label: "WordPress",
+    tagline: "From installing WordPress through theme customization and plugin development.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/",
+    heroVideoLabel: "freeCodeCamp: How to Make a Website with WordPress",
+    heroCertUrl: "https://yoast.com/academy/free-training-wordpress-for-beginners/",
+    heroCertLabel: "Yoast Academy: WordPress for Beginners (Free, with Certificate)",
+    sections: [
+      {
+        id: "wordpress-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/",
+        certUrl: "https://yoast.com/academy/free-training-wordpress-for-beginners/",
+        certLabel: "Yoast Academy: WordPress for Beginners",
+        topics: [
+          { id: "wordpress-install", title: "Installation & Hosting", description: "Domains, hosting, and installing WordPress.", videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/" },
+          { id: "wordpress-dashboard", title: "The Dashboard", description: "Posts, pages, media, and the admin interface.", videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/" },
+        ],
+      },
+      {
+        id: "wordpress-themes",
+        title: "Themes & Customization",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/",
+        topics: [
+          { id: "wordpress-themes-topic", title: "Themes & the Block Editor", description: "Choosing themes and building pages with Gutenberg blocks.", videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/" },
+        ],
+      },
+      {
+        id: "wordpress-plugins",
+        title: "Plugins & Development",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/",
+        topics: [
+          { id: "wordpress-plugins-topic", title: "Plugins", description: "Extending WordPress functionality without touching core code.", videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/" },
+          { id: "wordpress-custom-dev", title: "Custom Theme & Plugin Development", description: "Hooks, filters, and the WordPress Plugin API for PHP developers.", videoUrl: "https://www.freecodecamp.org/news/how-to-make-a-website-with-wordpress/" },
+        ],
+      },
+    ],
+  },
+  "computer-science": {
+    id: "computer-science",
+    label: "Computer Science",
+    tagline: "Harvard's CS50 — algorithmic thinking, data structures, and the fundamentals of CS.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/",
+    heroVideoLabel: "freeCodeCamp: Harvard CS50 — Free Computer Science University Course",
+    heroCertUrl: "https://cs50.harvard.edu/x/",
+    heroCertLabel: "Harvard CS50x (Official, Free Certificate)",
+    sections: [
+      {
+        id: "cs-fundamentals",
+        title: "Fundamentals",
+        videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/",
+        certUrl: "https://cs50.harvard.edu/x/",
+        certLabel: "Harvard CS50x",
+        topics: [
+          { id: "cs-algorithmic-thinking", title: "Algorithmic Thinking", description: "Breaking problems into precise, step-by-step solutions.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+          { id: "cs-abstraction", title: "Abstraction", description: "Hiding complexity behind simpler interfaces.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+        ],
+      },
+      {
+        id: "cs-data-structures",
+        title: "Data Structures & Algorithms",
+        videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/",
+        topics: [
+          { id: "cs-arrays-linked-lists", title: "Arrays & Linked Lists", description: "Contiguous vs. pointer-based data storage.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+          { id: "cs-sorting-searching", title: "Sorting & Searching", description: "Bubble sort, merge sort, and binary search.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+        ],
+      },
+      {
+        id: "cs-systems",
+        title: "Memory & Systems",
+        videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/",
+        topics: [
+          { id: "cs-memory-management", title: "Memory Management", description: "Stack, heap, and how programs use memory.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+        ],
+      },
+      {
+        id: "cs-theory",
+        title: "Theory & Security",
+        videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/",
+        topics: [
+          { id: "cs-complexity", title: "Big-O & Complexity", description: "Reasoning about how algorithms scale.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+          { id: "cs-security-basics", title: "Security Fundamentals", description: "Common vulnerabilities and secure design principles.", videoUrl: "https://www.freecodecamp.org/news/harvard-cs50-2026-free-computer-science-university-course/" },
+        ],
+      },
+    ],
+  },
+  leetcode: {
+    id: "leetcode",
+    label: "LeetCode",
+    tagline: "A structured path through the essential coding-interview patterns.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/",
+    heroVideoLabel: "freeCodeCamp: Prepare for Technical Interviews Using NeetCode 150",
+    heroCertUrl: "https://www.freecodecamp.org/learn/coding-interview-prep/",
+    heroCertLabel: "freeCodeCamp: Coding Interview Prep Certification",
+    sections: [
+      {
+        id: "leetcode-arrays-strings",
+        title: "Arrays & Strings",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/",
+        certUrl: "https://www.freecodecamp.org/learn/coding-interview-prep/",
+        certLabel: "freeCodeCamp: Coding Interview Prep",
+        topics: [
+          { id: "leetcode-two-pointers", title: "Two Pointers & Sliding Window", description: "Patterns for scanning arrays and strings in linear time.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+          { id: "leetcode-hashing", title: "Hashing", description: "Using hash maps/sets to trade space for O(1) lookups.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+        ],
+      },
+      {
+        id: "leetcode-trees-graphs",
+        title: "Trees & Graphs",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/",
+        topics: [
+          { id: "leetcode-tree-traversal", title: "Tree Traversal", description: "DFS/BFS on binary trees and BSTs.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+          { id: "leetcode-graph-traversal", title: "Graph Traversal", description: "DFS/BFS, topological sort, and union-find.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+        ],
+      },
+      {
+        id: "leetcode-dp",
+        title: "Dynamic Programming",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/",
+        topics: [
+          { id: "leetcode-1d-dp", title: "1D DP", description: "Climbing stairs, house robber, and coin change patterns.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+          { id: "leetcode-2d-dp", title: "2D DP", description: "Grid paths, edit distance, and knapsack-style problems.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+        ],
+      },
+      {
+        id: "leetcode-backtracking-heap",
+        title: "Backtracking & Heaps",
+        videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/",
+        topics: [
+          { id: "leetcode-backtracking-topic", title: "Backtracking", description: "Permutations, combinations, and subsets.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+          { id: "leetcode-heaps-topic", title: "Heaps & Priority Queues", description: "Top-K problems and merge-k-sorted patterns.", videoUrl: "https://www.freecodecamp.org/news/prepare-for-technical-interviews-using-neetcode-150/" },
+        ],
+      },
+    ],
+  },
+  "power-bi": {
+    id: "power-bi",
+    label: "Power BI",
+    tagline: "Data modeling, DAX, and report design — through PL-300 topics.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/",
+    heroVideoLabel: "freeCodeCamp: Microsoft Power Platform Fundamentals (PL-900) Course",
+    heroCertUrl: "https://learn.microsoft.com/en-us/credentials/certifications/exams/pl-300/",
+    heroCertLabel: "Microsoft: PL-300 — Power BI Data Analyst",
+    sections: [
+      {
+        id: "powerbi-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/",
+        certUrl: "https://learn.microsoft.com/en-us/credentials/certifications/exams/pl-300/",
+        certLabel: "Microsoft: PL-300",
+        topics: [
+          { id: "powerbi-power-query", title: "Power Query", description: "Importing and transforming data before it hits the model.", videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/" },
+          { id: "powerbi-data-modeling", title: "Data Modeling", description: "Relationships, star schema, and model design.", videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/" },
+        ],
+      },
+      {
+        id: "powerbi-dax",
+        title: "DAX",
+        videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/",
+        topics: [
+          { id: "powerbi-dax-measures", title: "Measures & Calculated Columns", description: "Writing DAX formulas for aggregations and derived values.", videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/" },
+        ],
+      },
+      {
+        id: "powerbi-visuals",
+        title: "Reports & Visuals",
+        videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/",
+        topics: [
+          { id: "powerbi-visualizations", title: "Visualizations", description: "Choosing the right chart type for the data and story.", videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/" },
+          { id: "powerbi-dashboards", title: "Dashboards & Sharing", description: "Publishing reports and building dashboards in the Power BI service.", videoUrl: "https://www.freecodecamp.org/news/microsoft-power-platform-fundamentals-certification-pl-900/" },
+        ],
+      },
+    ],
+  },
+  "python-data-analysis": {
+    id: "python-data-analysis",
+    label: "Python for Data Analysis",
+    tagline: "NumPy, Pandas, and Matplotlib — through the freeCodeCamp Data Analysis certification.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/",
+    heroVideoLabel: "freeCodeCamp: Learn Pandas & Python for Data Analysis",
+    heroCertUrl: "https://www.freecodecamp.org/learn/data-analysis-with-python/",
+    heroCertLabel: "freeCodeCamp: Data Analysis with Python Certification",
+    sections: [
+      {
+        id: "pda-numpy",
+        title: "NumPy",
+        videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/",
+        certUrl: "https://www.freecodecamp.org/learn/data-analysis-with-python/",
+        certLabel: "freeCodeCamp: Data Analysis with Python",
+        topics: [
+          { id: "pda-ndarray", title: "NumPy Arrays", description: "Vectorized operations on n-dimensional arrays.", videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/" },
+        ],
+      },
+      {
+        id: "pda-pandas",
+        title: "Pandas",
+        videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/",
+        topics: [
+          { id: "pda-dataframes", title: "DataFrames & Series", description: "Reading CSVs/SQL and manipulating tabular data.", videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/" },
+          { id: "pda-groupby", title: "GroupBy & Merging", description: "Aggregating and joining datasets.", videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/" },
+        ],
+      },
+      {
+        id: "pda-viz",
+        title: "Visualization",
+        videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/",
+        topics: [
+          { id: "pda-matplotlib-seaborn", title: "Matplotlib & Seaborn", description: "Plotting distributions, trends, and relationships.", videoUrl: "https://www.freecodecamp.org/news/learn-pandas-for-data-science/" },
+        ],
+      },
+    ],
+  },
+  "r-programming": {
+    id: "r-programming",
+    label: "R Programming",
+    tagline: "Statistical computing — vectors, data frames, and the tidyverse.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/",
+    heroVideoLabel: "freeCodeCamp: Learn R Programming from Harvard University (CS50R)",
+    heroCertUrl: "https://cs50.harvard.edu/r/",
+    heroCertLabel: "Harvard CS50R (Official, Free)",
+    sections: [
+      {
+        id: "r-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/",
+        certUrl: "https://cs50.harvard.edu/r/",
+        certLabel: "Harvard CS50R",
+        topics: [
+          { id: "r-vectors-dataframes", title: "Vectors & Data Frames", description: "R's core data structures for statistical computing.", videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/" },
+          { id: "r-functions-loops", title: "Functions & Loops", description: "Writing reusable functions and iterating over data.", videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/" },
+        ],
+      },
+      {
+        id: "r-tidyverse",
+        title: "The Tidyverse",
+        videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/",
+        topics: [
+          { id: "r-dplyr", title: "dplyr", description: "filter, select, mutate, and summarize for tidy data manipulation.", videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/" },
+          { id: "r-ggplot2", title: "ggplot2", description: "The grammar of graphics for building visualizations.", videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/" },
+        ],
+      },
+      {
+        id: "r-stats",
+        title: "Statistics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/",
+        topics: [
+          { id: "r-regression-clustering", title: "Regression & Clustering", description: "Basic statistical modeling in R.", videoUrl: "https://www.freecodecamp.org/news/learn-r-programming-from-harvard-university/" },
+        ],
+      },
+    ],
+  },
+  "prompt-engineering": {
+    id: "prompt-engineering",
+    label: "Prompt Engineering",
+    tagline: "Writing effective prompts — zero/few-shot, chaining, and evaluation.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/",
+    heroVideoLabel: "freeCodeCamp: Learn Prompt Engineering — Full Course",
+    heroCertUrl: "https://www.deeplearning.ai/courses/ai-prompting-for-everyone",
+    heroCertLabel: "DeepLearning.AI: AI Prompting for Everyone (Free, with Certificate)",
+    sections: [
+      {
+        id: "pe-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/",
+        certUrl: "https://www.deeplearning.ai/courses/ai-prompting-for-everyone",
+        certLabel: "DeepLearning.AI: AI Prompting for Everyone",
+        topics: [
+          { id: "pe-mindset", title: "The Prompt Engineering Mindset", description: "Treating prompts as an iterative design problem.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+          { id: "pe-zero-few-shot", title: "Zero-Shot & Few-Shot Prompting", description: "Giving a model zero, one, or several examples to follow.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+        ],
+      },
+      {
+        id: "pe-techniques",
+        title: "Techniques",
+        videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/",
+        topics: [
+          { id: "pe-chain-of-thought", title: "Chain-of-Thought Prompting", description: "Asking a model to reason step by step.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+          { id: "pe-role-prompting", title: "Role & System Prompts", description: "Setting persona and constraints before the user's actual request.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+        ],
+      },
+      {
+        id: "pe-pitfalls",
+        title: "Pitfalls & Evaluation",
+        videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/",
+        topics: [
+          { id: "pe-hallucinations", title: "AI Hallucinations", description: "Why models confidently state wrong things, and how to reduce it.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+          { id: "pe-embeddings", title: "Vectors & Text Embeddings", description: "How semantic search and retrieval-augmented prompts work.", videoUrl: "https://www.freecodecamp.org/news/learn-prompt-engineering-full-course/" },
+        ],
+      },
+    ],
+  },
+  "ai-agents": {
+    id: "ai-agents",
+    label: "AI Agents",
+    tagline: "Building autonomous, tool-using LLM agents with LangChain and LangGraph.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/",
+    heroVideoLabel: "freeCodeCamp: Agentic AI Using LangGraph — Build AI Agents & Automate Workflows",
+    heroCertUrl: "https://huggingface.co/learn/agents-course/unit0/introduction",
+    heroCertLabel: "Hugging Face: AI Agents Course (Free, with Certificate)",
+    sections: [
+      {
+        id: "agents-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/",
+        certUrl: "https://huggingface.co/learn/agents-course/unit0/introduction",
+        certLabel: "Hugging Face: AI Agents Course",
+        topics: [
+          { id: "agents-vs-llms", title: "Agentic AI vs. Standard LLMs", description: "What makes an agent different from a single prompt/response call.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+          { id: "agents-tool-use", title: "Tool Use", description: "Giving an LLM the ability to call functions and external APIs.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+        ],
+      },
+      {
+        id: "agents-orchestration",
+        title: "Orchestration",
+        videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/",
+        topics: [
+          { id: "agents-langgraph", title: "LangGraph", description: "Modeling agent workflows as graphs of nodes and edges.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+          { id: "agents-multi-agent", title: "Multi-Agent Systems", description: "Coordinating multiple specialized agents on one task.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+        ],
+      },
+      {
+        id: "agents-advanced",
+        title: "Advanced Techniques",
+        videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/",
+        topics: [
+          { id: "agents-rag", title: "RAG for Agents", description: "Grounding agent responses in retrieved documents.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+          { id: "agents-hitl", title: "Human-in-the-Loop", description: "Adding approval steps for high-stakes agent actions.", videoUrl: "https://www.freecodecamp.org/news/agentic-ai-using-langgraph-build-ai-agents-automate-workflows/" },
+        ],
+      },
+    ],
+  },
+  "ai-product-builders": {
+    id: "ai-product-builders",
+    label: "AI Product Builders",
+    tagline: "Shipping AI-powered products end-to-end — from idea to a deployed, sellable application.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/",
+    heroVideoLabel: "freeCodeCamp: Build and Deploy a Polished AI Project and Get Sales",
+    heroCertUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/ai-for-product-management",
+    heroCertLabel: "Great Learning: AI for Product Management (Free, with Certificate)",
+    sections: [
+      {
+        id: "aipb-foundations",
+        title: "Foundations",
+        videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/",
+        certUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/ai-for-product-management",
+        certLabel: "Great Learning: AI for Product Management",
+        topics: [
+          { id: "aipb-idea-to-mvp", title: "From Idea to MVP", description: "Scoping an AI feature that's actually worth building.", videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/" },
+          { id: "aipb-model-selection", title: "Choosing a Model/API", description: "Picking the right LLM provider and API for cost and quality.", videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/" },
+        ],
+      },
+      {
+        id: "aipb-building",
+        title: "Building",
+        videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/",
+        topics: [
+          { id: "aipb-ui-polish", title: "Polishing the UI/UX", description: "Making AI output feel trustworthy and production-ready.", videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/" },
+        ],
+      },
+      {
+        id: "aipb-launch",
+        title: "Deployment & Monetization",
+        videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/",
+        topics: [
+          { id: "aipb-deployment", title: "Deployment", description: "Shipping the app to real users.", videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/" },
+          { id: "aipb-pricing-sales", title: "Pricing & Getting First Sales", description: "Turning a working AI product into a paying business.", videoUrl: "https://www.freecodecamp.org/news/build-and-deploy-a-polished-ai-project-and-get-sales/" },
+        ],
+      },
+    ],
+  },
+  "claude-code": {
+    id: "claude-code",
+    label: "Claude Code",
+    tagline: "Anthropic's agentic coding tool — reading, editing, and running commands across a codebase.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/",
+    heroVideoLabel: "freeCodeCamp: Claude Certified Architect — Foundations",
+    heroCertUrl: "https://anthropic.com/learn",
+    heroCertLabel: "Anthropic Academy (Official, Free Certificates)",
+    sections: [
+      {
+        id: "claude-code-basics",
+        title: "Basics",
+        videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/",
+        certUrl: "https://anthropic.com/learn",
+        certLabel: "Anthropic Academy",
+        topics: [
+          { id: "claude-code-cli", title: "The Claude Code CLI", description: "Reading a codebase, making edits, and running shell commands.", videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/" },
+          { id: "claude-code-context", title: "Context Management", description: "How Claude Code builds context from your project files.", videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/" },
+        ],
+      },
+      {
+        id: "claude-code-workflows",
+        title: "Workflows",
+        videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/",
+        topics: [
+          { id: "claude-code-plan-mode", title: "Plan Mode & Permissions", description: "Reviewing a plan before Claude Code makes changes.", videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/" },
+          { id: "claude-code-skills", title: "Skills & Subagents", description: "Packaging reusable instructions and delegating to subagents.", videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/" },
+        ],
+      },
+      {
+        id: "claude-code-mcp",
+        title: "MCP & Extensibility",
+        videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/",
+        topics: [
+          { id: "claude-code-mcp-topic", title: "Model Context Protocol", description: "Connecting Claude Code to external tools and data sources.", videoUrl: "https://www.freecodecamp.org/news/claude-certified-architect-foundations-prep-for-anthropic-s-new-certification-exam/" },
+        ],
+      },
+    ],
+  },
+  "design-system": {
+    id: "design-system",
+    label: "Design System",
+    tagline: "Tokens, components, and documentation for consistent product design at scale.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/",
+    heroVideoLabel: "freeCodeCamp: Learn How to Create a Design System in Figma",
+    heroCertUrl: "https://www.coursera.org/professional-certificates/google-ux-design",
+    heroCertLabel: "Google UX Design Professional Certificate",
+    sections: [
+      {
+        id: "ds-foundations",
+        title: "Foundations",
+        videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/",
+        certUrl: "https://www.coursera.org/professional-certificates/google-ux-design",
+        certLabel: "Google UX Design Certificate",
+        topics: [
+          { id: "ds-design-tokens", title: "Design Tokens", description: "Color, spacing, and typography as reusable, named values.", videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/" },
+          { id: "ds-color-type-systems", title: "Color & Type Systems", description: "Building scalable color palettes and type scales.", videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/" },
+        ],
+      },
+      {
+        id: "ds-components",
+        title: "Components",
+        videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/",
+        topics: [
+          { id: "ds-master-components", title: "Master Components & Variants", description: "Reusable Figma components with states and variants.", videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/" },
+        ],
+      },
+      {
+        id: "ds-scaling",
+        title: "Scaling the System",
+        videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/",
+        topics: [
+          { id: "ds-responsive-grids", title: "Responsive Grids & Spacing", description: "Layout rules that hold up across screen sizes.", videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/" },
+          { id: "ds-code-handoff", title: "Design-to-Code Handoff", description: "Keeping design tokens in sync with a component library in code.", videoUrl: "https://www.freecodecamp.org/news/learn-how-to-create-a-design-system-in-figma/" },
+        ],
+      },
+    ],
+  },
+  "software-design-architecture": {
+    id: "software-design-architecture",
+    label: "Design Architecture",
+    tagline: "OOP principles, design patterns, and architectural decision-making.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/",
+    heroVideoLabel: "freeCodeCamp: Master OOP and Design Patterns",
+    heroCertUrl: "https://www.coursera.org/learn/design-patterns",
+    heroCertLabel: "Coursera: Design Patterns",
+    sections: [
+      {
+        id: "sda-oop",
+        title: "OOP Principles",
+        videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/",
+        certUrl: "https://www.coursera.org/learn/design-patterns",
+        certLabel: "Coursera: Design Patterns",
+        topics: [
+          { id: "sda-solid", title: "SOLID Principles", description: "Five guidelines for maintainable object-oriented design.", videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/" },
+        ],
+      },
+      {
+        id: "sda-patterns",
+        title: "Design Patterns",
+        videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/",
+        topics: [
+          { id: "sda-creational", title: "Creational Patterns", description: "Factory, builder, and singleton patterns.", videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/" },
+          { id: "sda-structural-behavioral", title: "Structural & Behavioral Patterns", description: "Adapter, decorator, observer, and strategy patterns.", videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/" },
+        ],
+      },
+      {
+        id: "sda-architecture",
+        title: "Architectural Decisions",
+        videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/",
+        topics: [
+          { id: "sda-layered-hexagonal", title: "Layered & Hexagonal Architecture", description: "Separating business logic from frameworks and infrastructure.", videoUrl: "https://www.freecodecamp.org/news/master-object-oriented-programming-and-design-patterns-in-c/" },
+        ],
+      },
+    ],
+  },
+  openclaw: {
+    id: "openclaw",
+    label: "OpenClaw",
+    tagline: "Deploying and configuring OpenClaw — a self-hosted, programmable AI agent.",
+    heroVideoUrl: "https://docs.openclaw.ai/start/getting-started",
+    heroVideoLabel: "OpenClaw: Official Getting Started Guide",
+    heroCertUrl: "https://huggingface.co/learn/agents-course/unit0/introduction",
+    heroCertLabel: "Hugging Face: AI Agents Course (Free, with Certificate)",
+    sections: [
+      {
+        id: "openclaw-understanding",
+        title: "Understanding OpenClaw",
+        videoUrl: "https://docs.openclaw.ai/start/getting-started",
+        certUrl: "https://huggingface.co/learn/agents-course/unit0/introduction",
+        certLabel: "Hugging Face: AI Agents Course",
+        topics: [
+          { id: "openclaw-what-is", title: "What is OpenClaw?", description: "A self-hosted, MIT-licensed agent that connects messaging apps to AI models you control.", videoUrl: "https://docs.openclaw.ai/start/getting-started" },
+        ],
+      },
+      {
+        id: "openclaw-install",
+        title: "Installation",
+        videoUrl: "https://docs.openclaw.ai/start/getting-started",
+        topics: [
+          { id: "openclaw-quickstart", title: "Quick Start", description: "Installing OpenClaw and running the onboarding flow.", videoUrl: "https://docs.openclaw.ai/start/getting-started" },
+        ],
+      },
+      {
+        id: "openclaw-connect",
+        title: "Connecting Channels",
+        videoUrl: "https://docs.openclaw.ai/start/getting-started",
+        topics: [
+          { id: "openclaw-channels", title: "Messaging Channels", description: "Connecting Telegram, WhatsApp, Discord, and other channels.", videoUrl: "https://docs.openclaw.ai/start/getting-started" },
+        ],
+      },
+      {
+        id: "openclaw-security",
+        title: "Security",
+        videoUrl: "https://docs.openclaw.ai/start/getting-started",
+        topics: [
+          { id: "openclaw-security-topic", title: "Security Best Practices", description: "Hardening a self-hosted agent before giving it real permissions.", videoUrl: "https://docs.openclaw.ai/start/getting-started" },
+        ],
+      },
+    ],
+  },
+  "vibe-coding": {
+    id: "vibe-coding",
+    label: "Vibe Coding",
+    tagline: "Building software through natural-language prompts and AI-assisted tools.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/",
+    heroVideoLabel: "freeCodeCamp: How to Vibe Code with n8n",
+    heroCertUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/learn-vibe-coding-with-ai-tools",
+    heroCertLabel: "Great Learning: Vibe Coding with AI Tools (Free, with Certificate)",
+    sections: [
+      {
+        id: "vibe-mindset",
+        title: "The Vibe Coding Mindset",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/",
+        certUrl: "https://www.mygreatlearning.com/academy/learn-for-free/courses/learn-vibe-coding-with-ai-tools",
+        certLabel: "Great Learning: Vibe Coding with AI Tools",
+        topics: [
+          { id: "vibe-what-is", title: "What is Vibe Coding?", description: "Directing an AI tool with natural language instead of writing every line by hand.", videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/" },
+        ],
+      },
+      {
+        id: "vibe-tools",
+        title: "Tools",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/",
+        topics: [
+          { id: "vibe-ai-editors", title: "AI-Native Editors", description: "Cursor, Claude Code, and other AI-first coding tools.", videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/" },
+          { id: "vibe-automation-n8n", title: "Workflow Automation (n8n)", description: "Connecting apps and APIs without writing glue code by hand.", videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/" },
+        ],
+      },
+      {
+        id: "vibe-pitfalls",
+        title: "Pitfalls",
+        videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/",
+        topics: [
+          { id: "vibe-review-code", title: "Reviewing AI-Generated Code", description: "Why you still need to read and understand what got shipped.", videoUrl: "https://www.freecodecamp.org/news/how-to-vibe-code-with-help-from-n8n/" },
+        ],
+      },
+    ],
+  },
+  "frontend-beginner": {
+    id: "frontend-beginner",
+    label: "Frontend Beginner",
+    tagline: "The absolute-beginner on-ramp to frontend — HTML, CSS, and just enough JavaScript.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+    heroVideoLabel: "freeCodeCamp: HTML Full Course for Beginners",
+    heroCertUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+    heroCertLabel: "freeCodeCamp: Responsive Web Design Certification",
+    sections: [
+      {
+        id: "feb-html-css",
+        title: "HTML & CSS",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        certUrl: "https://www.freecodecamp.org/learn/responsive-web-design/",
+        certLabel: "freeCodeCamp: Responsive Web Design",
+        topics: [
+          { id: "feb-html-basics", title: "HTML Basics", description: "Tags, elements, and the structure of a web page.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+          { id: "feb-css-basics", title: "CSS Basics", description: "Selectors, the box model, and basic styling.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "feb-js-basics",
+        title: "A Little JavaScript",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        topics: [
+          { id: "feb-js-dom", title: "The DOM & Events", description: "Making a page interactive by responding to clicks and input.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+      {
+        id: "feb-next-steps",
+        title: "Next Steps",
+        videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/",
+        topics: [
+          { id: "feb-pick-a-path", title: "Picking a Framework", description: "When you're ready to move on to React, Vue, or Angular.", videoUrl: "https://www.freecodecamp.org/news/html-full-course-for-beginners/" },
+        ],
+      },
+    ],
+  },
+  "backend-beginner": {
+    id: "backend-beginner",
+    label: "Backend Beginner",
+    tagline: "The absolute-beginner on-ramp to backend — a server, a route, and a database.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/",
+    heroVideoLabel: "freeCodeCamp: Node.js and Express.js — Full Course",
+    heroCertUrl: "https://www.freecodecamp.org/learn/back-end-development-and-apis/",
+    heroCertLabel: "freeCodeCamp: Back End Development and APIs Certification",
+    sections: [
+      {
+        id: "beb-server-basics",
+        title: "Your First Server",
+        videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/",
+        certUrl: "https://www.freecodecamp.org/learn/back-end-development-and-apis/",
+        certLabel: "freeCodeCamp: Back End Development and APIs",
+        topics: [
+          { id: "beb-http-basics", title: "What is a Server?", description: "Handling HTTP requests and sending responses.", videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/" },
+          { id: "beb-routes", title: "Routes", description: "Mapping URLs to the code that handles them.", videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/" },
+        ],
+      },
+      {
+        id: "beb-database-basics",
+        title: "A Database",
+        videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/",
+        topics: [
+          { id: "beb-crud-basics", title: "Basic CRUD", description: "Create, read, update, and delete records.", videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/" },
+        ],
+      },
+      {
+        id: "beb-next-steps",
+        title: "Next Steps",
+        videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/",
+        topics: [
+          { id: "beb-pick-a-stack", title: "Picking a Language/Framework", description: "Node.js, Python/Django, or another backend stack to go deeper on.", videoUrl: "https://www.freecodecamp.org/news/free-8-hour-node-express-course/" },
+        ],
+      },
+    ],
+  },
+  "devops-beginner": {
+    id: "devops-beginner",
+    label: "DevOps Beginner",
+    tagline: "The absolute-beginner on-ramp to DevOps — the command line, Git, and one deployment.",
+    heroVideoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+    heroVideoLabel: "freeCodeCamp: Introduction to Linux (LFS101x)",
+    heroCertUrl: "https://training.linuxfoundation.org/training/introduction-to-linux/",
+    heroCertLabel: "Linux Foundation: Introduction to Linux (LFS101x)",
+    sections: [
+      {
+        id: "deb-command-line",
+        title: "The Command Line",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        certUrl: "https://training.linuxfoundation.org/training/introduction-to-linux/",
+        certLabel: "Linux Foundation: Introduction to Linux",
+        topics: [
+          { id: "deb-shell-basics", title: "Shell Basics", description: "Navigating files and running commands in a terminal.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+      {
+        id: "deb-version-control",
+        title: "Version Control",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        topics: [
+          { id: "deb-git-basics", title: "Git Basics", description: "Committing changes and pushing to a remote repository.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+      {
+        id: "deb-first-deploy",
+        title: "Your First Deployment",
+        videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/",
+        topics: [
+          { id: "deb-deploy-basics", title: "Deploying a Simple App", description: "Getting a small app running on a real server or platform.", videoUrl: "https://www.freecodecamp.org/news/introduction-to-linux/" },
+        ],
+      },
+    ],
+  },
+  "git-github-beginner": {
+    id: "git-github-beginner",
+    label: "Git and GitHub Beginner",
+    tagline: "The absolute-beginner on-ramp to Git and GitHub — your first commit and pull request.",
+    heroVideoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU",
+    heroVideoLabel: "freeCodeCamp: Learn Git — Full Course for Beginners",
+    heroCertUrl: "https://docs.github.com/en/get-started/showcase-your-expertise-with-github-certifications/about-github-certifications",
+    heroCertLabel: "GitHub Foundations Certification",
+    sections: [
+      {
+        id: "ggb-first-commit",
+        title: "Your First Commit",
+        videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU",
+        certUrl: "https://docs.github.com/en/get-started/showcase-your-expertise-with-github-certifications/about-github-certifications",
+        certLabel: "GitHub Foundations Certification",
+        topics: [
+          { id: "ggb-init-add-commit", title: "init, add & commit", description: "Turning a folder into a Git repository and saving your first snapshot.", videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU" },
+        ],
+      },
+      {
+        id: "ggb-github-basics",
+        title: "GitHub Basics",
+        videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU",
+        topics: [
+          { id: "ggb-remote-push", title: "Remotes & Push", description: "Connecting a local repo to GitHub and pushing your commits.", videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU" },
+        ],
+      },
+      {
+        id: "ggb-first-pr",
+        title: "Your First Pull Request",
+        videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU",
+        topics: [
+          { id: "ggb-pr-basics", title: "Branches & Pull Requests", description: "Making a change on a branch and opening a PR for review.", videoUrl: "https://www.youtube.com/watch?v=zTjRZNkhiEU" },
+        ],
       },
     ],
   },

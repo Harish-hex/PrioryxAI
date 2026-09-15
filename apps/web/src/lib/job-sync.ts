@@ -8,7 +8,7 @@ function normalizeRole(value: string): string | null {
   const lowered = value.trim().toLowerCase();
   if (!lowered) return null;
 
-  if (["typescript", "javascript", "react", "next", "frontend"].some((token) => lowered.includes(token))) {
+  if (["typescript", "javascript", "react", "next", "frontend", "html", "css", "ui/ux", "web design"].some((token) => lowered.includes(token))) {
     return "frontend developer";
   }
   if (["node", "express", "backend", "api", "java", "spring"].some((token) => lowered.includes(token))) {
@@ -17,11 +17,25 @@ function normalizeRole(value: string): string | null {
   if (["python", "machine learning", "ai", "data", "analytics"].some((token) => lowered.includes(token))) {
     return "python developer";
   }
-  if (["c++", "compiler", "operating system", "systems"].some((token) => lowered.includes(token))) {
+  if (["dbms", "database", "sql", "rdbms"].some((token) => lowered.includes(token))) {
+    return "backend developer";
+  }
+  if (["c++", "compiler", "operating system", "systems", "computer network", "cn ", "coa", "computer organization"].some((token) => lowered.includes(token))) {
     return "software developer";
   }
+  if (["android", "flutter", "mobile", "ios"].some((token) => lowered.includes(token))) {
+    return "mobile app developer";
+  }
+  if (["dsa", "data structure", "algorithm"].some((token) => lowered.includes(token))) {
+    return "software developer";
+  }
+  if (["cloud", "aws", "azure", "devops", "docker", "kubernetes"].some((token) => lowered.includes(token))) {
+    return "devops engineer";
+  }
 
-  return lowered;
+  // Unrecognized subjects (course codes/acronyms like "TOC", "EVS", "Maths-II")
+  // aren't real job-search terms — drop them instead of searching for them literally.
+  return null;
 }
 
 export function buildInternshalaSearchUrl(role: string): string {

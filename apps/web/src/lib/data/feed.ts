@@ -221,7 +221,7 @@ function buildSetupTasks({
     no_foundation: {
       id: 'profile-guidance',
       type: 'manual',
-      title: 'Clear your backlogs first — academics unlock internship eligibility',
+      title: 'Set a study plan to strengthen your academic foundation',
       due_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
       completed: false,
       score: 108,
@@ -229,7 +229,7 @@ function buildSetupTasks({
       estimate: '10 min',
       action_label: 'Plan with AI',
       action_view: 'assistant',
-      reason: 'Most companies screen on CGPA. A backlog-free transcript is prerequisite to internship applications.',
+      reason: 'A steady academic foundation makes every later step — projects, internships, placements — easier to build on.',
     },
     academics_first: {
       id: 'profile-guidance',

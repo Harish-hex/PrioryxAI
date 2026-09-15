@@ -1,572 +1,357 @@
 # PrioryxAI
 
-<div align="center">
+PrioryxAI is an AI-assisted student productivity and career intelligence platform. It brings academic tasks, exam schedules, coding-platform progress, GitHub portfolio signals, resume data, job opportunities, project ideas, and assistant conversations into one prioritized workspace.
 
-# ⚡ PrioryxAI (formerly DeadlineOS)
-### The AI-Powered Operating System & Career Intelligence Platform for Students
+The repository is web-first, with additional mobile clients:
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-18.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o%20%26%20Embeddings-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
-[![Upstash](https://img.shields.io/badge/Upstash-Redis%20%26%20QStash-00E599?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
-[![Expo](https://img.shields.io/badge/Expo-React%20Native-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
-[![Swift](https://img.shields.io/badge/iOS-SwiftUI-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://developer.apple.com/swift/)
-[![Kotlin](https://img.shields.io/badge/Android-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![Razorpay](https://img.shields.io/badge/Razorpay-Subscriptions-0C2340?style=for-the-badge&logo=razorpay&logoColor=white)](https://razorpay.com/)
+- A production-oriented Next.js application in `src/`.
+- An Expo React Native client in `PrioryxAI/`.
+- Native Android and iOS reference clients in `PrioryxAI-Android/` and `PrioryxAI-iOS/`.
+- Supabase migrations and schema references for the shared data layer.
 
-<p align="center">
-  <strong>Transforming academic overload, fragmented deadlines, and career ambiguity into an explainable, daily execution feed.</strong>
-</p>
+The current product copy may still reference the earlier name `DeadlineOS` in some places. The repository and platform direction are organized under `PrioryxAI`.
 
-</div>
+## Product Summary
 
----
+PrioryxAI is designed for students who need to decide what to work on next across many disconnected areas:
 
-## 📖 Table of Contents
+- Academic deadlines, assignments, exams, and weekly timetables.
+- Personal tasks and daily planning.
+- Resume quality, project portfolio strength, and job readiness.
+- GitHub, LeetCode, HackerRank, and other coding-preparation signals.
+- Internship and job-market opportunities.
+- AI assistant conversations, memory, and contextual guidance.
 
-- [Overview](#-overview)
-- [System Architecture](#-system-architecture)
-  - [High-Level Platform Architecture](#high-level-platform-architecture)
-  - [Decision & Priority Orchestrator Flow](#decision--priority-orchestrator-flow)
-  - [Model Context Protocol (MCP) Multi-Agent Architecture](#model-context-protocol-mcp-multi-agent-architecture)
-  - [Deterministic Placement Readiness Model](#deterministic-placement-readiness-model)
-- [Key Features](#-key-features)
-  - [1. Explainable Priority Feed & Daily Planner](#1-explainable-priority-feed--daily-planner)
-  - [2. Academic & Schedule Intelligence (OCR / Vision)](#2-academic--schedule-intelligence-ocr--vision)
-  - [3. Interactive Career Roadmaps (30+ Industry Tracks)](#3-interactive-career-roadmaps-30-industry-tracks)
-  - [4. Weekly Smart Workload Scheduler](#4-weekly-smart-workload-scheduler)
-  - [5. GitHub Portfolio & Security Intelligence](#5-github-portfolio--security-intelligence)
-  - [6. Coding Intelligence (LeetCode & HackerRank)](#6-coding-intelligence-leetcode--hackerrank)
-  - [7. AI Resume Intelligence & ATS SWOT Studio](#7-ai-resume-intelligence--ats-swot-studio)
-  - [8. Project Foundry (AI Portfolio Architect)](#8-project-foundry-ai-portfolio-architect)
-  - [9. Real-Time Multi-Source Job Market Aggregator](#9-real-time-multi-source-job-market-aggregator)
-  - [10. Contextual AI Assistant, Memory & Bounded Tools](#10-contextual-ai-assistant-memory--bounded-tools)
-  - [11. Peer Collaboration & Privacy-Preserving Cohort Intelligence](#11-peer-collaboration--privacy-preserving-cohort-intelligence)
-  - [12. Gamification, Streaks & Daily Challenges](#12-gamification-streaks--daily-challenges)
-- [Cross-Platform Ecosystem](#-cross-platform-ecosystem)
-- [Repository Structure](#-repository-structure)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Configuration](#environment-configuration)
-  - [Database & Migrations](#database--migrations)
-  - [Running the Web Application](#running-the-web-application)
-  - [Running Mobile Applications](#running-mobile-applications)
-  - [Running Tests & Quality Assurance](#running-tests--quality-assurance)
-- [API Reference](#-api-reference)
-- [Security, Privacy & Ethics](#-security-privacy--ethics)
-- [License & Contributing](#-license--contributing)
+The core product idea is to turn scattered student context into explainable next actions. Some features use large language models for extraction, reasoning, generation, and conversational assistance; critical scoring and ranking paths keep deterministic fallbacks so the application remains usable when AI or external integrations are unavailable.
 
----
+## Current Capabilities
 
-## 🌟 Overview
+| Area | What it does | Main implementation |
+| --- | --- | --- |
+| Dashboard and feed | Shows next priority, setup nudges, task feed, stats, and career signals | `src/app/feed`, `src/app/api/feed`, `src/lib/scoring`, `src/lib/context` |
+| Task management | Creates, completes, snoozes, stages, and prioritizes tasks | `src/app/api/tasks`, Supabase `tasks` data |
+| AI assistant | Streams personalized responses and can use bounded tools | `src/app/api/assistant`, `src/lib/assistant/tools.ts`, `src/lib/memory` |
+| Priority planning | Produces daily plans and workload recommendations | `src/app/api/priority`, `src/lib/priority`, `src/lib/planning` |
+| Resume intelligence | Processes uploaded resumes, extracts content, generates analysis and drafts | `src/app/api/resume`, `src/lib/file-processor.ts`, `src/lib/pdf-parser.ts` |
+| Academic schedule extraction | Converts exam and timetable uploads into structured records | `src/app/api/schedule`, `src/lib/schedule/extractor.ts` |
+| Coding intelligence | Connects and analyzes LeetCode and HackerRank data | `src/app/api/leetcode`, `src/app/api/hackerrank`, `src/lib/leetcode`, `src/lib/hackerrank` |
+| GitHub intelligence | Syncs repositories and produces portfolio improvement actions | `src/app/api/github`, `src/app/api/sync/github`, `src/lib/github-sync.ts` |
+| Project Foundry | Generates and tracks portfolio project ideas | `src/app/api/foundry`, `src/lib/mcp/agents/foundry-agent.ts` |
+| Job and opportunity matching | Fetches, normalizes, ranks, and tracks opportunities | `src/app/api/jobs`, `src/app/api/opportunities`, `src/lib/opportunities` |
+| RAG foundation | Indexes and searches user-scoped context documents | `src/app/api/rag`, `src/lib/rag` |
+| Payments | Razorpay subscription and webhook support | `src/app/api/payments`, `src/app/api/webhooks/razorpay` |
 
-Students and aspiring software engineers juggle an overwhelming number of disconnected platforms: college timetables, exam portals, assignment trackers, GitHub repositories, LeetCode/HackerRank problem queues, resumes, and internship job boards. 
+## Technical Stack
 
-**PrioryxAI** unifies these disparate streams into a **single, explainable "Next Move" operating system**. 
+### Web Application
 
-Rather than relying purely on opaque black-box AI recommendations, PrioryxAI implements a **hybrid decision engine**:
-- **Deterministic Math & Rules Engine**: Powers mission-critical prioritization, deadline decay calculations, placement readiness scoring, and privacy-preserving cohort metrics with zero hallucination risk.
-- **Multimodal AI & LLMs (OpenAI GPT-4o / Claude)**: Leveraged where natural language synthesis, vision extraction, OCR timetable parsing, SWOT resume auditing, and conversational problem-solving excel.
-- **Fail-Safe Degradation**: If third-party APIs, vector embeddings, or Redis instances go offline, PrioryxAI gracefully falls back to deterministic rules, local caches, and lexical keyword search.
+- Next.js 14 App Router
+- React 18
+- TypeScript
+- Tailwind CSS
+- Framer Motion, Recharts, Lucide icons
+- Supabase Auth, PostgreSQL, Row Level Security, and Storage
+- OpenAI API for chat, extraction, generation, embeddings, and selected reasoning flows
+- Upstash Redis and QStash for rate limits, caching, and background sync hooks
+- GitHub GraphQL, Apify, Remotive, Arbeitnow, LeetCode-related APIs, HackerRank-related services, YouTube APIs, and Razorpay
 
----
+### Mobile Clients
 
-## 🏗️ System Architecture
+- `PrioryxAI/`: Expo Router, React Native, NativeWind, Zustand, Supabase client, Expo document/camera/notification APIs.
+- `PrioryxAI-Android/`: Kotlin/Gradle native Android client structure.
+- `PrioryxAI-iOS/`: SwiftUI client structure with package-based dependencies.
+- Root Capacitor config is also present for wrapping the web build when needed.
 
-### High-Level Platform Architecture
+## AI Architecture
 
-```mermaid
-graph TB
-    subgraph Clients["Client Layer"]
-        Web["Next.js 14 Web App<br/>(Tailwind, Framer Motion, Neumorphic UI)"]
-        ExpoApp["PrioryxAI Expo App<br/>(React Native, NativeWind, Zustand)"]
-        iOSApp["PrioryxAI-iOS<br/>(Native SwiftUI & Xcode Scaffold)"]
-        AndroidApp["PrioryxAI-Android<br/>(Native Kotlin & Jetpack)"]
-        CapacitorWrapper["Capacitor Native Shell<br/>(Android / iOS Webview)"]
-    end
+PrioryxAI uses AI as an application intelligence layer, not as a standalone trained machine-learning system. The application combines deterministic scoring, structured user context, external data ingestion, and LLM calls where language understanding or generation adds value.
 
-    subgraph APILayer["Next.js 14 App Router API Layer (Node.js Runtime)"]
-        AuthRoute["/api/auth/* (Supabase Auth & SSR)"]
-        PriorityRoute["/api/priority & /api/feed"]
-        AssistantRoute["/api/assistant (SSE Streaming + Tools)"]
-        CareerRoute["/api/career/* (Roadmap, Collab, Market)"]
-        ScheduleRoute["/api/schedule/* (Vision OCR Timetables)"]
-        ResumeRoute["/api/resume/* (Mammoth & PDF Extraction)"]
-        IntegrationsRoute["/api/github, /api/leetcode, /api/hackerrank"]
-        PaymentRoute["/api/payments/* (Razorpay Webhooks)"]
-    end
+### AI Design Principles
 
-    subgraph DecisionEngine["Intelligence & Decision Layer"]
-        Orchestrator["Priority Orchestrator"]
-        Collectors["9 Autonomous Data Collectors"]
-        DecayModel["Exponential Urgency Decay Engine"]
-        ReadinessEngine["Placement Readiness Model (v3)"]
-        MCPMultiAgent["MCP Agentic Orchestrator (7 Agents)"]
-        RAGModule["RAG Pipeline (pgvector + Lexical Fallback)"]
-    end
+- Keep stable decisions explainable with deterministic or hybrid scoring.
+- Use LLMs for tasks that benefit from language understanding: assistant chat, resume parsing, SWOT analysis, document extraction, project generation, interview guidance, coding analysis, and natural-language explanations.
+- Bound AI tools behind explicit server-side functions instead of allowing unrestricted application access.
+- Cache expensive or repeatable AI outputs where practical.
+- Fall back to deterministic or lexical behavior when AI, embeddings, Redis, or external APIs are unavailable.
+- Treat retrieved RAG snippets as untrusted context inside assistant prompts.
 
-    subgraph DataPlane["Data & Infrastructure Plane"]
-        Postgres["Supabase PostgreSQL<br/>(Row Level Security & pgvector)"]
-        SupabaseStorage["Supabase Storage<br/>(Resumes, Schedules, Avatars)"]
-        Redis["Upstash Redis<br/>(Rate Limiting & Decision Caching)"]
-        QStash["Upstash QStash<br/>(Signed Background Cron Triggers)"]
-    end
+### Main AI Components
 
-    subgraph ExternalServices["External Providers & APIs"]
-        OpenAI["OpenAI (GPT-4o, Text-Embeddings)"]
-        GitHubAPI["GitHub GraphQL & REST API"]
-        OSV["OSV.dev Vulnerability API"]
-        JobAggregators["Job Boards (Remotive, RemoteOK, Adzuna, Jooble, Apify)"]
-        CodingPlatforms["LeetCode & HackerRank Scraping/APIs"]
-        YouTubeAPI["YouTube Data API v3 (Curated Educator Playlists)"]
-        RazorpayGateway["Razorpay Gateway"]
-    end
+| Component | Input | Processing | Output |
+| --- | --- | --- | --- |
+| Assistant | User message, profile, tasks, history, memory, retrieved snippets | OpenAI chat call with bounded tool loop and streamed response | Personalized answer, optional task actions, persisted conversation |
+| Memory | Recent assistant exchanges | Lightweight extraction of durable user facts | User-scoped memory snippets for later prompts |
+| Priority planner | Tasks, exams, coding signals, resume gaps, GitHub state, workload state | Hybrid deterministic collectors plus optional LLM planner | Daily plan, focus, reasons, burnout note, fallback status |
+| Explainable priority | Task metadata, due dates, effort, impact, deadline risk | Deterministic score dimensions | Score, urgency, impact, effort, factors, summary |
+| Readiness score | Resume, skills, GitHub, LeetCode, profile evidence | Deterministic score plus optional LLM explanation | Placement-readiness score and next actions |
+| Resume intelligence | PDF, DOCX, image, or text resume | File extraction plus structured AI parsing/SWOT/generation | Normalized resume data, analysis, generated resume content |
+| Schedule extraction | Uploaded exam or timetable documents | Document processing and prompt-based extraction | Structured exam/timetable entries and tasks |
+| Coding analysis | LeetCode/HackerRank stats and profile data | Deterministic scoring plus LLM gap analysis | Weak topics, roadmap, recommendations |
+| GitHub narrative | Repository metadata and activity cache | Deterministic scoring plus optional AI narrative | Portfolio strengths, weaknesses, and priority actions |
+| Project Foundry | Resume, profile, coding, GitHub, and goal context | MCP-style agent/tool orchestration and LLM generation | Tailored portfolio project ideas and phase guidance |
+| RAG | User-scoped context documents | Chunking, optional embeddings, vector or lexical retrieval | Bounded snippets for assistant and search APIs |
 
-    Clients --> APILayer
-    APILayer --> DecisionEngine
-    DecisionEngine --> DataPlane
-    DecisionEngine --> ExternalServices
-```
+### RAG and Embeddings
 
----
+The RAG layer is implemented in `src/lib/rag` and exposed through:
 
-### Decision & Priority Orchestrator Flow
+- `POST /api/rag/index`
+- `POST /api/rag/search`
 
-The heartbeat of PrioryxAI is the daily planning engine located in `src/lib/priority/`:
+Documents can be indexed without embeddings. When `OPENAI_API_KEY`, the Supabase vector migration, and `pgvector` support are available, the system can store embeddings and use vector similarity through the database RPC. When semantic retrieval is unavailable, it falls back to lexical retrieval.
 
-```mermaid
-flowchart TD
-    Start([User Requests Priority Feed / Daily Plan]) --> CacheCheck{Cached Plan in Supabase & Redis for Today?}
-    CacheCheck -- Yes --> ReturnCache[Return Cached Plan & Active Priority Tasks]
-    CacheCheck -- No (or Force Regenerate) --> RunCollectors[Execute 9 Autonomous Data Collectors in Parallel]
+### Agent and Tool Boundaries
 
-    subgraph CollectorsList["9 Specialized Context Collectors"]
-        C1["Exam Collector (Countdowns & Urgency)"]
-        C2["Timetable Collector (Class & Lab Blocks)"]
-        C3["Subject Collector (Coursework & Assignments)"]
-        C4["DSA Collector (LeetCode/HackerRank Gaps)"]
-        C5["GitHub Collector (PRs, Commits, Repo Health)"]
-        C6["Project Collector (Foundry Milestones)"]
-        C7["Job Collector (Application Deadlines)"]
-        C8["Resume Collector (ATS & Skill Gaps)"]
-        C9["Roadmap Collector (Career Node Targets)"]
-    end
+The assistant and MCP-oriented flows use server-side tool registries and adapters instead of arbitrary client-side execution. Tools cover constrained actions such as fetching readiness score, reading today's tasks, creating or snoozing tasks, checking LeetCode weak topics, and retrieving upcoming exams. Future autonomous behavior should add stronger approval flows, audit logs, retry policy, and per-tool authorization before expanding action scope.
 
-    RunCollectors --> CollectorsList
-    CollectorsList --> Aggregator[Aggregate Candidate Signals & Normalize]
-    
-    Aggregator --> MathFormula["Compute Deterministic Urgency Score:<br/>Score = Base × e^(-hours / 48) + Consequence"]
-    MathFormula --> AIPlanner["AI Daily Planner (OpenAI GPT-4o)<br/>Balancing Workload, Focus Selection & Burnout Prevention"]
-    
-    AIPlanner --> AtomicDB["Atomic Transaction:<br/>1. Delete Stale AI Tasks (Preserve User Roadmap Tasks)<br/>2. Bulk Insert Generated Priority Tasks<br/>3. Upsert daily_plans Table"]
-    AtomicDB --> UIOutput([Deliver Top 'Next Move' Card & Priority Feed to Client])
-```
-
----
-
-### Model Context Protocol (MCP) Multi-Agent Architecture
-
-Located in `src/lib/mcp/`, PrioryxAI features a structured multi-agent system where bounded agents collaborate across specific career tasks:
-
-```mermaid
-graph LR
-    Master[MCP Agentic Orchestrator] --> AIAgent["AI Agent<br/>(Core Reasoning & Plan Generation)"]
-    Master --> AuthAgent["Auth & Profile Agent<br/>(Permissions & User Scope)"]
-    Master --> FoundryAgent["Foundry Agent<br/>(Architecture & Stack Specs)"]
-    Master --> GitHubAgent["GitHub Agent<br/>(Repo Analysis & PR Velocity)"]
-    Master --> MarketAgent["Market Agent<br/>(Job Sourcing & Skill Matching)"]
-    Master --> ResearchAgent["Research Agent<br/>(Domain & Topic Research)"]
-    Master --> ResumeAgent["Resume Agent<br/>(ATS Audit & SWOT Extraction)"]
-```
-
----
-
-### Deterministic Placement Readiness Model
-
-Implemented in `src/lib/scoring/readiness-score.ts`, the Placement Readiness Score ($0 - 100$) evaluates a student's employability index across 5 deterministic, verifiable pillars:
-
-$$\text{Readiness Score} = 0.20 \cdot S_{\text{GitHub}} + 0.25 \cdot S_{\text{Coding}} + 0.20 \cdot S_{\text{Resume}} + 0.20 \cdot S_{\text{Tasks}} + 0.15 \cdot S_{\text{Consistency}}$$
-
-| Component | Weight | Key Inputs & Metrics Tracked |
-| :--- | :---: | :--- |
-| **GitHub Portfolio** ($S_{\text{GitHub}}$) | **20%** | Repo documentation quality, README architecture diagrams, recent commit timestamps, description coverage, open-source pull requests. |
-| **Coding & DSA** ($S_{\text{Coding}}$) | **25%** | Total solved LeetCode/HackerRank count, ratio of Medium/Hard problems ($\ge 40\%$ target), breadth across core algorithmic topics. |
-| **Resume Quality** ($S_{\text{Resume}}$) | **20%** | Verified resume upload, extracted skill diversity ($\ge 8$ core skills), completed AI SWOT analysis, ATS compatibility. |
-| **Task Execution** ($S_{\text{Tasks}}$) | **20%** | 7-day task completion velocity, low ratio of overdue tasks, proactive handling of upcoming 14-day deadlines. |
-| **Consistency & Streaks** ($S_{\text{Consistency}}$) | **15%** | Active 30-day GitHub contribution days, 7-day LeetCode problem activity, habit streak maintenance. |
-
----
-
-## 🚀 Key Features
-
-### 1. Explainable Priority Feed & Daily Planner
-- **"Next Move" Card**: Directly highlights the single highest-leverage task for the day, accompanied by a natural-language reason string explaining *why* it is prioritized right now.
-- **Time-Decaying Urgency**: Implements mathematical decay ($e^{-\Delta t / 48}$) ensuring deadlines escalate smoothly as crunch time approaches.
-- **Burnout Mitigation**: Caps daily recommendations, balances high-intensity tasks (exam prep, system design) with lower-friction items, and offers instant task snoozing.
-
-### 2. Academic & Schedule Intelligence (OCR / Vision)
-- **Document & Image Uploads**: Upload camera snapshots, scans, or PDFs of college exam timetables and recurring class schedules.
-- **Multimodal LLM Parsing**: Uses computer vision to extract subject codes, exam dates, room numbers, and timings into structured database rows.
-- **Automated Milestone Creation**: Automatically inserts revision blocks and exam countdown tasks into your daily priority stream.
-
-### 3. Interactive Career Roadmaps (30+ Industry Tracks)
-- **30+ Curated Engineering Tracks**: AI Engineer, Full-Stack, Frontend, Backend, DevOps, Data Analyst, Data Engineer, Machine Learning, MLOps, iOS, Android, Cyber Security, Blockchain, Game Developer, Product Manager, Technical Writer, UX Design, and more.
-- **Over 4,300+ Lines of Curricula**: Detailed section-by-section breakdown with curated YouTube video tutorials from elite educators (freeCodeCamp, NeetCode, Fireship, Abdul Bari, MIT OpenCourseWare) and industry certification links.
-- **Downloadable PDF Guides**: Official roadmap blueprints stored in `roadmap/*.pdf`.
-- **Direct Feed Integration**: One-click "Start Task" button turns any roadmap topic node into an actionable priority task in your dashboard.
-
-### 4. Weekly Smart Workload Scheduler
-- **Temporal Balance**: `WeeklyPlanWidget` visualizes time commitments across the 7 days of the week.
-- **Category Balancing**: Smartly splits available hours between Academic/Exams, Coding/DSA, Project Foundry, Job Applications, and Rest.
-
-### 5. GitHub Portfolio & Security Intelligence
-- **Deep Repo Inspector**: Scans repositories for detailed documentation, clean commit messages, licensing, and CI/CD pipelines.
-- **Automated Security Scanner (`src/lib/github/security-scanner.ts`)**: Integrates directly with the keyless, high-speed **OSV.dev** vulnerability batch API to detect CVEs and GHSAs in `package.json` (npm) and `requirements.txt` (PyPI).
-- **Portfolio Narrative Generator**: Analyzes your code repositories and recommends which showcase projects to highlight on your resume.
-
-### 6. Coding Intelligence (LeetCode & HackerRank)
-- **Live Sync**: Aggregates total solved problems, acceptance rates, difficulty distribution, and competition rankings.
-- **Weak-Topic Detection**: Flags algorithmic gaps (e.g., Dynamic Programming, Graph Traversal, Binary Search) and suggests targeted remedial problems.
-- **Daily DSA Challenge**: Delivers a daily tailored coding prompt with direct links to practice.
-
-### 7. AI Resume Intelligence & ATS SWOT Studio
-- **Multi-Format Ingestion**: Parses `.pdf`, `.docx` (via Mammoth), and raw text documents.
-- **AI SWOT Analysis**: Pinpoints Strengths, Weaknesses, Opportunities, and Threats in your current profile.
-- **ATS Compatibility Scoring**: Calculates keyword match rates against target engineering roles and generates tailored resume bullet points with strong action verbs and quantified impact.
-
-### 8. Project Foundry (AI Portfolio Architect)
-- **Concept Generator**: Formulates unique, production-grade project concepts customized to your target job profile and existing skillset.
-- **Full Architecture Blueprints**: Delivers database schemas, API architecture, frontend components, and step-by-step milestones.
-- **Milestone Tracking**: Directly syncs project phases into your daily task manager.
-
-### 9. Real-Time Multi-Source Job Market Aggregator
-- **10+ Supported Job Feeds**: Aggregates tech opportunities from Remotive, RemoteOK, Arbeitnow, Adzuna, Jooble, Careerjet, Findwork, USAJobs, TheMuse, Jobdatalake, and Apify (Internshala).
-- **Personalized Skill Match Scoring**: Compares job requirements against your verified skills, displaying match percentages, missing prerequisites, and estimated compensation.
-- **Pro Gating & Application Tracker**: Manage application lifecycles from Saved to Applied, Interviewing, and Offered.
-
-### 10. Contextual AI Assistant, Memory & Bounded Tools
-- **Streaming SSE Chat**: Low-latency responses with formatted markdown and syntax-highlighted code.
-- **Durable User Memory (`src/lib/memory/user-memory.ts`)**: Extracts and remembers long-term user context (university, graduation year, target roles, preferred programming languages).
-- **Bounded Server-Side Tool Execution**:
-  - `get_readiness_score`: Fetches the latest deterministic score.
-  - `get_today_tasks`: Reads active priorities.
-  - `create_task`: Programmatically adds new tasks.
-  - `snooze_task`: Extends deadlines safely.
-  - `get_leetcode_weak_topics`: Pulls active algorithmic deficiencies.
-  - `get_upcoming_exams`: Queries scheduled academic exams.
-- **Hybrid RAG Knowledge Retrieval**: User-scoped documents are chunked and queried using Supabase `pgvector` semantic cosine similarity with automatic fallback to keyword-based lexical retrieval.
-
-### 11. Peer Collaboration & Privacy-Preserving Cohort Intelligence
-- **Study Matchmaking**: Discover peers with complementary tech stacks or shared exam goals.
-- **Virtual Study Rooms**: Real-time collaborative sessions with synchronized focus timers.
-- **Cohort Benchmarking**: Privacy-first percentile rankings (enforcing $k$-anonymity and minimum cohort sizes) comparing your progress against your university or global cohort.
-
-### 12. Gamification, Streaks & Daily Challenges
-- **Activity Tracker**: Monitors cross-platform actions (tasks completed, commits pushed, LeetCode problems solved).
-- **Streak Protection**: Visual streak counters and celebratory confetti animations (`canvas-confetti`) when completing high-urgency milestones.
-
----
-
-## 📱 Cross-Platform Ecosystem
-
-PrioryxAI is built to be accessible anywhere a student works:
-
-```text
-PrioryxAI Platform
-├── Web Client (src/)               -> Next.js 14, Tailwind CSS, Neumorphic Design, Canvas Waves
-├── Mobile App (PrioryxAI/)         -> React Native, Expo Router, NativeWind, Zustand
-├── iOS Native (PrioryxAI-iOS/)     -> Swift, SwiftUI, Xcode Project Scaffolding, Supabase Auth
-├── Android Native (PrioryxAI-Android/) -> Kotlin, Gradle, Android Jetpack
-└── Capacitor Wrapper (root)        -> Android & iOS wrapper for fast hybrid web-app distribution
-```
-
----
-
-## 📁 Repository Structure
+## Repository Layout
 
 ```text
 .
 ├── src/
-│   ├── app/                          # Next.js 14 App Router
-│   │   ├── (auth)/                   # Authentication flows (login, signup)
-│   │   ├── admin/                    # Admin diagnostics & telemetry
-│   │   ├── api/                      # 35+ API route handlers (Node.js runtime)
-│   │   │   ├── assistant/            # Streaming assistant & tools
-│   │   │   ├── career/               # Roadmaps, collab rooms, market jobs
-│   │   │   ├── feed/                 # Priority feed calculation
-│   │   │   ├── github/               # GitHub sync, scoring, security scans
-│   │   │   ├── leetcode/             # LeetCode profile sync
-│   │   │   ├── payments/             # Razorpay subscription endpoints
-│   │   │   ├── priority/             # Daily planning orchestrator
-│   │   │   ├── rag/                  # Semantic document index & search
-│   │   │   ├── resume/               # File upload, parsing, SWOT analysis
-│   │   │   ├── schedule/             # Timetable & exam OCR ingestion
-│   │   │   └── webhooks/             # Razorpay & GitHub webhooks
-│   │   ├── career/                   # Career studio pages (Roadmaps, Foundry, Resume, Jobs)
-│   │   ├── feed/                     # Main student dashboard & Next Move card
-│   │   ├── onboarding/               # High-contrast neumorphic onboarding wizard
-│   │   ├── pricing/                  # Pro subscription tiers & checkout
-│   │   └── u/[username]/             # Public student portfolios
-│   ├── components/                   # React UI component library
-│   │   ├── landing/                  # Landing page animations & pricing sections
-│   │   ├── planning/                 # WeeklyPlanWidget & scheduler components
-│   │   ├── schedule/                 # Timetable & exam uploader dropzones
-│   │   ├── ui/                       # Glassmorphism, buttons, dialogs, waves background
-│   │   ├── app-shell.tsx             # Root navigation shell & notifications
-│   │   └── dashboard-view.tsx        # Central task feed & stats visualizer
-│   └── lib/                          # Core business logic & services
-│       ├── assistant/                # Bounded assistant tool definitions
-│       ├── github/                   # AST analyzers, repo inspector, OSV security scanner
-│       ├── mcp/                      # Model Context Protocol multi-agent system
-│       ├── memory/                   # Durable user memory extractor
-│       ├── peer/                     # Privacy-preserving cohort intelligence
-│       ├── planning/                 # Weekly scheduler & temporal balancing
-│       ├── priority/                 # 9 autonomous collectors & AI planner
-│       ├── rag/                      # pgvector embeddings & lexical retrieval
-│       ├── roadmaps/                 # 4,300+ lines of tech tracks & curriculum data
-│       ├── scoring/                  # Deterministic placement readiness formula (v3)
-│       ├── supabase/                 # Supabase client, SSR, and middleware
-│       └── youtube/                  # YouTube v3 API client & curated educator channels
+│   ├── app/                  # Next.js pages, layouts, and API routes
+│   ├── components/           # Web UI components
+│   ├── data/                 # Static or seed-like app data
+│   ├── lib/                  # AI, scoring, Supabase, integrations, context, RAG
+│   └── scripts/              # Utility scripts
 ├── supabase/
-│   └── migrations/                   # 34 canonical SQL database migrations
-├── PrioryxAI/                        # Expo React Native cross-platform mobile client
-├── PrioryxAI-Android/                # Native Android Kotlin/Gradle application
-├── PrioryxAI-iOS/                    # Native iOS SwiftUI/Xcode project
-├── roadmap/                          # Curated career roadmap PDF blueprints
-├── tests/                            # Node.js built-in automated test suite
-├── capacitor.config.ts               # Capacitor mobile wrapping configuration
-├── package.json                      # Workspace scripts and dependencies
-└── README.md                         # Project documentation
+│   └── migrations/           # Canonical database migrations
+├── docs/db/                  # Reference schema dumps only
+├── PrioryxAI/                # Expo React Native app
+├── PrioryxAI-Android/        # Native Android app
+├── PrioryxAI-iOS/            # Native iOS SwiftUI app
+├── public/                   # Web static assets
+├── assets/                   # Product/reference assets
+├── tests/                    # Node test files
+├── AI_IMPLEMENTATION.md      # AI implementation phase notes
+├── MIGRATIONS.md             # Migration policy and chronology
+├── PRIORYXAI_DESCRIPTION.md  # Detailed product and architecture description
+└── README.md
 ```
 
----
-
-## 💻 Tech Stack
-
-| Domain | Technology / Library | Role |
-| :--- | :--- | :--- |
-| **Frontend Framework** | **Next.js 14 (App Router)** | Full-stack React framework with SSR and Server Actions |
-| **Language** | **TypeScript 5** | Strict static typing across web, mobile, and APIs |
-| **Styling & Animation** | **Tailwind CSS, Framer Motion, GSAP, Lenis** | Neumorphic high-contrast UI, canvas waves, smooth scrolling |
-| **Charts & Visuals** | **Recharts, Canvas Confetti** | Readiness analytics, workload distributions, reward animations |
-| **Database & Auth** | **Supabase (PostgreSQL + RLS + Auth + Storage)** | Relational data store, vector embeddings (`pgvector`), OAuth |
-| **Caching & Rate Limits**| **Upstash Redis & Ratelimit** | Token-bucket rate limiting and 15-minute API cache layers |
-| **Background Jobs** | **Upstash QStash** | Cryptographically signed asynchronous cron triggers |
-| **Artificial Intelligence**| **OpenAI GPT-4o, Anthropic Claude** | Extraction, SWOT generation, vision OCR, chat streaming |
-| **Document Processing** | **Mammoth (.docx), pdf-parse (.pdf), XLSX** | Server-side parsing of uploaded resumes and spreadsheets |
-| **Vulnerability Scanning**| **OSV.dev Batch API** | Keyless real-time dependency CVE/GHSA scanner |
-| **Payments** | **Razorpay API & Webhooks** | Subscription billing, invoicing, Pro tier gating |
-| **Mobile Clients** | **Expo React Native, SwiftUI, Kotlin, Capacitor** | Native and hybrid iOS & Android experiences |
-
----
-
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js**: v18.17.0+ or v20.x
-- **npm**: v9.x or v10.x
-- **Supabase Account**: A live Supabase project with PostgreSQL
-- **OpenAI API Key**: For GPT-4o reasoning, vision extraction, and embeddings
-- *(Optional)*: Upstash Redis, Razorpay, GitHub Personal Access Token, Apify
+- Node.js compatible with Next.js 14 and the installed dependency set.
+- npm.
+- A Supabase project for authenticated and persistent workflows.
+- OpenAI API access for AI features.
+- Optional service credentials for GitHub, Apify, Upstash, Razorpay, and other integrations.
 
----
-
-### Installation
-
-Clone the repository and install root dependencies:
+### Install Dependencies
 
 ```bash
-# Clone the repository
-git clone https://github.com/codewithyug06/PrioryxAI.git
-cd PrioryxAI
-
-# Install all npm dependencies
 npm install
 ```
 
----
+### Configure Environment
 
-### Environment Configuration
-
-Create a `.env.local` file in the root directory by copying `.env.example`:
+Create `.env.local` from `.env.example`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Configure the environment variables according to your local services:
-
-| Variable | Required? | Description |
-| :--- | :---: | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`| **Yes** | Your Supabase public anonymous API key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Service role key for admin background operations & RLS bypass |
-| `OPENAI_API_KEY` | **Yes** | OpenAI API key for assistant, vision OCR, and RAG embeddings |
-| `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis REST endpoint for rate limiting and cache |
-| `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash Redis REST token |
-| `QSTASH_CURRENT_SIGNING_KEY` | Optional | Upstash QStash key for background webhook verification |
-| `GITHUB_TOKEN` | Optional | GitHub personal access token for higher GraphQL API limits |
-| `GITHUB_WEBHOOK_SECRET` | Optional | Webhook secret for real-time repository push sync |
-| `APIFY_TOKEN` | Optional | Apify token for scraper-backed internship indexing |
-| `RAZORPAY_KEY_ID` | Optional | Razorpay key for processing subscriptions |
-| `RAZORPAY_KEY_SECRET` | Optional | Razorpay secret for checkout verification |
-| `RAZORPAY_PLAN_ID` | Optional | Razorpay recurring subscription plan ID |
-| `RAZORPAY_WEBHOOK_SECRET` | Optional | Razorpay webhook signature validation secret |
-| `ADZUNA_APP_ID` / `_API_KEY` | Optional | Adzuna job search API credentials |
-| `JOOBLE_API_KEY` | Optional | Jooble job search API key |
-| `CAREERJET_API_KEY` | Optional | Careerjet job search API key |
-| `FINDWORK_API_KEY` | Optional | Findwork job search API key |
-| `USAJOBS_API_KEY` | Optional | USAJobs API key |
-| `THEMUSE_API_KEY` | Optional | The Muse job search API key |
-| `JOBDATALAKE_API_KEY` | Optional | JobDataLake API key |
-
----
-
-### Database & Migrations
-
-Database migrations are located in `supabase/migrations/` and follow strict idempotent SQL practices.
-
-To apply migrations using the Supabase CLI:
+Fill the values required for the workflows you want to run:
 
 ```bash
-# Link your local project to your Supabase project
-npx supabase link --project-ref your-project-id
-
-# Push all canonical migrations to your database
-npx supabase db push
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+APIFY_TOKEN=
+GITHUB_TOKEN=
+GITHUB_WEBHOOK_SECRET=
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_PLAN_ID=
+RAZORPAY_WEBHOOK_SECRET=
+NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK=
 ```
 
-Alternatively, you can run the migrations sequentially via the Supabase SQL Editor dashboard.
+At minimum, most authenticated web flows need Supabase URL and anon key. Server-side database writes, storage processing, admin operations, and integration syncs may require the service-role key. AI features require `OPENAI_API_KEY`.
 
----
-
-### Running the Web Application
-
-Start the local Next.js development server:
+### Run Web App
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+The local web app runs at:
 
-To produce an optimized production build:
+```text
+http://localhost:3000
+```
+
+### Build Web App
 
 ```bash
 npm run build
 npm run start
 ```
 
----
+`npm run start` expects `PORT` to be set because the script runs `next start -p $PORT`.
 
-### Running Mobile Applications
+### Run Tests
 
-#### 1. Expo React Native Client (`PrioryxAI/`)
+```bash
+npm test
+```
+
+The current test harness uses Node's built-in test runner and covers selected deterministic decision logic, including priority scoring, opportunity matching, skill-gap analysis, and lexical RAG fallback.
+
+### Lint
+
+```bash
+npm run lint
+```
+
+The Next.js config currently ignores ESLint during production builds. Treat lint failures as engineering debt to address, not as proof that a build cannot run.
+
+## Database and Migrations
+
+Supabase migrations live only in:
+
+```text
+supabase/migrations/
+```
+
+Follow the convention documented in `MIGRATIONS.md`:
+
+```text
+YYYYMMDD_short_description.sql
+```
+
+Use guarded DDL such as `IF NOT EXISTS` and `IF EXISTS` where possible so migrations are idempotent. Do not put runnable migration files at the repository root. The SQL files in `docs/db/` are reference dumps and should not be pushed as migrations.
+
+The schema includes data models for users, tasks, assistant messages, coding profiles, GitHub analysis/cache, LeetCode and HackerRank intelligence, schedules, resumes, project ideas, job applications, peer/collaboration data, readiness scores, opportunity matching, recommendation events, and RAG-ready context documents.
+
+Security note: many tables use Row Level Security and user-owned access policies. Server routes that use `SUPABASE_SERVICE_ROLE_KEY` bypass RLS by design and must remain tightly scoped.
+
+## Mobile Development
+
+### Expo Client
+
 ```bash
 cd PrioryxAI
 npm install
-
-# Start the Expo Metro bundler
 npm run start
+```
 
-# Launch on specific emulators/devices
+Available scripts:
+
+```bash
 npm run android
 npm run ios
 npm run web
 ```
 
-#### 2. Native Android App (`PrioryxAI-Android/`)
-Open the `PrioryxAI-Android` directory in **Android Studio**. Allow Gradle to sync dependencies, then run on an Android Virtual Device (AVD) or physical device.
+The Expo app uses Supabase, Expo Router, NativeWind, Zustand, camera/document APIs, secure storage, notifications, and haptics.
 
-#### 3. Native iOS App (`PrioryxAI-iOS/`)
-Open `PrioryxAI-iOS` in **Xcode**. Ensure Swift Package Manager resolves dependencies, choose an iOS Simulator (iOS 17+ recommended), and press **Run (Cmd + R)**.
+### Native Android
 
-#### 4. Capacitor Native Shell
-To sync and run the web build inside Capacitor:
+The native Android project is in `PrioryxAI-Android/` and uses Gradle/Kotlin project structure.
+
+### Native iOS
+
+The native iOS project is in `PrioryxAI-iOS/` and contains SwiftUI features for onboarding, dashboard, assistant, learning, career, profile, and setup flows.
+
+### Capacitor
+
+The root project also has `capacitor.config.ts` with:
+
+- App ID: `ai.prioryx.app`
+- App name: `PrioryxAI`
+- Web directory: `out`
+
+Useful root scripts:
+
 ```bash
 npm run mobile:copy
 npm run mobile:sync
 npm run mobile:android
 ```
 
----
+## API Surface
 
-### Running Tests & Quality Assurance
+Important API route groups:
 
-PrioryxAI includes an automated unit test harness powered by the Node.js native test runner:
+- `/api/assistant`
+- `/api/feed`
+- `/api/priority`
+- `/api/planning`
+- `/api/tasks`
+- `/api/user`
+- `/api/profile`
+- `/api/resume`
+- `/api/schedule`
+- `/api/github`
+- `/api/leetcode`
+- `/api/hackerrank`
+- `/api/opportunities`
+- `/api/jobs`
+- `/api/rag`
+- `/api/readiness-score`
+- `/api/foundry`
+- `/api/mcp`
+- `/api/payments`
+- `/api/webhooks`
 
-```bash
-# Run unit tests
-npm test
+Most routes perform their own authentication and authorization checks. API routes that call third-party services should validate credentials, handle rate limits, and return controlled fallback states where possible.
 
-# Run ESLint validation
-npm run lint
-```
+## External Integrations
 
-The test suite covers:
-- Deterministic explainable priority scoring and overdue risk escalation.
-- Job opportunity normalization, deduplication, and skill extraction.
-- Explainable skill-gap analysis without false proficiency hallucinations.
-- Bounded lexical RAG fallback behavior when vector search is offline.
-- API route security bounds and credential leak prevention.
+| Integration | Purpose |
+| --- | --- |
+| Supabase | Auth, PostgreSQL, RLS, Storage, service-role operations |
+| OpenAI | Assistant, structured extraction, generation, analysis, embeddings |
+| Upstash Redis | Rate limiting, AI output caching, feed/planner cache |
+| QStash | Signed background job trigger support |
+| GitHub | Repository and contribution intelligence |
+| Apify | Internshala and scraper-backed opportunity ingestion |
+| Remotive / Arbeitnow | Job and opportunity data |
+| LeetCode-related APIs | Coding profile, solved problems, weak-topic analysis |
+| HackerRank-related services | Coding profile and badge intelligence |
+| YouTube APIs | Learning-resource recommendations |
+| Razorpay | Subscription/payment flows |
 
----
+## Security and Privacy Notes
 
-## 📡 API Reference
+- Do not commit `.env.local`, Supabase service-role keys, OpenAI keys, tokens, webhook secrets, or payment secrets.
+- Supabase anon keys are public client credentials, but production configuration should still be environment-managed.
+- Service-role operations must stay server-side.
+- Webhook routes should verify signatures or shared secrets before processing state changes.
+- Assistant memory and RAG documents are user-scoped and should never be mixed across users.
+- Cohort or peer intelligence should only expose aggregate data and should enforce minimum cohort sizes.
+- AI output should be treated as advisory. Deterministic scoring and user-visible explanations should make important recommendations auditable.
 
-PrioryxAI exposes 35+ structured API endpoints organized into functional route groups:
+## Development Workflow
 
-| Endpoint Group | Method | Description |
-| :--- | :---: | :--- |
-| `/api/priority` | `GET` / `POST` | Triggers the 9 collectors and generates the daily priority plan |
-| `/api/feed` | `GET` | Returns the active prioritized task feed and "Next Move" card |
-| `/api/tasks` | `GET` / `POST` | Manages tasks (create, complete, snooze, stage, delete) |
-| `/api/assistant` | `POST` | SSE streaming chat endpoint with bounded function execution |
-| `/api/readiness-score` | `GET` / `POST` | Computes and stores the deterministic Placement Readiness Score |
-| `/api/schedule/process-timetable` | `POST` | Vision OCR parser for recurring class schedules |
-| `/api/schedule/process-exam` | `POST` | Vision OCR parser for exam timetables with countdown insertion |
-| `/api/resume/upload` | `POST` | Ingests PDF/DOCX resumes and runs AI SWOT analysis |
-| `/api/career/roadmap` | `GET` / `POST` | Queries tech tracks and tracks node progress |
-| `/api/career/market/jobs` | `GET` | Multi-source job search and candidate skill-gap scoring |
-| `/api/career/collab/*` | `GET` / `POST` | Matchmaking and room coordination for peer study sessions |
-| `/api/foundry/generate` | `POST` | AI architect for generating tailored portfolio project specs |
-| `/api/github/*` | `GET` / `POST` | Syncs repositories, runs AST checks and OSV security audits |
-| `/api/leetcode/*` | `GET` / `POST` | Pulls LeetCode stats, solved counts, and weak-topic tags |
-| `/api/rag/index` & `/search` | `POST` | Indexes user context into `pgvector` and performs semantic search |
-| `/api/payments/subscribe` | `POST` | Creates Razorpay subscription instances |
-| `/api/webhooks/razorpay` | `POST` | Validates HMAC SHA-256 signatures for billing events |
+1. Keep migrations in `supabase/migrations/`.
+2. Add deterministic tests for scoring, matching, fallback logic, and other business-critical behavior.
+3. Prefer typed context builders over ad hoc prompt construction.
+4. Keep AI prompts bounded and explicit about allowed context.
+5. Use fallbacks for OpenAI, Redis, Supabase RPC, and third-party API failures.
+6. Avoid widening service-role access when a user-scoped Supabase client is sufficient.
+7. Update `AI_IMPLEMENTATION.md` when adding or materially changing AI behavior.
+8. Update this README when setup, environment variables, route groups, or architecture changes.
 
----
+## Known Limitations
 
-## 🔒 Security, Privacy & Ethics
+- PrioryxAI does not currently train its own ranking model.
+- Opportunity matching and priority scoring are deterministic or hybrid, not learned from user outcomes.
+- Semantic RAG requires the relevant Supabase migration, `pgvector`, and OpenAI embeddings configuration; otherwise lexical fallback is used.
+- AI quality depends on profile completeness, integration freshness, uploaded document quality, and prompt context.
+- Mobile clients may not have full feature parity with the web application.
+- Some legacy code and product copy may still use the previous `DeadlineOS` naming.
 
-- **Zero Exposure of Service Role Keys**: Client components strictly interact via the public anon key. Elevated database operations remain restricted to server routes.
-- **Row Level Security (RLS)**: Enforced across all PostgreSQL tables. Users can only read, insert, and modify their own records.
-- **Privacy-Preserving Cohorts**: Peer intelligence aggregates enforce strict $k$-anonymity thresholds ($N \ge 5$) so individual student grades or scores can never be reverse-engineered.
-- **Deterministic Guardrails**: LLMs are never permitted to unilaterally delete databases or mutate external accounts. Tool executions are strictly bounded by JSON schemas.
-- **Keyless Security Scanning**: Dependency vulnerability audits utilize public OSV.dev endpoints without transmitting private source code off-premises.
+## Useful Reference Documents
 
----
-
-## 📄 License & Contributing
-
-Distributed under the **MIT License**. See `LICENSE` for more information.
-
-Contributions, issue reports, and feature requests are welcome!
-1. Fork the repository
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'feat: add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-<div align="center">
-  <sub>Built with ❤️ by the PrioryxAI Team. Empowering the next generation of engineers to master their time and launch their careers.</sub>
-</div>
+- `PRIORYXAI_DESCRIPTION.md`: full product and architecture description.
+- `AI_IMPLEMENTATION.md`: AI feature implementation history and phase notes.
+- `MIGRATIONS.md`: migration rules and migration chronology.
+- `MCP_CONNECTOR_SETUP.md`: MCP connector setup notes.
+- `docs/db/`: reference schema dumps.

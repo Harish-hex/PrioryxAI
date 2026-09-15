@@ -138,8 +138,21 @@ export async function generateDailyPlan(
   // Sort by urgency score descending
   allTasks.sort((a, b) => b.urgency_score - a.urgency_score)
 
-  // Limit to top 8
-  const todaysTasks = allTasks.slice(0, 8)
+  // Limit to top 8 — but a strongly-matched job (85%+) is a time-sensitive
+  // opportunity, not just another study suggestion, so guarantee it a slot
+  // even on a day crowded with CRITICAL exam/deadline tasks.
+  let todaysTasks = allTasks.slice(0, 8)
+  const topJob = jobs.length > 0 ? jobs.reduce((best, j) => j.matchScore > best.matchScore ? j : best, jobs[0]) : null
+  if (topJob && topJob.matchScore >= 85) {
+    const alreadyIncluded = todaysTasks.some(t => t.source_id === topJob.opportunityId && t.source_type === 'opportunity')
+    if (!alreadyIncluded) {
+      const topJobTask = allTasks.find(t => t.source_id === topJob.opportunityId && t.source_type === 'opportunity')
+      if (topJobTask) {
+        // Bump the lowest-urgency task out to make room, rather than growing past 8.
+        todaysTasks = [...todaysTasks.slice(0, 7), topJobTask]
+      }
+    }
+  }
   const totalMinutesToday = todaysTasks.reduce(
     (sum, t) => sum + t.estimated_minutes, 0
   )
