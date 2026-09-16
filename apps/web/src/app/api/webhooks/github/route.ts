@@ -26,8 +26,12 @@ export async function POST(request: NextRequest) {
   }
 
   const event = request.headers.get('x-github-event');
-  if (event !== 'push') {
-    // Only trigger sync on push events
+  // push: new commits change languages/streak/last-commit.
+  // repository: created/deleted/renamed/transferred repos change the repo
+  // count and list itself — without this, a newly created or deleted repo
+  // never triggers a resync until the next commit (or never, for a repo
+  // that's deleted before its first push).
+  if (event !== 'push' && event !== 'repository') {
     return NextResponse.json({ received: true, action: 'ignored' });
   }
 
