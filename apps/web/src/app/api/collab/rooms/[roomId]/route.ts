@@ -50,6 +50,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
   const { data: room } = await db.from('study_rooms').select('host_id, session_data').eq('id', params.roomId).maybeSingle();
   if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
 
+  if (room.host_id !== user.id) {
+    const { data: membership } = await db
+      .from('study_room_members')
+      .select('id')
+      .eq('room_id', params.roomId)
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return NextResponse.json({ error: 'You are not an active member of this room' }, { status: 403 });
+    }
+  }
+
   let body: { focusTopic?: string; sessionData?: Record<string, unknown> };
   try {
     body = await req.json();

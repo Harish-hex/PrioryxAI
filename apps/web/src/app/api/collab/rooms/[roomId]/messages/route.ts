@@ -12,6 +12,23 @@ export async function GET(_req: NextRequest, { params }: { params: { roomId: str
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = createServiceRoleClient();
+
+  const { data: room } = await db.from('study_rooms').select('is_private, host_id').eq('id', params.roomId).maybeSingle();
+  if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+
+  if (room.is_private && room.host_id !== user.id) {
+    const { data: membership } = await db
+      .from('study_room_members')
+      .select('id')
+      .eq('room_id', params.roomId)
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return NextResponse.json({ error: 'This room is private' }, { status: 403 });
+    }
+  }
+
   const { data: messages, error } = await db
     .from('study_room_messages')
     .select('*')
