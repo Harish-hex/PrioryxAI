@@ -45,6 +45,9 @@
     },
     "src/app/api/webhooks/razorpay/route.ts": {
       "maxDuration": 10
+    },
+    "src/app/api/cron/github-sync/route.ts": {
+      "maxDuration": 300
     }
   },
   "headers": [
@@ -56,6 +59,12 @@
           "value": "no-store"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/github-sync",
+      "schedule": "0 3 * * *"
     }
   ]
 }
