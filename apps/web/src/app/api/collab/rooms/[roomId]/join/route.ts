@@ -59,7 +59,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       } catch {
         // no body sent
       }
-      if (!room.password_hash || !body.password || !verifyRoomPassword(body.password, room.password_hash)) {
+      const candidatePassword = body.password?.trim();
+      if (!room.password_hash || !candidatePassword || !verifyRoomPassword(candidatePassword, room.password_hash)) {
         return NextResponse.json({ error: 'Incorrect password' }, { status: 403 });
       }
     }

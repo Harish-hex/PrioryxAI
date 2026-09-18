@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
       focus_topic: body.focusTopic?.trim() || null,
       max_members: maxMembers,
       is_private: Boolean(body.isPrivate),
-      password_hash: body.isPrivate && body.password ? hashRoomPassword(body.password) : null,
+      password_hash: body.isPrivate && body.password?.trim() ? hashRoomPassword(body.password.trim()) : null,
       status: body.scheduledAt ? 'scheduled' : 'active',
       scheduled_at: body.scheduledAt || null,
       started_at: body.scheduledAt ? null : new Date().toISOString(),

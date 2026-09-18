@@ -105,7 +105,7 @@ export function CreateRoomForm() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Amrita CSE Graph Sprint"
+          placeholder="e.g. CSE Graph Sprint"
           required
           minLength={3}
           className="neu-input mt-1.5 w-full rounded-2xl px-4 py-2.5 text-sm outline-none"

@@ -561,7 +561,7 @@ function CollabContent() {
                   if (connectState.status !== 'idle') setConnectState({ status: 'idle' })
                 }}
                 onKeyDown={e => e.key === 'Enter' && connectCode.length >= 4 && handleConnect()}
-                placeholder="PEER CODE (e.g. YUG4K2)"
+                placeholder="ENTER PEER CODE"
                 maxLength={6}
                 className="neu-inset flex-1 rounded-2xl px-4 py-2 text-xs font-mono tracking-[0.15em] uppercase outline-none text-slate-900 dark:text-white placeholder-slate-400"
               />
